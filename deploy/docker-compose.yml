@@ -5,6 +5,7 @@
 # Pipeline temps réel de l'enrôlement (profil « temps-reel », voir pipeline/README.md) :
 #   docker compose -f deploy/docker-compose.yml --profile temps-reel up -d --build
 #   MOSIP simulée → Debezium → Kafka → job PySpark → base BI → API (8080) → page http://localhost:5173/enrolement
+#   Interface Kafka (lecture seule) : http://localhost:8090
 #   Vérification : docker compose -f deploy/docker-compose.yml run --rm outils
 name: bi-anid
 
@@ -172,6 +173,25 @@ services:
       kafka:
         condition: service_healthy
       mosip-sim:
+        condition: service_healthy
+
+  # Interface web de Kafka (Kafbat UI) : topics, messages, groupes de consommateurs et connecteur Debezium.
+  # http://localhost:8090, en lecture seule et accessible depuis ce poste seulement. Les messages contiennent le RID
+  # en clair (fictif ici) : jamais d'interface de ce type sans authentification ni contrôle d'accès en recette ou
+  # en production.
+  kafka-ui:
+    profiles: ["temps-reel"]
+    image: ghcr.io/kafbat/kafka-ui:v1.5.0
+    environment:
+      KAFKA_CLUSTERS_0_NAME: bi-anid-dev
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:8083
+      KAFKA_CLUSTERS_0_READONLY: "true"
+    ports:
+      - "127.0.0.1:8090:8080"
+    depends_on:
+      kafka:
         condition: service_healthy
 
   # Enregistre le connecteur pipeline/cdc/connecteurs/regprc-dev.json (une fois, idempotent), puis s'arrête.

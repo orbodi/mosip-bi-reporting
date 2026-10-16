@@ -26,7 +26,7 @@ Les tables du Data Mart (`etat`, `pipeline`, colonnes de `bi`) sont créées par
 ## Environnement local temps réel (Docker Desktop)
 
 Prérequis : Docker Desktop avec au moins 8 Go de mémoire attribués, accès Internet au premier lancement (images,
-dépendances Maven et npm, connecteur Kafka de Spark). Ports utilisés : 5173, 8080, 8083, 5432, 5433.
+dépendances Maven et npm, connecteur Kafka de Spark). Ports utilisés : 5173, 8080, 8083, 8090, 5432, 5433.
 
 ```powershell
 # depuis la racine du dépôt
@@ -42,6 +42,7 @@ l'API). Ensuite : http://localhost:5173/enrolement. Le bloc « Devenir des inscr
 | `mosip-sim` | PostgreSQL « MOSIP » simulé : table `regprc.registration` au DDL officiel, rôle `bi_cdc`, publication `bi_cdc_regprc`, TLS, `wal_level=logical` |
 | `simulateur-mosip` | crée 3 000 inscriptions fictives sur 60 jours, puis 1 à 4 nouvelles toutes les 5 s, et fait avancer celles en cours |
 | `kafka` | Apache Kafka 4.1.1 (un nœud, KRaft) |
+| `kafka-ui` | interface web de Kafka (Kafbat UI 1.5.0) sur http://localhost:8090 : topics, messages, retard des consommateurs, état du connecteur Debezium ; lecture seule, accessible depuis le poste seulement |
 | `connect` | Kafka Connect avec Debezium 3.7.0 ; secrets lus dans son environnement (`${env:...}`) |
 | `connect-init` | enregistre `cdc/connecteurs/regprc-dev.json` puis s'arrête (attend l'état RUNNING) |
 | `spark-enrolement` | job PySpark, un lot toutes les 10 s, checkpoint dans le volume `checkpoints-spark` |
@@ -57,6 +58,12 @@ docker compose -f deploy/docker-compose.yml run --rm outils
 Compte rendu par étape (base simulée, slot, connecteur, lots Spark, rejets, concordance état courant ↔ faits,
 fraîcheur, API). Tout doit être « OK » ; « ALERTE » sur `enrolement_non_classees` signale des statuts sans
 correspondance validée. Suivre un service : `docker compose -f deploy/docker-compose.yml logs -f spark-enrolement`.
+
+Dans l'interface Kafka (http://localhost:8090) : le topic `mosip.dev.regprc.registration` reçoit un message par
+changement dans MOSIP (clé = RID, valeur = enveloppe Debezium `before` / `after` / `source` / `op`) ; l'onglet
+Consumers montre le retard de lecture du job Spark ; l'onglet Kafka Connect montre l'état du connecteur
+`bi-cdc-regprc-dev`. L'interface est en lecture seule : pour redémarrer le connecteur, passer par l'API REST de
+Kafka Connect (port 8083).
 
 Délai attendu entre un changement dans MOSIP et l'écran : quelques secondes pour Debezium, au plus 10 s pour le lot
 Spark, au plus 30 s pour la relecture de la page.
