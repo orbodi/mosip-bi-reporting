@@ -1,0 +1,21 @@
+package tg.anid.bi.enrolement;
+
+import java.time.LocalDate;
+
+/**
+ * Bloc « Devenir des inscriptions » de la page Enrôlement (docs/indicateurs.md : E-INS, E-NIU, E-COURS, E-ECH,
+ * E-REJ). Contrôle : niuGeneres + enCours + echouees + rejetees + nonClassees = inscriptions.
+ *
+ * @param perimetre    « Ensemble du Togo » ou nom de la zone filtrée
+ * @param du           première date incluse (jour de réception), ou null depuis le début
+ * @param au           dernière date incluse, ou null jusqu'à la dernière donnée
+ * @param inscriptions paquets d'inscription reçus
+ * @param niuGeneres   inscriptions abouties (statut regroupé « abouti »)
+ * @param enCours      inscriptions ni abouties, ni échouées, ni rejetées
+ * @param echouees     traitement en échec technique
+ * @param rejetees     inscriptions rejetées
+ * @param nonClassees  statut MOSIP sans correspondance validée (doit rester à 0 une fois la règle validée)
+ */
+public record DevenirInscriptions(String perimetre, LocalDate du, LocalDate au, long inscriptions, long niuGeneres,
+                                  long enCours, long echouees, long rejetees, long nonClassees) {
+}

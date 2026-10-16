@@ -1,0 +1,38 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Java
+backend/target/
+*.class
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/node_modules/.tmp/
+
+# Python (pipeline temps réel)
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# dbt
+pipeline/target/
+pipeline/dbt_packages/
+pipeline/logs/
+
+# Claude Code
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+
+# Système
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

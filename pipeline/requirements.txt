@@ -1,0 +1,4 @@
+# Pipeline temps réel (job PySpark, simulateur, outils). Versions figées, vérifiées le 16/10/2026.
+pyspark==4.2.0
+psycopg[binary]==3.3.6
+pytest==9.1.1

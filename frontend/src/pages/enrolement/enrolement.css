@@ -1,0 +1,147 @@
+/* Page Enrôlement (maquette/pages/Enrolement.dc.html). Jetons de styles/jetons.css uniquement. */
+.grille-page {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e-6);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .grille-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Élément principal de la page : crochets jaunes aux deux coins hauts (maquette). */
+.bloc-principal::before,
+.bloc-principal::after {
+  content: '';
+  position: absolute;
+  top: var(--e-4);
+  width: 22px;
+  height: 22px;
+  border-top: 3px solid var(--or);
+}
+.bloc-principal::before {
+  left: var(--e-4);
+  border-left: 3px solid var(--or);
+  border-top-left-radius: var(--r-s);
+}
+.bloc-principal::after {
+  right: var(--e-4);
+  border-right: 3px solid var(--or);
+  border-top-right-radius: var(--r-s);
+}
+
+.bloc-devenir__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+}
+.bloc-devenir__note {
+  margin: var(--e-1) 0 var(--e-5);
+  font-size: var(--t-xs);
+}
+
+.pastille-portee {
+  padding: var(--e-1) var(--e-3);
+  border-radius: var(--r-pilule);
+  background: var(--bleu-clair);
+  color: var(--bleu);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.bloc-devenir__principal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  margin: 0 0 var(--e-4);
+}
+.bloc-devenir__valeur {
+  font-size: var(--t-hero);
+  font-weight: 700;
+  line-height: 1.1;
+}
+.bloc-devenir__unite {
+  color: var(--encre-2);
+  font-size: var(--t-m);
+}
+
+.barre-statuts {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  margin-bottom: var(--e-5);
+  border-radius: var(--r-pilule);
+  overflow: hidden;
+  background: var(--trait);
+}
+.barre-statuts__part {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.statut--niu {
+  background: var(--statut-niu);
+}
+.statut--en-cours {
+  background: var(--statut-en-cours);
+}
+.statut--echoue {
+  background: var(--statut-echoue);
+}
+.statut--rejete {
+  background: var(--statut-rejete);
+}
+.statut--non-classe {
+  background: var(--statut-non-classe);
+}
+
+.cartes-statuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.carte-statut {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  padding: var(--e-4);
+  border: 1px solid var(--or-pale);
+  border-radius: var(--r-m);
+  background: var(--surface);
+}
+.carte-statut__libelle {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  color: var(--bleu);
+  font-size: var(--t-s);
+  font-weight: 600;
+}
+.puce-statut {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.carte-statut__valeur {
+  font-size: var(--t-kpi);
+  font-weight: 700;
+}
+.carte-statut__part {
+  font-size: var(--t-s);
+}
+
+.alerte-donnees {
+  margin: var(--e-4) 0 0;
+  padding: var(--e-3) var(--e-4);
+  border-left: 4px solid var(--or);
+  border-radius: var(--r-s);
+  background: var(--or-pale);
+  font-size: var(--t-s);
+}

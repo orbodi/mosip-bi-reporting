@@ -1,0 +1,98 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1980,
+      "is_interactive": true,
+      "title": "1. Vue d’ensemble",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Enrolement.dc.html": {
+      "expand": "fill",
+      "h": 2697,
+      "is_interactive": true,
+      "title": "2. Enrôlement (drill-down territoire)",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Cartes.dc.html": {
+      "expand": "fill",
+      "h": 2768,
+      "is_interactive": true,
+      "title": "3. Impression des cartes",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Usage.dc.html": {
+      "expand": "fill",
+      "h": 1733,
+      "is_interactive": true,
+      "title": "6. Authentifications",
+      "w": 1440,
+      "x": 7600,
+      "y": 0
+    },
+    "Technique.dc.html": {
+      "expand": "fill",
+      "h": 1376,
+      "is_interactive": true,
+      "title": "7. Exploration des données",
+      "w": 1440,
+      "x": 9120,
+      "y": 0
+    },
+    "Biometrie.dc.html": {
+      "expand": "fill",
+      "h": 2426,
+      "is_interactive": true,
+      "title": "4. ABIS",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    },
+    "Idps.dc.html": {
+      "expand": "fill",
+      "h": 1696,
+      "is_interactive": true,
+      "title": "5. IDPS",
+      "w": 1440,
+      "x": 6080,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-01T09:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "titre": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "BI ANID, maquette v5 (données en partie illustratives)",
+      "w": 240,
+      "x": 1063,
+      "y": -1548
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Enrolement.dc.html",
+    "Cartes.dc.html",
+    "Biometrie.dc.html",
+    "Idps.dc.html",
+    "Usage.dc.html",
+    "Technique.dc.html"
+  ],
+  "pages": [],
+  "title": "Maquette BI ANID"
+}

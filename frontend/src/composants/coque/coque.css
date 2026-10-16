@@ -1,0 +1,366 @@
+/* En-tête */
+.en-tete {
+  background: var(--surface);
+  border-bottom: 1px solid var(--trait);
+}
+.en-tete__interieur {
+  max-width: calc(var(--largeur-contenu) + 2 * var(--gouttiere) + 64px);
+  margin: 0 auto;
+  padding: 10px var(--gouttiere);
+  min-height: 76px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-6);
+}
+.en-tete__marque {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+}
+.en-tete__logo {
+  display: block;
+  height: 46px;
+  width: auto;
+}
+.en-tete__app {
+  padding-left: var(--e-4);
+  border-left: 1px solid var(--trait);
+  color: var(--bleu);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.en-tete__nav {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.en-tete__lien {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--encre-2);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.en-tete__lien:hover {
+  color: var(--encre);
+}
+.en-tete__lien[aria-current='page'] {
+  color: var(--encre);
+  font-weight: 600;
+  box-shadow: inset 0 -3px 0 var(--or);
+}
+.en-tete__menu {
+  display: none;
+  position: relative;
+}
+.en-tete__menu > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 var(--e-4);
+  border: 1px solid var(--bord-champ);
+  border-radius: var(--r-pilule);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.en-tete__menu > summary::-webkit-details-marker {
+  display: none;
+}
+.en-tete__menu svg,
+.pastille-filtre__bouton svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.en-tete__nav-mobile {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  padding: var(--e-2);
+  background: var(--surface);
+  border-radius: var(--r-m);
+  box-shadow: var(--ombre-3);
+}
+.en-tete__utilisateur {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  font-size: var(--t-s);
+  color: var(--encre-2);
+}
+.en-tete__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 17px;
+  background: var(--bleu-clair);
+  color: var(--bleu);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+.en-tete__identite {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.en-tete__nom {
+  color: var(--encre);
+  font-weight: 600;
+}
+.en-tete__portee {
+  font-size: var(--t-xs);
+}
+@media (max-width: 700px) {
+  .en-tete__interieur {
+    flex-wrap: nowrap;
+    gap: var(--e-3);
+    min-height: 64px;
+  }
+  .en-tete__nav,
+  .en-tete__identite {
+    display: none;
+  }
+  .en-tete__marque {
+    gap: var(--e-3);
+  }
+  .en-tete__app {
+    padding-left: var(--e-3);
+    font-size: var(--t-s);
+  }
+  .en-tete__menu {
+    display: block;
+    margin-left: auto;
+  }
+  .en-tete__menu > summary {
+    padding: 0 var(--e-3);
+  }
+  .en-tete__utilisateur {
+    margin-left: 0;
+  }
+  .en-tete__logo {
+    height: 34px;
+  }
+}
+
+/* Bandeau bleu */
+.bandeau {
+  background-color: var(--bleu);
+  background-image: url('../../assets/bande-empreintes.svg');
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+  background-position: right center;
+  color: var(--sur-bleu);
+}
+.bandeau__interieur {
+  max-width: calc(var(--largeur-contenu) + 2 * var(--gouttiere));
+  margin: 0 auto;
+  padding: 36px var(--gouttiere) 88px;
+}
+.bandeau__ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3) var(--e-6);
+}
+.bandeau__titre {
+  margin: 0;
+  font-size: var(--t-titre);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.bandeau__filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3);
+  margin-top: var(--e-5);
+}
+.bandeau + .contenu {
+  margin-top: -56px;
+}
+@media (max-width: 700px) {
+  .bandeau {
+    background-image:
+      linear-gradient(rgb(31 78 140 / 0.7), rgb(31 78 140 / 0.7)), url('../../assets/bande-empreintes.svg');
+  }
+  .bandeau__interieur {
+    padding: 24px var(--gouttiere) 72px;
+  }
+}
+
+/* Pastille « Dernière mise à jour » */
+.mise-a-jour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 auto;
+  padding: 4px 12px;
+  border-radius: var(--r-pilule);
+  background: var(--or);
+  color: var(--encre);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mise-a-jour svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+@media (max-width: 700px) {
+  .mise-a-jour {
+    margin-left: 0;
+  }
+}
+
+/* Filtres en pastilles sur le bandeau */
+.filtre-periode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3);
+}
+.pastille-filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  height: 40px;
+  padding: 0 6px 0 14px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: var(--r-pilule);
+  background: var(--bleu-pastille);
+}
+.pastille-filtre__libelle {
+  color: var(--sur-bleu-2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.pastille-filtre__bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 var(--e-2);
+  border: 0;
+  border-radius: var(--r-pilule);
+  background: transparent;
+  color: var(--sur-bleu);
+  font: 600 var(--t-m) var(--police);
+  cursor: pointer;
+}
+.pastille-filtre__bouton[data-focus-visible] {
+  outline: 2px solid var(--or);
+  outline-offset: 2px;
+}
+.liste-popover {
+  min-width: var(--trigger-width);
+  background: var(--surface);
+  border-radius: var(--r-m);
+  box-shadow: var(--ombre-3);
+  overflow: auto;
+}
+.liste {
+  padding: var(--e-1);
+  outline: none;
+}
+.liste__option {
+  padding: 10px 12px;
+  border-radius: var(--r-s);
+  color: var(--encre);
+  font-size: var(--t-m);
+  cursor: pointer;
+  outline: none;
+}
+.liste__option[data-focused] {
+  background: var(--bleu-clair);
+}
+.liste__option[data-selected] {
+  font-weight: 600;
+}
+.filtre-periode__dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-3);
+}
+.filtre-periode__dates label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  color: var(--sur-bleu-2);
+  font-size: var(--t-s);
+}
+.filtre-periode__dates input {
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: var(--r-pilule);
+  background: var(--bleu-pastille);
+  color: var(--sur-bleu);
+  font: 500 var(--t-m) var(--police);
+  color-scheme: dark;
+}
+.filtre-periode__plage {
+  margin: 0;
+  color: var(--sur-bleu-2);
+  font-size: var(--t-s);
+}
+
+/* Pied de page */
+.pied {
+  margin-top: 56px;
+  background-color: var(--bleu);
+  background-image: url('../../assets/bande-empreintes.svg');
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+  background-position: right center;
+  color: var(--sur-bleu-2);
+}
+.pied__interieur {
+  max-width: calc(var(--largeur-contenu) + 2 * var(--gouttiere));
+  margin: 0 auto;
+  padding: 28px var(--gouttiere);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-4);
+}
+.pied__marque {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+}
+.pied__logo {
+  height: 38px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+.pied__app {
+  padding-left: var(--e-4);
+  border-left: 1px solid rgb(255 255 255 / 0.4);
+  color: var(--sur-bleu);
+  font-weight: 600;
+}
+.pied__note {
+  margin: 0;
+  font-size: var(--t-s);
+}

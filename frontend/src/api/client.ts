@@ -1,0 +1,50 @@
+import type { components } from './schema';
+
+export type Meta = components['schemas']['Meta'];
+export type FraicheurSource = components['schemas']['FraicheurSource'];
+export type DevenirInscriptions = components['schemas']['DevenirInscriptions'];
+
+/**
+ * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la
+ * minute entre MOSIP et l'écran avec le lot Spark de 10 s. Suspendue quand l'onglet n'est pas visible.
+ */
+export const RAFRAICHISSEMENT_MS = 30_000;
+
+/** Base de l'API : même origine par défaut (proxy Vite en développement, reverse proxy en production). */
+const BASE = import.meta.env.VITE_API_URL ?? '';
+
+let fournisseurJeton: () => string | undefined = () => undefined;
+
+/** Branché par l'authentification Keycloak pour joindre le jeton d'accès à chaque appel. */
+export function definirFournisseurJeton(fournisseur: () => string | undefined) {
+  fournisseurJeton = fournisseur;
+}
+
+export class ErreurApi extends Error {
+  constructor(
+    readonly statut: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ErreurApi';
+  }
+}
+
+/** GET sur /api/v1{chemin} ; les paramètres vides sont omis. */
+export async function lireApi<T>(
+  chemin: string,
+  parametres: Record<string, string | undefined> = {},
+): Promise<T> {
+  const url = new URL(`${BASE}/api/v1${chemin}`, window.location.origin);
+  for (const [cle, valeur] of Object.entries(parametres)) {
+    if (valeur) url.searchParams.set(cle, valeur);
+  }
+  const jeton = fournisseurJeton();
+  const reponse = await fetch(url, {
+    headers: { Accept: 'application/json', ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}) },
+  });
+  if (!reponse.ok) {
+    throw new ErreurApi(reponse.status, `Appel ${chemin} : statut ${reponse.status}`);
+  }
+  return (await reponse.json()) as T;
+}

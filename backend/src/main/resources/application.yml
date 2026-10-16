@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: bi-anid-api
+  datasource:
+    url: ${BI_DB_URL:jdbc:postgresql://localhost:5432/bi}
+    username: ${BI_DB_USER:bi}
+    password: ${BI_DB_PASSWORD:}
+  flyway:
+    schemas: bi
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Realm Keycloak de l'ANID ; les clés publiques sont lues au premier jeton reçu.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/anid}
+
+server:
+  port: 8080
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+bi:
+  securite:
+    active: ${BI_SECURITE_ACTIVE:true}
+  origines-autorisees: ${BI_ORIGINES_AUTORISEES:http://localhost:5173}

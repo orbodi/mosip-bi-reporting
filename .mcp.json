@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "base-bi": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub@1.5.0",
+        "--dsn",
+        "${BI_DB_LECTURE_DSN:-postgres://bi_lecture:bi_lecture@localhost:5432/bi?sslmode=disable}"
+      ]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.83", "--headless"]
+    }
+  }
+}

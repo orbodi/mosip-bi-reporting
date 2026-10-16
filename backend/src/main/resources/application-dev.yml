@@ -1,0 +1,16 @@
+# Profil de développement : base Docker locale (deploy/docker-compose.yml), données de démonstration,
+# sécurité désactivée. Ne jamais activer ce profil en recette ou en production.
+spring:
+  datasource:
+    username: bi
+    password: bi
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
+
+bi:
+  securite:
+    active: ${BI_SECURITE_ACTIVE:false}
+
+logging:
+  level:
+    tg.anid.bi: debug

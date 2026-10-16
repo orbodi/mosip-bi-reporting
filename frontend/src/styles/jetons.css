@@ -1,0 +1,85 @@
+/* Jetons de design du BI ANID (docs/charte.md). Les composants n'utilisent que ces variables. */
+:root {
+  /* Marque */
+  --bleu: #1f4e8c;
+  --bleu-pastille: #2d5e9e;
+  --bleu-clair: #e3eaf3;
+  --or: #fcba21;
+  --or-texte: #b07d00;
+  --or-pale: #fef4dc;
+
+  /* Texte et surfaces */
+  --encre: #071b35;
+  --encre-2: #4b5a6e;
+  --trait: #e6ebf0;
+  --bord-champ: #7f8c9d;
+  --fond: #f1f4f6;
+  --surface: #ffffff;
+  --sur-bleu: #ffffff;
+  --sur-bleu-2: rgb(255 255 255 / 0.82);
+
+  /* Sémantique */
+  --danger: #d03b3b;
+  --succes: #1baf7a;
+
+  /* Data-viz */
+  --serie-1: #2a78d6;
+  --serie-2: #1baf7a;
+  --serie-echec: #d03b3b;
+  --serie-hommes: #0e8a62;
+  --serie-femmes: #2a78d6;
+  --chevron: #2368c2;
+  --seq-1: #b7d3f6;
+  --seq-2: #6da7ec;
+  --seq-3: #2a78d6;
+  --seq-4: #184f95;
+
+  /* Couleur fixe par statut d'inscription (maquette, bloc « Devenir des inscriptions ») */
+  --statut-niu: #1f4e8c;
+  --statut-en-cours: #fab219;
+  --statut-echoue: #ec835a;
+  --statut-rejete: #d03b3b;
+  --statut-non-classe: #7f8c9d;
+
+  /* Typographie */
+  --police: 'Poppins', system-ui, sans-serif;
+  --t-xs: 12px;
+  --t-s: 13px;
+  --t-m: 14px;
+  --t-l: 16px;
+  --t-xl: 20px;
+  --t-2xl: 22px;
+  --t-titre: 30px;
+  --t-kpi: 26px;
+  --t-hero: 38px;
+
+  /* Formes */
+  --r-s: 4px;
+  --r-m: 8px;
+  --r-l: 14px;
+  --r-pilule: 999px;
+  --ombre-1: 0 2px 6px rgb(7 27 53 / 0.06);
+  --ombre-2: 0 1px 2px rgb(7 27 53 / 0.06), 0 8px 24px rgb(7 27 53 / 0.06);
+  --ombre-3: 0 14px 34px rgb(7 27 53 / 0.18);
+
+  /* Espacements (multiples de 4px) */
+  --e-1: 4px;
+  --e-2: 8px;
+  --e-3: 12px;
+  --e-4: 16px;
+  --e-5: 20px;
+  --e-6: 24px;
+  --e-8: 32px;
+
+  /* Mise en page */
+  --largeur-contenu: 1248px;
+  --gouttiere: 32px;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --gouttiere: 16px;
+    --t-titre: 26px;
+    --t-hero: 30px;
+  }
+}

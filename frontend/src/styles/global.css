@@ -1,0 +1,83 @@
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import './jetons.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--police);
+  font-size: var(--t-m);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--bleu);
+}
+a:hover {
+  color: var(--encre);
+}
+
+:focus-visible {
+  outline: 2px solid var(--bleu);
+  outline-offset: 2px;
+}
+
+.chiffre {
+  font-variant-numeric: tabular-nums;
+}
+
+.lien-evitement {
+  position: absolute;
+  left: var(--e-4);
+  top: var(--e-2);
+  z-index: 10;
+  padding: var(--e-2) var(--e-4);
+  border-radius: var(--r-m);
+  background: var(--surface);
+  transform: translateY(-200%);
+}
+.lien-evitement:focus {
+  transform: none;
+  box-shadow: var(--ombre-3);
+}
+
+.contenu {
+  max-width: calc(var(--largeur-contenu) + 2 * var(--gouttiere));
+  margin: 0 auto;
+  padding: 0 var(--gouttiere);
+}
+
+.panneau {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--r-l);
+  box-shadow: var(--ombre-2);
+  padding: var(--e-6) var(--e-8);
+}
+@media (max-width: 700px) {
+  .panneau {
+    padding: var(--e-5) var(--e-4);
+  }
+}
+
+.titre-bloc {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-weight: 600;
+}
+
+.texte-2 {
+  color: var(--encre-2);
+}
