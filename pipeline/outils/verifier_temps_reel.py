@@ -16,10 +16,13 @@ import os
 import sys
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 SLOT = os.environ.get("SLOT", "bi_cdc_regprc_dev")
 CONNECTEUR = os.environ.get("CONNECTEUR", "bi-cdc-regprc-dev")
+# Délai normal entre MOSIP et le Data Mart (lot Spark de 10 s, avec marge) : les inscriptions plus récentes peuvent
+# être « en cours de transfert » sans que ce soit une anomalie.
+DELAI_TRANSFERT_S = int(os.environ.get("DELAI_TRANSFERT_S", "60"))
 
 
 @dataclass
@@ -49,14 +52,18 @@ def verifier() -> list[Resultat]:
     resultats: list[Resultat] = []
     mosip_dsn, dm_dsn = os.environ["MOSIP_SIM_DSN"], os.environ["DATAMART_DSN"]
     connect, api = os.environ.get("CONNECT_URL", "http://connect:8083"), os.environ.get("API_URL", "http://api:8080")
+    # Horodatages MOSIP en UTC sans fuseau (comme etat.registration.cr_dtimes).
+    limite = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=DELAI_TRANSFERT_S)
 
     # 1. Source et slot
-    nb_mosip = None
+    nb_mosip = nb_mosip_ancien = None
     try:
         with psycopg.connect(mosip_dsn) as c:
-            nb_mosip, derniere = c.execute(
+            nb_mosip, nb_mosip_ancien, derniere = c.execute(
                 "select count(*) filter (where not coalesce(is_deleted, false)),"
-                " max(greatest(cr_dtimes, coalesce(upd_dtimes, cr_dtimes))) from regprc.registration"
+                " count(*) filter (where not coalesce(is_deleted, false) and cr_dtimes < %s),"
+                " max(greatest(cr_dtimes, coalesce(upd_dtimes, cr_dtimes))) from regprc.registration",
+                (limite,),
             ).fetchone()
             resultats.append(
                 Resultat(
@@ -105,19 +112,25 @@ def verifier() -> list[Resultat]:
                 Resultat("Job Spark", nb_lots > 0, f"{nb_lots} lots appliqués, dernier {secondes(dernier_lot)}")
             )
             resultats.append(Resultat("Événements rejetés", rejets == 0, f"{rejets}", alerte=rejets > 0))
-            nb_etat, source_ts = c.execute(
-                "select count(*) filter (where not _supprime and not coalesce(is_deleted, false)), max(_source_ts)"
-                " from etat.registration"
+            nb_etat, nb_etat_ancien, source_ts = c.execute(
+                "select count(*) filter (where not _supprime and not coalesce(is_deleted, false)),"
+                " count(*) filter (where not _supprime and not coalesce(is_deleted, false) and cr_dtimes < %s),"
+                " max(_source_ts) from etat.registration",
+                (limite,),
             ).fetchone()
             if nb_mosip is not None:
-                ecart = nb_mosip - nb_etat
+                # Échec seulement si des inscriptions de plus de DELAI_TRANSFERT_S manquent : les plus récentes
+                # peuvent encore être entre MOSIP et le Data Mart (Debezium, Kafka, lot Spark).
+                manquantes = nb_mosip_ancien - nb_etat_ancien
+                en_transfert = (nb_mosip - nb_etat) - manquantes
+                detail = f"{nb_etat} inscriptions"
+                if manquantes:
+                    detail += f", {manquantes} absentes depuis plus de {DELAI_TRANSFERT_S} s"
+                if en_transfert:
+                    detail += f", {en_transfert} en cours de transfert"
                 resultats.append(
                     Resultat(
-                        "État courant",
-                        ecart == 0,
-                        f"{nb_etat} inscriptions (écart avec MOSIP : {ecart}),"
-                        f" dernier changement reçu {secondes(source_ts)}",
-                        alerte=0 < ecart <= 10,
+                        "État courant", manquantes == 0, f"{detail}, dernier changement reçu {secondes(source_ts)}"
                     )
                 )
             for controle, statut, valeur, detail in c.execute("select * from pipeline.controler_enrolement()"):
