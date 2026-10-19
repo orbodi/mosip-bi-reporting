@@ -8,8 +8,10 @@ Le développement continue sur `main` ; cette branche sert à montrer et tester 
 
 ## Démarrer avec Docker
 
-Prérequis : Docker Desktop. Les ports 5432, 8080 et 5173 doivent être libres (arrêter d'abord l'environnement de
-`main` s'il tourne : `docker compose -f deploy/docker-compose.yml down`).
+Prérequis : Docker. Ports utilisés sur la machine : 5432, 8080 et 5173. S'ils sont déjà pris (autre service,
+environnement de `main`), choisir d'autres ports : `API_PORT=8081 FRONT_PORT=5174 PG_PORT=5433 docker compose up -d`.
+Pour ouvrir l'interface depuis un autre poste par le nom du serveur, ajouter `FRONT_HOTE=<nom du serveur>` ;
+par l'adresse IP, rien à faire.
 
 ```
 docker compose up -d

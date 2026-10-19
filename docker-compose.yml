@@ -8,6 +8,11 @@
 #
 #   Interface : http://localhost:5173/enrolement
 #   API       : http://localhost:8080/swagger-ui.html
+#
+# Ports de la machine hôte réglables si déjà pris (l'interface joint l'API par le réseau Docker, pas par ces ports) :
+#   API_PORT=8081 docker compose up -d        (aussi FRONT_PORT, PG_PORT)
+# Accès depuis un autre poste par le nom du serveur (Vite n'accepte d'office que localhost et les adresses IP) :
+#   FRONT_HOTE=bi-pipeline-01 docker compose up -d
 name: bi-anid-dashboard
 
 services:
@@ -18,7 +23,7 @@ services:
       POSTGRES_USER: bi
       POSTGRES_PASSWORD: bi
     ports:
-      - "5432:5432"
+      - "${PG_PORT:-5432}:5432"
     volumes:
       - donnees-bi:/var/lib/postgresql/data
     healthcheck:
@@ -40,7 +45,7 @@ services:
       - ./backend:/backend
       - cache-maven:/root/.m2
     ports:
-      - "8080:8080"
+      - "${API_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,11 +57,12 @@ services:
     command: ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0"]
     environment:
       API_PROXY_CIBLE: http://api:8080
+      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: ${FRONT_HOTE:-}
     volumes:
       - ./frontend:/frontend
       - modules-front:/frontend/node_modules
     ports:
-      - "5173:5173"
+      - "${FRONT_PORT:-5173}:5173"
     depends_on:
       - api
 
