@@ -20,10 +20,14 @@
 ```
 
 ## Data Mart PostgreSQL
+Structure détaillée par domaine (tables, grains, colonnes MOSIP retenues et exclues, décisions ouvertes) :
+`docs/datamart.md`.
 - `etat` : état courant des tables MOSIP capturées (colonnes retenues, RID remplacé par son empreinte HMAC, LSN du
   dernier événement appliqué, suppression logique). Lu par le pipeline seulement.
 - `pipeline` : registre des lots traités (idempotence), événements rejetés (sans leur contenu), contrôles qualité,
   correspondance des statuts MOSIP.
+- `journal` : événements des sources hors base MOSIP (journaux ABIS d'IN Groupe, IDPS, partenaires d'impression et
+  de distribution), une ligne par événement, sans donnée personnelle.
 - `bi` : tables lues par l'API (ci-dessous).
 
 ## Schéma `bi`

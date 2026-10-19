@@ -13,6 +13,12 @@ const formatDate = new Intl.DateTimeFormat('fr-FR', {
   year: 'numeric',
   timeZone: FUSEAU,
 });
+const formatJourMois = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', timeZone: FUSEAU });
+const formatJourMoisCourt = new Intl.DateTimeFormat('fr-FR', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: FUSEAU,
+});
 const formatHeure = new Intl.DateTimeFormat('fr-FR', {
   hour: '2-digit',
   minute: '2-digit',
@@ -56,4 +62,17 @@ export function heureFr(valeur: string | Date): string {
 /** « 14/01/2026 à 11h59 », texte de la pastille « Dernière mise à jour ». */
 export function miseAJourFr(valeur: string | Date): string {
   return `${dateFr(valeur)} à ${heureFr(valeur)}`;
+}
+
+/** Date seule « aaaa-mm-jj » de l'API, lue comme un jour du Togo (UTC+0). */
+const jour = (iso: string) => new Date(`${iso}T00:00:00Z`);
+
+/** « 2026-01-05 » → « 5 janvier » (lecture d'une semaine : « Semaine du 5 janvier »). */
+export function jourMoisFr(iso: string): string {
+  return formatJourMois.format(jour(iso));
+}
+
+/** « 2026-01-05 » → « 05/01 » (axe des semaines). */
+export function jourMoisCourt(iso: string): string {
+  return formatJourMoisCourt.format(jour(iso));
 }

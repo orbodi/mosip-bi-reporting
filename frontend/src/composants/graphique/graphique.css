@@ -1,0 +1,5 @@
+/* Conteneur des graphiques ECharts (la taille vient du parent et de la prop hauteur). */
+.graphique {
+  width: 100%;
+  min-width: 0;
+}

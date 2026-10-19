@@ -37,6 +37,20 @@ Chaque décision : date, choix, raison. Ajouter les nouvelles en bas de la secti
   captures aux trois largeurs, accessibilité) ; tests dbt (réconciliation des chiffres), remplacés par les tests du
   pipeline CDC (décision du 16/10/2026).
 - 2026-10-13 : Déploiement visé : images Docker et Helm sur le cluster Kubernetes de MOSIP, Keycloak existant.
+- 2026-10-19 : **Page Enrôlement, données de démonstration** (plan `docs/plans/enrolement.md`). « NIU par semaine »
+  en lecture flux : NIU rattachés à leur jour de génération, table `bi.fait_niu_jour` (migration `V3`), vide hors
+  démonstration tant que le lot A ne l'alimente pas (l'API le signale par `niuDisponibles`, le front n'affiche alors
+  pas de courbe). Filtre Région porté par l'adresse (`?region=`), liste servie par `GET /api/v1/meta/regions` selon la
+  portée Keycloak ; Territoire, Âge et sexe et Top des centres le suivent ; Pré-inscription, Devenir et Semaines
+  restent nationaux avec la pastille « Ensemble du Togo » (comme la maquette).
+- 2026-10-19 : **Profil `demo` séparé du profil `dev`** (`application-demo.yml`, `db/demo/R__volumes_demo.sql`) : deux
+  ans d'inscriptions fictives générées en SQL pour la page Enrôlement. Séparé parce que ces faits ne viennent pas de
+  `etat.registration` : le contrôle « état courant = faits » de la chaîne temps réel échouerait. Le script refuse de
+  tourner sur une base déjà alimentée par le pipeline. Lancement : `mvn spring-boot:run -Dspring-boot.run.profiles=dev,demo`.
+- 2026-10-19 : **Carte du Togo avec ECharts** sur un fond SVG nommé (contours de la maquette, © contributeurs
+  OpenStreetMap, geoBoundaries ; 37 préfectures), ECharts chargé à la demande (paquet séparé). Les zones de l'API sont
+  reliées aux contours par leur nom en attendant les codes de `master.location` ; une zone sans contour est citée sous
+  la carte. Préfectures et centres de développement : codes provisoires (`SAV-01`…) dans `R__donnees_dev.sql`.
 
 ## Charte
 - Bleu ANID adouci `#1F4E8C` (remplace `#013781` depuis le 9 oct. 2026), bleu nuit `#071B35` pour le texte,
@@ -59,6 +73,15 @@ Chaque décision : date, choix, raison. Ajouter les nouvelles en bas de la secti
 - Statuts en doublon dans le BI actuel (Traité/Réussi…) : probable mélange `status_code` / `latest_trn_status_code`.
 - Taux d'échec des authentifications de 57,7 %.
 - IDPS : 14 ordres, tous en erreur et en attente, tous en Savanes le 03/07/2026 (circuit pilote).
+- Pré-inscription (relevés du 14/10/2026 sur `mosip_prereg`, comptages seuls) : `appointment_date` vaut 31/12/9999
+  pour tous les rendez-vous, actifs et consommés (« Expirées » restera à 0, seul `booking_dtimes` est exploitable) ;
+  444 pré-inscriptions ont plusieurs lignes de rendez-vous, toujours pour le même centre (double envoi en mai 2025,
+  re-réservation encore active en septembre 2026 : compter en `count(distinct prereg_id)`) ; 2 245 rendez-vous sans
+  pré-inscription ; 1 144 pré-inscriptions « Pending_Appointment » avec rendez-vous et 268 « Booked » sans rendez-vous ;
+  aucun statut `Expired` ni `Cancelled`.
+- Base `mosip_prereg` : tables de copie hors DDL officiel (`applicant_demographic_consumed_16102025`, `asi_app`,
+  `asi_doc`) à exclure de toute capture ; `processed_prereg_list` du DDL officiel absente de l'instance ; une
+  publication `dbz_publication` existe déjà et couvre des tables exclues de la capture (à revoir avec le DBA).
 
 ## À trancher avant ou pendant le développement (revue UI/UX du 9 oct. 2026)
 1. Dictionnaire des indicateurs complet (définition, dénominateur, libellé, fraîcheur par source) — amorcé dans `docs/indicateurs.md`.
@@ -91,6 +114,6 @@ Chaque décision : date, choix, raison. Ajouter les nouvelles en bas de la secti
    (table `pipeline.correspondance_statut`).
 6. **Date de rattachement d'une inscription** : `pkt_cr_dtimes` (création du paquet au centre) ou `cr_dtimes`
    (réception par MOSIP), et fuseau des horodatages.
-7. **Retrait de l'ébauche dbt** quand le flux CDC de l'enrôlement tourne en recette ; mettre à jour en même temps le
-   skill `nouveau-kpi`, l'agent `auditeur-donnees` et la permission `Bash(dbt *)` de `.claude/settings.json`, qui
-   citent encore dbt.
+7. **Retrait de l'ébauche dbt** quand le flux CDC de l'enrôlement tourne en recette ; retirer en même temps
+   la permission `Bash(dbt *)` de `.claude/settings.json`. Le skill `nouveau-kpi` et l'agent `auditeur-donnees` ne
+   citent plus dbt depuis le 16/10/2026 (structure du Data Mart : `docs/datamart.md`).

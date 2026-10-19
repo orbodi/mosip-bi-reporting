@@ -25,26 +25,75 @@ on conflict (code) do update
     set nom = excluded.nom,
         ordre = excluded.ordre;
 
--- Centres fictifs (deux par région) utilisés par le simulateur MOSIP du pipeline temps réel
--- (pipeline/simulateur) : le code est le préfixe à 5 chiffres des RID simulés. Rattachés directement à la région
--- en attendant le référentiel master.location / master.registration_center.
+-- Préfectures des contours de la maquette (geoBoundaries : 37 des 39 préfectures officielles), du nord au sud dans
+-- chaque région. Codes provisoires en attendant master.location ; les noms servent à relier les contours de la carte.
 insert into bi.zone (niveau, code, nom, parent_id, ordre)
-select 'centre', c.code, c.nom, r.id, c.ordre
+select 'prefecture', p.code, p.nom, r.id, p.ordre
 from (values
-    ('10011', 'Centre de démonstration Savanes 1',    'SAV', 1),
-    ('10012', 'Centre de démonstration Savanes 2',    'SAV', 2),
-    ('10021', 'Centre de démonstration Kara 1',       'KAR', 1),
-    ('10022', 'Centre de démonstration Kara 2',       'KAR', 2),
-    ('10031', 'Centre de démonstration Centrale 1',   'CEN', 1),
-    ('10032', 'Centre de démonstration Centrale 2',   'CEN', 2),
-    ('10041', 'Centre de démonstration Plateaux 1',   'PLA', 1),
-    ('10042', 'Centre de démonstration Plateaux 2',   'PLA', 2),
-    ('10051', 'Centre de démonstration Maritime 1',   'MAR', 1),
-    ('10052', 'Centre de démonstration Maritime 2',   'MAR', 2),
-    ('10061', 'Centre de démonstration Grand Lomé 1', 'GLO', 1),
-    ('10062', 'Centre de démonstration Grand Lomé 2', 'GLO', 2)
-) as c (code, nom, region, ordre)
-join bi.zone r on r.code = c.region
+    ('SAV-01', 'Cinkassé', 'SAV', 1),
+    ('SAV-02', 'Tône', 'SAV', 2),
+    ('SAV-03', 'Kpendjal', 'SAV', 3),
+    ('SAV-04', 'Tandjouaré', 'SAV', 4),
+    ('SAV-05', 'Oti', 'SAV', 5),
+    ('KAR-01', 'Kéran', 'KAR', 1),
+    ('KAR-02', 'Doufelgou', 'KAR', 2),
+    ('KAR-03', 'Binah', 'KAR', 3),
+    ('KAR-04', 'Dankpen', 'KAR', 4),
+    ('KAR-05', 'Kozah', 'KAR', 5),
+    ('KAR-06', 'Assoli', 'KAR', 6),
+    ('KAR-07', 'Bassar', 'KAR', 7),
+    ('CEN-01', 'Tchaoudjo', 'CEN', 1),
+    ('CEN-02', 'Tchamba', 'CEN', 2),
+    ('CEN-03', 'Mô', 'CEN', 3),
+    ('CEN-04', 'Sotouboua', 'CEN', 4),
+    ('CEN-05', 'Blitta', 'CEN', 5),
+    ('PLA-01', 'Est-Mono', 'PLA', 1),
+    ('PLA-02', 'Akébou', 'PLA', 2),
+    ('PLA-03', 'Anié', 'PLA', 3),
+    ('PLA-04', 'Amou', 'PLA', 4),
+    ('PLA-05', 'Wawa', 'PLA', 5),
+    ('PLA-06', 'Ogou', 'PLA', 6),
+    ('PLA-07', 'Danyi', 'PLA', 7),
+    ('PLA-08', 'Moyen-Mono', 'PLA', 8),
+    ('PLA-09', 'Kpélé', 'PLA', 9),
+    ('PLA-10', 'Haho', 'PLA', 10),
+    ('PLA-11', 'Kloto', 'PLA', 11),
+    ('PLA-12', 'Agou', 'PLA', 12),
+    ('MAR-01', 'Yoto', 'MAR', 1),
+    ('MAR-02', 'Zio', 'MAR', 2),
+    ('MAR-03', 'Bas-Mono', 'MAR', 3),
+    ('MAR-04', 'Avé', 'MAR', 4),
+    ('MAR-05', 'Vo', 'MAR', 5),
+    ('MAR-06', 'Lacs', 'MAR', 6),
+    ('GLO-01', 'Golfe', 'GLO', 1),
+    ('GLO-02', 'Lomé', 'GLO', 2)
+) as p (code, nom, region, ordre)
+join bi.zone r on r.code = p.region
+on conflict (code) do update
+    set nom = excluded.nom,
+        parent_id = excluded.parent_id,
+        ordre = excluded.ordre;
+
+-- Centres fictifs (deux par région) utilisés par le simulateur MOSIP du pipeline temps réel
+-- (pipeline/simulateur) : le code est le préfixe à 5 chiffres des RID simulés. Rattachés à une préfecture de leur
+-- région en attendant le référentiel master.location / master.registration_center.
+insert into bi.zone (niveau, code, nom, parent_id, ordre)
+select 'centre', c.code, c.nom, p.id, c.ordre
+from (values
+    ('10011', 'Centre de démonstration Savanes 1',    'SAV-02', 1),
+    ('10012', 'Centre de démonstration Savanes 2',    'SAV-01', 2),
+    ('10021', 'Centre de démonstration Kara 1',       'KAR-05', 1),
+    ('10022', 'Centre de démonstration Kara 2',       'KAR-07', 2),
+    ('10031', 'Centre de démonstration Centrale 1',   'CEN-01', 1),
+    ('10032', 'Centre de démonstration Centrale 2',   'CEN-04', 2),
+    ('10041', 'Centre de démonstration Plateaux 1',   'PLA-06', 1),
+    ('10042', 'Centre de démonstration Plateaux 2',   'PLA-11', 2),
+    ('10051', 'Centre de démonstration Maritime 1',   'MAR-02', 1),
+    ('10052', 'Centre de démonstration Maritime 2',   'MAR-06', 2),
+    ('10061', 'Centre de démonstration Grand Lomé 1', 'GLO-01', 1),
+    ('10062', 'Centre de démonstration Grand Lomé 2', 'GLO-02', 2)
+) as c (code, nom, prefecture, ordre)
+join bi.zone p on p.code = c.prefecture
 on conflict (code) do update
     set nom = excluded.nom,
         parent_id = excluded.parent_id,

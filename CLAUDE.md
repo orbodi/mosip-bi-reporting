@@ -12,7 +12,7 @@ et reprend la maquette validée en octobre 2026 (dossier `maquette/`).
   `publier.sql`) date d'avant ce choix : ne pas l'étendre (voir `docs/decisions.md`).
 - `deploy/` : Docker Compose de développement (PostgreSQL BI, Keycloak de test, chaîne temps réel avec MOSIP simulée).
 - `maquette/` : référence visuelle (pages, captures, fichier de présentation). Ne pas modifier.
-- `docs/` : décisions, architecture, dictionnaire des indicateurs, sources MOSIP, charte.
+- `docs/` : décisions, architecture, structure du Data Mart, dictionnaire des indicateurs, sources MOSIP, charte.
 
 ## Commandes
 - Base BI locale : `docker compose -f deploy/docker-compose.yml up -d postgres`
@@ -56,6 +56,9 @@ et reprend la maquette validée en octobre 2026 (dossier `maquette/`).
 
 ## Façon de travailler
 - Pour une page ou un module : mode plan d'abord, en s'appuyant sur la page de la maquette et sur le dictionnaire.
+- Équipe d'agents (`.claude/agents/`) : `tech-lead` cadre le lot (plan dans `docs/plans/`, décisions à poser),
+  puis `data-engineer` → `dev-backend` → `dev-front` → `qa-testeur` ; revues `auditeur-donnees`, `expert-uiux`,
+  `relecteur-securite`. Les questions métier se tranchent avec l'humain, jamais par un agent.
 - Une tâche par session ; `/clear` entre deux sujets sans rapport.
 - Avant de rendre la main : tests et vérification des types au vert (le hook Stop les lance).
 - Comparer le rendu à la maquette avec `/verif-visuelle` dès qu'une page change.
@@ -64,6 +67,7 @@ et reprend la maquette validée en octobre 2026 (dossier `maquette/`).
 ## Références
 - Décisions et anomalies connues : @docs/decisions.md
 - Dictionnaire des indicateurs : @docs/indicateurs.md
+- Structure du Data Mart (tables par domaine, grains, colonnes MOSIP retenues, décisions ouvertes) : docs/datamart.md
 - Architecture : docs/architecture.md ; sources MOSIP et journaux ABIS : docs/sources-mosip.md ; pipeline CDC :
   skill `/mosip-bi-pipeline`
 - Charte : docs/charte.md ; revue UI/UX : docs/revue-uiux.md ; historique de la maquette : docs/historique-maquette.md

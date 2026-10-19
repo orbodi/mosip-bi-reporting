@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DevenirInscriptions } from '../../api/client';
 import { RAFRAICHISSEMENT_MS } from '../../api/client';
@@ -29,7 +29,10 @@ const DEVENIR: DevenirInscriptions = {
   nonClassees: 0,
 };
 
-/** Réponses successives de l'API pour /enrolement/devenir ; /meta répond toujours META. */
+/**
+ * Réponses successives de l'API pour /enrolement/devenir ; /meta répond toujours META ; les autres blocs de la page
+ * reçoivent une erreur 404 (ils ont leurs propres tests).
+ */
 function simulerApi(...reponses: DevenirInscriptions[]) {
   const appels: string[] = [];
   let n = 0;
@@ -37,6 +40,9 @@ function simulerApi(...reponses: DevenirInscriptions[]) {
     'fetch',
     vi.fn(async (url: URL) => {
       appels.push(url.toString());
+      if (!url.pathname.endsWith('/meta') && !url.pathname.endsWith('/enrolement/devenir')) {
+        return new Response('', { status: 404 });
+      }
       const corps = url.pathname.endsWith('/meta') ? META : reponses[Math.min(n++, reponses.length - 1)];
       return new Response(JSON.stringify(corps), { headers: { 'Content-Type': 'application/json' } });
     }),
@@ -67,7 +73,8 @@ describe('Devenir des inscriptions', () => {
     const sousTitre = `NIU générés, soit ${pct(0.933)} des ${nf(1000)} inscriptions`.replace(/\s+/g, ' ');
     expect(await screen.findByText(sousTitre)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Devenir des inscriptions' })).toBeInTheDocument();
-    expect(screen.getByText('Ensemble du Togo')).toBeInTheDocument();
+    const bloc = within(screen.getByRole('region', { name: 'Devenir des inscriptions' }));
+    expect(bloc.getByText('Ensemble du Togo')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /NIU générés 93,3/ })).toBeInTheDocument();
     for (const libelle of ['En cours', 'Échoués', 'Rejetés']) {
       expect(screen.getByText(libelle)).toBeInTheDocument();
@@ -80,7 +87,8 @@ describe('Devenir des inscriptions', () => {
     afficher('/enrolement');
 
     expect(await screen.findByText('Non classés')).toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveTextContent('sans correspondance validée');
+    const bloc = within(screen.getByRole('region', { name: 'Devenir des inscriptions' }));
+    expect(bloc.getByRole('note')).toHaveTextContent('sans correspondance validée');
   });
 
   it('envoie la plage du filtre Période à l’API', async () => {

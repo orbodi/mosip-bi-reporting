@@ -145,3 +145,422 @@
   background: var(--or-pale);
   font-size: var(--t-s);
 }
+
+/* --- Commun aux blocs de la page --------------------------------------------------------------------------- */
+.bloc-pleine-largeur {
+  grid-column: 1 / -1;
+}
+.bloc__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+  margin-bottom: var(--e-4);
+}
+.bloc__titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+}
+.bloc__sous-titre {
+  margin: var(--e-1) 0 var(--e-4);
+  font-size: var(--t-s);
+}
+.bloc__entete .bloc__sous-titre {
+  margin-bottom: 0;
+}
+
+/* Lecture d'un graphique ou d'une carte (aria-live) */
+.lecture {
+  margin: 0 0 var(--e-3);
+  padding-left: var(--e-3);
+  border-left: 3px solid var(--bleu);
+  font-size: var(--t-s);
+}
+
+/* Légende lisible hors du graphique */
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--encre-2);
+  font-size: var(--t-s);
+}
+.legende li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+}
+.legende__barre {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--serie-1);
+}
+.legende__courbe {
+  width: 16px;
+  height: 3px;
+  background: var(--bleu);
+}
+
+/* Équivalent tableau d'un graphique */
+.equivalent {
+  margin-top: var(--e-3);
+  font-size: var(--t-s);
+}
+.equivalent summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--bleu);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Tableaux de la page */
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-s);
+}
+.tableau th,
+.tableau td {
+  padding: var(--e-3) var(--e-2);
+  border-bottom: 1px solid var(--trait);
+  text-align: left;
+  vertical-align: middle;
+}
+.tableau thead th {
+  padding-top: var(--e-2);
+  padding-bottom: var(--e-2);
+  color: var(--encre-2);
+  font-weight: 500;
+}
+.tableau tbody th {
+  font-weight: 500;
+}
+.tableau .tableau__nombre {
+  text-align: right;
+  white-space: nowrap;
+}
+.tableau tr.hors-periode {
+  color: var(--encre-2);
+}
+
+/* Bloc « Inscriptions et NIU par semaine » */
+.bloc-semaines .graphique {
+  margin-top: var(--e-2);
+}
+
+/* Bloc « Territoire » ---------------------------------------------------------------------------------------- */
+.territoire__entete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--e-4) var(--e-8);
+  padding-bottom: var(--e-5);
+  border-bottom: 1px solid var(--trait);
+}
+.fil-ariane {
+  display: flex;
+  align-items: center;
+  gap: var(--e-1);
+  margin-bottom: var(--e-1);
+  color: var(--encre-2);
+  font-size: var(--t-s);
+}
+.fil-ariane .chevron,
+.tableau-zones__ouvrir .chevron {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fil-ariane__lien {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bleu);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.territoire__chiffres {
+  display: flex;
+  gap: var(--e-6);
+  margin: 0;
+}
+.territoire__chiffres > div + div {
+  padding-left: var(--e-6);
+  border-left: 1px solid var(--trait);
+}
+.territoire__chiffres dt {
+  color: var(--encre-2);
+  font-size: var(--t-s);
+}
+.territoire__chiffres dd {
+  margin: 0;
+  font-size: var(--t-s);
+}
+.territoire__chiffres .territoire__valeur {
+  color: var(--encre);
+  font-size: var(--t-kpi);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.territoire__corps {
+  display: grid;
+  grid-template-columns: minmax(0, 11fr) minmax(0, 14fr);
+  gap: var(--e-6) var(--e-8);
+  padding-top: var(--e-5);
+}
+@media (max-width: 1100px) {
+  .territoire__corps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.carte-territoire {
+  display: grid;
+  grid-template-columns: minmax(170px, 2fr) minmax(0, 3fr);
+  gap: var(--e-4);
+  align-items: start;
+}
+@media (max-width: 700px) {
+  .carte-territoire {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.carte-territoire__titre-liste {
+  margin: 0 0 var(--e-2);
+  font-size: var(--t-s);
+  font-weight: 500;
+}
+.carte-territoire__lecture {
+  min-height: 64px;
+  margin: 0 0 var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  border-radius: var(--r-m);
+  background: var(--fond);
+  font-size: var(--t-s);
+}
+.carte-territoire__zones {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.zone-choix {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: 40px;
+  padding: var(--e-1) var(--e-3);
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--r-s);
+  background: transparent;
+  color: var(--encre);
+  font: 600 var(--t-s) var(--police);
+  text-align: left;
+}
+.zone-choix--active {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-left-color: var(--or);
+  background: var(--bleu);
+  color: var(--sur-bleu);
+}
+.zone-choix--bouton {
+  cursor: pointer;
+}
+.zone-choix--bouton:hover,
+.zone-choix--survol {
+  background: var(--bleu-clair);
+}
+.zone-choix__nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.classe-niu {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.classe-niu--0 {
+  background: var(--seq-1);
+}
+.classe-niu--1 {
+  background: var(--seq-2);
+}
+.classe-niu--2 {
+  background: var(--seq-3);
+}
+.classe-niu--3 {
+  background: var(--seq-4);
+}
+.classe-niu--aucune {
+  background: var(--trait);
+}
+.carte-territoire__carte {
+  margin: 0;
+}
+.carte-territoire__legende-titre {
+  margin: var(--e-3) 0 var(--e-1);
+  font-size: var(--t-xs);
+}
+.carte-territoire__legende {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.carte-territoire__legende .classe-niu {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin-bottom: var(--e-1);
+  border-radius: 0;
+}
+.carte-territoire__note,
+.carte-territoire__source {
+  margin: var(--e-2) 0 0;
+  font-size: var(--t-xs);
+}
+
+.tableau-zones__titre {
+  margin-bottom: var(--e-2);
+  color: var(--encre);
+  font-size: var(--t-l);
+  font-weight: 600;
+  text-align: left;
+}
+.tableau-zones__ouvrir {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bleu);
+  font: 600 var(--t-m) var(--police);
+  cursor: pointer;
+}
+.tableau-zones__ouvrir:hover {
+  text-decoration: underline;
+}
+.tableau-zones__nom {
+  font-weight: 600;
+}
+.tableau-zones__alerte {
+  font-weight: 600;
+}
+.tableau-zones__taux {
+  display: block;
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
+.alerte-rejet {
+  color: var(--or-texte);
+}
+.tableau-zones__note {
+  margin: var(--e-3) 0 0;
+  font-size: var(--t-s);
+}
+@media (max-width: 700px) {
+  .tableau-zones .col-secondaire {
+    display: none;
+  }
+}
+
+/* Bloc « NIU générés par âge et par sexe » : non disponible */
+.non-disponible {
+  padding: var(--e-6);
+  border: 1px dashed var(--bord-champ);
+  border-radius: var(--r-m);
+  text-align: center;
+}
+.non-disponible p {
+  margin: 0;
+}
+.non-disponible .non-disponible__titre {
+  margin-bottom: var(--e-2);
+  font-size: var(--t-l);
+  font-weight: 600;
+}
+
+/* Bloc « Top des centres » : onglets React Aria */
+.onglets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--e-1);
+  padding: var(--e-1);
+  border-radius: var(--r-m);
+  background: var(--fond);
+}
+.onglets__onglet {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--e-3);
+  border-radius: 6px;
+  color: var(--encre-2);
+  font-size: var(--t-s);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+.onglets__onglet[data-selected] {
+  background: var(--surface);
+  box-shadow: var(--ombre-1);
+  color: var(--encre);
+}
+.onglets__onglet[data-focus-visible] {
+  outline: 2px solid var(--bleu);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .onglets__onglet {
+    min-height: 44px;
+  }
+}
+.onglets__panneau {
+  margin-top: var(--e-4);
+  outline: none;
+}
+.onglets__panneau[data-focus-visible] {
+  outline: 2px solid var(--bleu);
+}
+.tableau-centres__rang {
+  width: 48px;
+  color: var(--encre-2);
+}
+.tableau-centres__centre {
+  display: flex;
+  flex-direction: column;
+}
+.tableau-centres__nom {
+  color: var(--encre);
+  font-weight: 500;
+}
+.tableau-centres__lieu {
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
+.tableau-centres__valeur {
+  font-weight: 700;
+}

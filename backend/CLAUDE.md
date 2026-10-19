@@ -24,4 +24,6 @@ Java 21, Spring Boot 4.1, Maven. Package racine `tg.anid.bi`, découpé par doma
 
 ## Commandes
 - `mvn spring-boot:run -Dspring-boot.run.profiles=dev` : API sur http://localhost:8080 (Swagger : /swagger-ui.html)
+- `mvn spring-boot:run -Dspring-boot.run.profiles=dev,demo` : en plus, deux ans d'inscriptions fictives pour la page
+  Enrôlement (`db/demo`) ; base vide ou déjà en démonstration, jamais avec la chaîne temps réel
 - `mvn test` puis `mvn verify` avant de rendre la main quand le backend a changé.

@@ -45,6 +45,17 @@ Règles provisoires, à confirmer avec l'équipe MOSIP :
   le demande ;
 - E-BLOQ (bloquées depuis plus de 30 jours) n'est pas encore calculé : c'est un stock daté, pas un fait par jour.
 
+Mise en œuvre de la page (19/10/2026, `docs/plans/enrolement.md`), données de démonstration seulement :
+- « Inscriptions et NIU par semaine » (`GET /api/v1/enrolement/semaines`) : 12 semaines complètes (lundi-dimanche)
+  finissant au plus tard à la fin de la période ; inscriptions au jour de réception (`bi.fait_enrolement_jour`), NIU au
+  jour de génération (`bi.fait_niu_jour`, lecture flux). Sur toute la durée, les deux totaux de NIU concordent.
+- Territoire (`GET /api/v1/enrolement/territoire`) : une ligne par sous-zone directe ; somme des lignes = totaux de la
+  zone = bloc « Devenir des inscriptions ». Couleur de la carte : taux de NIU (< 92 %, 92-93, 93-94, ≥ 94 %). Alerte
+  ▲ : taux de rejet de la zone (E-REJ) arrondi à une décimale ≥ 3,5 %. Délai médian (E-DELAI) non disponible.
+- Top des centres (`GET /api/v1/enrolement/centres`) : 5 premiers centres par inscriptions, échecs (E-ECH) ou rejets
+  (E-REJ) ; un centre à zéro n'est pas classé ; à égalité, ordre alphabétique.
+- NIU par âge et par sexe : « non disponible » (règle Sexe et âge de CLAUDE.md).
+
 ## Impression des cartes
 | Code | Indicateur | Définition et calcul | Source probable | Référence | Statut |
 |---|---|---|---|---|---|

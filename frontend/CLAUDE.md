@@ -10,6 +10,9 @@ React 19, TypeScript strict, Vite. Application monopage derrière Keycloak.
   Un composant = un fichier `.tsx`, son CSS à côté, son test `*.test.tsx` à côté.
 - `src/api/` : `client.ts` (appel avec jeton), un fichier de hooks TanStack Query par domaine, `schema.ts` généré.
 - `src/lib/` : logique pure testée (formats, périodes). Toute règle de calcul ou d'affichage va ici, avec un test.
+- `src/composants/graphique/` : enveloppe ECharts (`Graphique.tsx`, ECharts chargé à la demande) ;
+  `src/composants/carte/` : contours du Togo (maquette) et fonds de carte SVG.
+- `src/test/apiSimulee.tsx` : API simulée et rendu de l'application pour les tests des pages.
 - `src/styles/jetons.css` : seules couleurs, tailles, rayons et ombres autorisés.
 
 ## Conventions

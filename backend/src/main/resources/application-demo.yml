@@ -1,0 +1,7 @@
+# Profil de démonstration, à ajouter au profil dev : mvn spring-boot:run -Dspring-boot.run.profiles=dev,demo
+# Charge en plus db/demo (environ deux ans d'inscriptions fictives pour la page Enrôlement). Base vide ou déjà en
+# démonstration seulement : refusé si le pipeline temps réel a alimenté etat.registration. Jamais en recette ni en
+# production.
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev,classpath:db/demo

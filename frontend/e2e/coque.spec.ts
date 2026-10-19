@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { simulerEnrolement } from './api';
 
 const META = {
   application: 'BI Reporting ANID',
@@ -40,6 +41,7 @@ const DEVENIR = {
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/v1/meta', (route) => route.fulfill({ json: META }));
   await page.route('**/api/v1/enrolement/devenir*', (route) => route.fulfill({ json: DEVENIR }));
+  await simulerEnrolement(page);
 });
 
 test('Vue d’ensemble : titre, date de mise à jour et accessibilité', async ({ page }, testInfo) => {
@@ -93,4 +95,45 @@ test('Enrôlement : devenir des inscriptions, accessibilité et capture', async 
     body: await page.screenshot({ fullPage: true }),
     contentType: 'image/png',
   });
+});
+
+test('Enrôlement : filtre Région, territoire et top des centres', async ({ page }) => {
+  await page.goto('/enrolement');
+  await expect(page.getByRole('heading', { name: 'Territoire : vue nationale' })).toBeVisible();
+  const territoire = page.getByRole('region', { name: /^Territoire/ });
+  await expect(territoire.getByText('▲', { exact: false }).first()).toBeVisible();
+
+  await page.getByRole('button', { name: /Région/ }).click();
+  await page.getByRole('option', { name: 'Kara' }).click();
+  await expect(page).toHaveURL(/region=KAR/);
+  await expect(page.getByRole('heading', { name: 'Territoire : région Kara' })).toBeVisible();
+  await expect(territoire.getByRole('table', { name: 'Préfectures de la région Kara' })).toBeVisible();
+  // Les blocs nationaux le signalent ; le top des centres suit la région.
+  await expect(
+    page.getByRole('region', { name: 'Inscriptions et NIU par semaine' }).getByText('Ensemble du Togo'),
+  ).toBeVisible();
+  const top = page.getByRole('region', { name: 'Top des centres' });
+  await expect(top.getByText('Région Kara')).toBeVisible();
+  await expect(top.getByText('Aucun centre de ce classement ne se trouve dans cette région.')).toBeVisible();
+
+  await territoire.getByRole('button', { name: 'Togo' }).click();
+  await expect(page.getByRole('heading', { name: 'Territoire : vue nationale' })).toBeVisible();
+  await territoire.getByRole('table', { name: 'Régions' }).getByRole('button', { name: /Kara/ }).click();
+  await expect(page).toHaveURL(/region=KAR/);
+
+  const audit = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  expect(audit.violations.map((v) => `${v.id} : ${v.help}`)).toEqual([]);
+});
+
+test('Enrôlement : onglets du top des centres au clavier', async ({ page }) => {
+  await page.goto('/enrolement');
+  const top = page.getByRole('region', { name: 'Top des centres' });
+  await expect(top.getByText('EPP Doumassesse I G/B')).toBeVisible();
+  await top.getByRole('tab', { name: 'Plus d’enregistrements' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(top.getByRole('tab', { name: 'Plus d’échecs' })).toHaveAttribute('aria-selected', 'true');
+  await expect(top.getByRole('columnheader', { name: 'Échecs' })).toBeVisible();
+  await expect(top.getByText('EPP Worgou G/A')).toBeVisible();
 });

@@ -37,8 +37,11 @@ describe('Coque', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        async () => new Response(JSON.stringify(META), { headers: { 'Content-Type': 'application/json' } }),
+      // /meta seulement : les blocs des pages reçoivent une erreur 404 (ils ont leurs propres tests).
+      vi.fn(async (url: URL) =>
+        url.pathname.endsWith('/meta')
+          ? new Response(JSON.stringify(META), { headers: { 'Content-Type': 'application/json' } })
+          : new Response('', { status: 404 }),
       ),
     );
   });

@@ -43,8 +43,13 @@ Lancer `claude` à la racine du dépôt. Il lit `CLAUDE.md` (règles du projet) 
 - **Skills** : `/nouveau-kpi <indicateur>` (de la fiche du dictionnaire à la page), `/verif-visuelle <page>`
   (comparaison à la maquette), `/demarrer` (environnement local), `/mosip-bi-pipeline` (pipeline CDC : Debezium,
   Kafka, PySpark, Data Mart, exploitation).
-- **Agents** : `expert-uiux` (revue d'une page), `auditeur-donnees` (concordance des chiffres),
-  `relecteur-securite` (Keycloak, portée régionale, données personnelles). Exemple : « demande à l'agent
+- **Agents** (`.claude/agents/`) :
+  - équipe de réalisation : `tech-lead` (cadrage d'un lot, plan dans `docs/plans/`, coordination),
+    `data-engineer` (connecteurs, jobs Spark, migrations du Data Mart), `dev-backend` (API Spring Boot),
+    `dev-front` (pages React fidèles à la maquette), `qa-testeur` (tests, non-régression, rapport de défauts) ;
+  - revues en lecture seule : `expert-uiux` (ergonomie d'une page), `auditeur-donnees` (concordance des chiffres),
+    `relecteur-securite` (Keycloak, portée régionale, données personnelles).
+  Exemples : « demande au tech-lead de cadrer le lot A de docs/datamart.md », « demande à l'agent
   auditeur-donnees de vérifier l'API des inscriptions ».
 - **Hooks** : formatage et lint après chaque modification du front ; tests au moment de rendre la main ;
   blocage des fichiers `.env`, de la maquette et des migrations déjà versionnées.

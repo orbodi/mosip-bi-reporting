@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { RAFRAICHISSEMENT_MS, lireApi, type Meta } from './client';
+import { RAFRAICHISSEMENT_MS, lireApi, type Meta, type Region } from './client';
 
 export type CodeSource = 'enrolement' | 'cartes' | 'abis' | 'idps' | 'authentifications';
 
@@ -17,4 +17,16 @@ export function useMeta() {
 export function useFraicheur(source: CodeSource) {
   const requete = useMeta();
   return { ...requete, fraicheur: requete.data?.sources.find((s) => s.source === source) };
+}
+
+/**
+ * Choix du filtre Région (GET /api/v1/meta/regions), du nord au sud. L'API ne renvoie que sa région à un
+ * utilisateur régional : le filtre n'offre alors que celle-ci.
+ */
+export function useRegions() {
+  return useQuery({
+    queryKey: ['meta', 'regions'],
+    queryFn: () => lireApi<Region[]>('/meta/regions'),
+    staleTime: 60 * 60_000,
+  });
 }

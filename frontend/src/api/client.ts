@@ -3,6 +3,13 @@ import type { components } from './schema';
 export type Meta = components['schemas']['Meta'];
 export type FraicheurSource = components['schemas']['FraicheurSource'];
 export type DevenirInscriptions = components['schemas']['DevenirInscriptions'];
+export type Region = components['schemas']['Region'];
+export type InscriptionsParSemaine = components['schemas']['InscriptionsParSemaine'];
+export type Semaine = components['schemas']['Semaine'];
+export type Territoire = components['schemas']['Territoire'];
+export type LigneZone = components['schemas']['LigneZone'];
+export type TopCentres = components['schemas']['TopCentres'];
+export type CentreClasse = components['schemas']['CentreClasse'];
 
 /**
  * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la

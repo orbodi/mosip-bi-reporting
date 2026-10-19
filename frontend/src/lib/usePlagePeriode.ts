@@ -19,3 +19,13 @@ export function usePlagePeriode(source: CodeSource): { choix: ChoixPeriode; donn
   const plage = donnees ? plagePeriode(choix, donnees, { du: filtres.du, au: filtres.au }) : undefined;
   return { choix, donnees, plage };
 }
+
+/**
+ * Plage à envoyer à l'API par les blocs : aucune pour « Depuis le début » (l'API prend toutes les données), sinon la
+ * plage calculée. {@code prete} reste faux tant que les bornes de la source ne sont pas connues.
+ */
+export function usePlageApi(source: CodeSource): { choix: ChoixPeriode; plage?: Plage; prete: boolean } {
+  const { choix, plage } = usePlagePeriode(source);
+  const depuisLeDebut = choix === 'tout';
+  return { choix, plage: depuisLeDebut ? undefined : plage, prete: depuisLeDebut || !!plage };
+}
