@@ -69,3 +69,20 @@ export function territoireInconnu(
   }));
   return { perimetre, ...chiffresInconnus, lignes };
 }
+
+/** Semaine d'un graphique hebdomadaire générique (composants/blocs/GraphiqueHebdo). */
+export interface SemaineValeurs {
+  lundi: string;
+  valeurs: Record<string, number>;
+}
+
+/** Les 12 semaines complètes jusqu'à {@code fin}, chaque série à « – ». */
+export function semainesVides(fin: string, cles: string[]): SemaineValeurs[] {
+  return lundisDesSemainesCompletes(fin).map((lundi) => ({
+    lundi,
+    valeurs: Object.fromEntries(cles.map((c) => [c, INCONNU])),
+  }));
+}
+
+/** Valeur inconnue (API absente) : affichée « – », jamais 0. */
+export const INCONNUE = INCONNU;

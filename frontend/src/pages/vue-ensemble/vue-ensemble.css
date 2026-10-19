@@ -1,0 +1,326 @@
+/* Vue d'ensemble (maquette/pages/Main.dc.html). Jetons de styles/jetons.css uniquement. */
+.parcours__entete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--e-3) var(--e-6);
+  padding: 28px 40px var(--e-2);
+}
+.parcours__titre {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-weight: 600;
+}
+.parcours__chiffre-cle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: var(--e-3) 18px;
+  border-radius: 10px;
+  background: var(--or-pale);
+}
+.parcours__chiffre-cle .chiffre {
+  font-size: var(--t-hero);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.parcours__chiffre-cle span:last-child {
+  max-width: 190px;
+  /* --or-texte sur --or-pale n'atteint que 3,3:1 : texte secondaire, contraste AA. */
+  color: var(--encre-2);
+  font-size: var(--t-s);
+  line-height: 1.35;
+}
+.parcours__alerte {
+  margin: var(--e-3) 40px 0;
+}
+.parcours__note {
+  margin: 0 40px 28px;
+}
+
+/* Frise des sept étapes */
+.frise {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: auto 44px auto;
+  margin: 0;
+  padding: var(--e-2) 40px 36px;
+  list-style: none;
+}
+.frise__etape {
+  display: contents;
+}
+.frise__bande,
+.frise__repere,
+.frise__texte {
+  grid-column: var(--colonne);
+}
+.frise__bande {
+  display: flex;
+  align-items: center;
+  grid-row: 2;
+  height: 44px;
+  margin-left: -10px;
+  padding: 0 18px 0 28px;
+  overflow: hidden;
+  color: var(--sur-bleu);
+  font-size: var(--t-s);
+  font-weight: 600;
+  white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%);
+}
+.frise__bande--premiere {
+  margin-left: 0;
+  padding-left: var(--e-4);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+}
+.frise__bande--bleu {
+  background: var(--bleu);
+}
+.frise__bande--bleu-vif {
+  background: var(--chevron);
+}
+.frise__bande--or {
+  background: var(--or);
+  color: var(--encre);
+}
+.frise__numero {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: var(--e-2);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--bleu);
+  font-size: 11px;
+  font-weight: 600;
+}
+.frise__bande--or .frise__numero {
+  background: var(--encre);
+  color: var(--or);
+}
+.frise__numero--bleu {
+  background: var(--bleu);
+  color: var(--sur-bleu);
+}
+.frise__numero--bleu-vif {
+  background: var(--chevron);
+  color: var(--sur-bleu);
+}
+.frise__numero--or {
+  background: var(--or);
+  color: var(--encre);
+}
+.frise__repere {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-self: center;
+}
+.frise__etape--haut .frise__repere {
+  grid-row: 1;
+  align-self: end;
+  flex-direction: column-reverse;
+}
+.frise__etape--bas .frise__repere {
+  grid-row: 3;
+  align-self: start;
+}
+.frise__pastille {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 27px;
+  background: var(--bleu);
+  box-shadow: var(--ombre-3);
+}
+.frise__pastille--or {
+  background: var(--or);
+}
+.frise__tige {
+  width: 3px;
+  height: 22px;
+  background: var(--bleu);
+}
+.frise__tige--or {
+  background: var(--or);
+}
+.frise__texte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 0 var(--e-1);
+  text-align: center;
+}
+.frise__etape--haut .frise__texte {
+  grid-row: 3;
+  align-self: start;
+  padding-top: 10px;
+}
+.frise__etape--bas .frise__texte {
+  grid-row: 1;
+  align-self: end;
+  padding-bottom: 10px;
+}
+.frise__nom {
+  display: none;
+}
+.frise__libelle {
+  color: var(--encre-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.frise__valeur {
+  font-size: var(--t-kpi);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.frise__part {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin-top: 3px;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.frise__piste {
+  flex-shrink: 0;
+  width: 64px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--bleu-clair);
+}
+.frise__piste > span {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bleu);
+}
+.frise__piste .frise__piste--or {
+  background: var(--or-texte);
+}
+.frise__paquets {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 158px;
+  max-width: 100%;
+  margin-top: var(--e-2);
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.frise__paquets > span {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--e-2);
+}
+.frise__paquets i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+.frise__paquets b {
+  color: var(--encre);
+  font-weight: 600;
+}
+@media (max-width: 1180px) {
+  .frise__valeur {
+    font-size: 21px;
+  }
+  .frise__pastille {
+    width: 44px;
+    height: 44px;
+  }
+  .frise__bande {
+    padding: 0 var(--e-2) 0 22px;
+    font-size: var(--t-xs);
+  }
+}
+@media (max-width: 900px) {
+  .frise {
+    display: flex;
+    flex-direction: column;
+  }
+  .frise__etape {
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: var(--e-4);
+    padding-bottom: 22px;
+  }
+  .frise__etape::before {
+    content: '';
+    position: absolute;
+    left: 21px;
+    top: 44px;
+    bottom: 0;
+    width: 2px;
+    background: var(--bleu-clair);
+  }
+  .frise__etape:last-child::before {
+    display: none;
+  }
+  .frise__bande,
+  .frise__tige {
+    display: none;
+  }
+  .frise__etape .frise__repere {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+  .frise__etape .frise__texte {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    align-items: flex-start;
+    padding: 2px 0 0;
+    text-align: left;
+  }
+  .frise__nom {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: var(--e-1);
+    font-size: var(--t-s);
+    font-weight: 600;
+  }
+}
+@media (max-width: 700px) {
+  .parcours__entete,
+  .frise {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .parcours__alerte,
+  .parcours__note {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+}
+
+/* Le parcours par région */
+.geo-m {
+  display: grid;
+  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+  gap: var(--e-8);
+}
+@media (max-width: 1240px) {
+  .geo-m {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

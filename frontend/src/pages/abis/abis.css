@@ -1,0 +1,88 @@
+/* ABIS (maquette/pages/Biometrie.dc.html). Jetons de styles/jetons.css uniquement. */
+.abis__transactions {
+  margin-top: var(--e-4);
+}
+.qualite {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e-4);
+}
+.indicateur--score {
+  align-items: flex-start;
+}
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.score b {
+  font-size: var(--t-2xl);
+  font-weight: 600;
+}
+.score span {
+  color: var(--encre-2);
+  font-size: var(--t-s);
+}
+.yeux {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin-top: var(--e-3);
+  padding-top: 10px;
+  border-top: 1px solid var(--trait);
+  font-size: 12.5px;
+}
+.yeux > div {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
+}
+.yeux b {
+  text-align: right;
+}
+.qualite__doigts {
+  margin-top: var(--e-6);
+}
+.exploitables {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: var(--e-6) 40px;
+  margin-top: var(--e-4);
+  padding: 22px var(--e-6);
+  border-radius: 10px;
+  background: var(--fond);
+}
+.exploitables__valeur {
+  font-size: var(--t-hero);
+  font-weight: 600;
+  line-height: 1.1;
+}
+.exploitables__repartition {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.qualite__titre-doigts {
+  margin: 26px 0 10px;
+}
+.mains {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.mains .repartition {
+  min-width: 140px;
+}
+@media (max-width: 1100px) {
+  .qualite,
+  .mains {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .exploitables {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

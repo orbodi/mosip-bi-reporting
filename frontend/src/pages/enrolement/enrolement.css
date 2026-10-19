@@ -109,12 +109,21 @@
 }
 .carte-statut {
   display: flex;
-  flex-direction: column;
-  gap: var(--e-1);
+  align-items: center;
+  gap: 14px;
   padding: var(--e-4);
-  border: 1px solid var(--or-pale);
+  border: 1px solid color-mix(in srgb, var(--or) 45%, var(--surface));
   border-radius: var(--r-m);
   background: var(--surface);
+}
+.carte-statut > .icone {
+  flex-shrink: 0;
+}
+.carte-statut__corps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  min-width: 0;
 }
 .carte-statut__libelle {
   display: flex;
@@ -172,14 +181,6 @@
   margin-bottom: 0;
 }
 
-/* Lecture d'un graphique ou d'une carte (aria-live) */
-.lecture {
-  margin: 0 0 var(--e-3);
-  padding-left: var(--e-3);
-  border-left: 3px solid var(--bleu);
-  font-size: var(--t-s);
-}
-
 /* Légende lisible hors du graphique */
 .legende {
   display: flex;
@@ -206,50 +207,6 @@
   width: 16px;
   height: 3px;
   background: var(--bleu);
-}
-
-/* Équivalent tableau d'un graphique */
-.equivalent {
-  margin-top: var(--e-3);
-  font-size: var(--t-s);
-}
-.equivalent summary {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  color: var(--bleu);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Tableaux de la page */
-.tableau {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--t-s);
-}
-.tableau th,
-.tableau td {
-  padding: var(--e-3) var(--e-2);
-  border-bottom: 1px solid var(--trait);
-  text-align: left;
-  vertical-align: middle;
-}
-.tableau thead th {
-  padding-top: var(--e-2);
-  padding-bottom: var(--e-2);
-  color: var(--encre-2);
-  font-weight: 500;
-}
-.tableau tbody th {
-  font-weight: 500;
-}
-.tableau .tableau__nombre {
-  text-align: right;
-  white-space: nowrap;
-}
-.tableau tr.hors-periode {
-  color: var(--encre-2);
 }
 
 /* Bloc « Inscriptions et NIU par semaine » */
@@ -326,119 +283,6 @@
   .territoire__corps {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.carte-territoire {
-  display: grid;
-  grid-template-columns: minmax(170px, 2fr) minmax(0, 3fr);
-  gap: var(--e-4);
-  align-items: start;
-}
-@media (max-width: 700px) {
-  .carte-territoire {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-.carte-territoire__titre-liste {
-  margin: 0 0 var(--e-2);
-  font-size: var(--t-s);
-  font-weight: 500;
-}
-.carte-territoire__lecture {
-  min-height: 64px;
-  margin: 0 0 var(--e-2);
-  padding: var(--e-2) var(--e-3);
-  border-radius: var(--r-m);
-  background: var(--fond);
-  font-size: var(--t-s);
-}
-.carte-territoire__zones {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.zone-choix {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--e-2);
-  min-height: 40px;
-  padding: var(--e-1) var(--e-3);
-  border: 0;
-  border-left: 3px solid transparent;
-  border-radius: var(--r-s);
-  background: transparent;
-  color: var(--encre);
-  font: 600 var(--t-s) var(--police);
-  text-align: left;
-}
-.zone-choix--active {
-  grid-template-columns: minmax(0, 1fr) auto;
-  border-left-color: var(--or);
-  background: var(--bleu);
-  color: var(--sur-bleu);
-}
-.zone-choix--bouton {
-  cursor: pointer;
-}
-.zone-choix--bouton:hover,
-.zone-choix--survol {
-  background: var(--bleu-clair);
-}
-.zone-choix__nom {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.classe-niu {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-}
-.classe-niu--0 {
-  background: var(--seq-1);
-}
-.classe-niu--1 {
-  background: var(--seq-2);
-}
-.classe-niu--2 {
-  background: var(--seq-3);
-}
-.classe-niu--3 {
-  background: var(--seq-4);
-}
-.classe-niu--aucune {
-  background: var(--trait);
-}
-.carte-territoire__carte {
-  margin: 0;
-}
-.carte-territoire__legende-titre {
-  margin: var(--e-3) 0 var(--e-1);
-  font-size: var(--t-xs);
-}
-.carte-territoire__legende {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--encre-2);
-  font-size: var(--t-xs);
-}
-.carte-territoire__legende .classe-niu {
-  display: block;
-  width: 100%;
-  height: 10px;
-  margin-bottom: var(--e-1);
-  border-radius: 0;
-}
-.carte-territoire__note,
-.carte-territoire__source {
-  margin: var(--e-2) 0 0;
-  font-size: var(--t-xs);
 }
 
 .tableau-zones__titre {

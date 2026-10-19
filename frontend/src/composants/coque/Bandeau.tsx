@@ -9,10 +9,12 @@ interface Props {
   sansPeriode?: boolean;
   /** Filtres propres à la page, après le filtre Période. */
   filtres?: ReactNode;
+  /** Texte d'introduction sous le titre (page Exploration). */
+  chapeau?: ReactNode;
 }
 
 /** Bandeau bleu en haut de chaque page : titre, date de mise à jour, filtres. Le premier panneau le chevauche. */
-export function Bandeau({ titre, source, sansPeriode, filtres }: Props) {
+export function Bandeau({ titre, source, sansPeriode, filtres, chapeau }: Props) {
   return (
     <section className="bandeau" aria-labelledby="titre-page">
       <div className="bandeau__interieur">
@@ -22,6 +24,7 @@ export function Bandeau({ titre, source, sansPeriode, filtres }: Props) {
           </h1>
           <MiseAJour source={source} />
         </div>
+        {chapeau && <p className="bandeau__chapeau">{chapeau}</p>}
         {(!sansPeriode || filtres) && (
           <div className="bandeau__filtres">
             {!sansPeriode && <FiltrePeriode source={source} />}

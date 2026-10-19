@@ -1,0 +1,55 @@
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afficher, simulerApi } from '../test/apiSimulee';
+
+describe('Pages de la maquette', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    ['/impression-cartes', 'Impression et remise', 'Impression des cartes'],
+    ['/abis', 'Transactions ABIS', 'ABIS (journaux IN Groupe)'],
+    ['/idps', 'Ordres d’impression', 'IDPS'],
+    ['/authentifications', 'Requêtes d’authentification', 'Authentifications (mosip_ida)'],
+  ])(
+    '%s : mise en page de la maquette, source signalée, aucun zéro inventé',
+    async (chemin, bloc, source) => {
+      simulerApi();
+      afficher(chemin);
+
+      const premier = within(await screen.findByRole('region', { name: bloc }));
+      expect(premier.getByRole('note')).toHaveTextContent(`Source « ${source} » pas encore raccordée`);
+      expect(premier.queryByText('0')).not.toBeInTheDocument();
+      expect(premier.getAllByText('–').length).toBeGreaterThanOrEqual(2);
+    },
+  );
+
+  it('Vue d’ensemble : étapes d’enrôlement de l’API, autres étapes « – »', async () => {
+    simulerApi();
+    afficher('/');
+
+    const parcours = within(
+      await screen.findByRole('region', { name: 'De la pré-inscription à la carte en main' }),
+    );
+    expect(await parcours.findByText('3 278 239'.replace(/\s/g, ' '))).toBeInTheDocument();
+    expect(parcours.getByText('Pré-inscriptions')).toBeInTheDocument();
+    const regions = within(screen.getByRole('region', { name: 'Le parcours par région' }));
+    expect(await regions.findByRole('rowheader', { name: 'Grand Lomé' })).toBeInTheDocument();
+  });
+
+  it('Exploration : inscriptions par région depuis l’API, puis par préfecture de la région choisie', async () => {
+    const appels = simulerApi();
+    afficher('/exploration');
+    const utilisateur = userEvent.setup();
+
+    const resultat = within(await screen.findByRole('region', { name: 'Inscriptions par région' }));
+    await utilisateur.click(await resultat.findByRole('button', { name: /Savanes/ }));
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Inscriptions par préfecture' }),
+    ).toBeInTheDocument();
+    expect(
+      appels.some((u) => u.pathname.endsWith('/territoire') && u.searchParams.get('zone') === 'SAV'),
+    ).toBe(true);
+    expect(await screen.findByRole('rowheader', { name: 'Tône' })).toBeInTheDocument();
+  });
+});

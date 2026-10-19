@@ -1,0 +1,684 @@
+/* Briques des pages (maquette/pages/*.dc.html). Jetons de styles/jetons.css uniquement. */
+
+/* --- Grilles de page ---------------------------------------------------------------------------------------- */
+.page-m {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-6);
+}
+.rangee {
+  display: grid;
+  gap: var(--e-6);
+  align-items: start;
+}
+.rangee--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.rangee--21 {
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+.rangee--11 {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+}
+.cartes-m {
+  display: grid;
+  gap: 14px var(--e-4);
+}
+.cartes-m--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.cartes-m--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .rangee--2,
+  .rangee--21,
+  .rangee--11 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cartes-m--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .cartes-m--3,
+  .cartes-m--2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Panneau ------------------------------------------------------------------------------------------------ */
+.panneau-m {
+  position: relative;
+  min-width: 0;
+  background: var(--surface);
+  border-radius: var(--r-l);
+  box-shadow: var(--ombre-2);
+}
+.panneau-m__entete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px var(--e-6);
+  padding: var(--e-6) 28px var(--e-5);
+  border-bottom: 1px solid var(--trait);
+}
+.panneau-m__entete--sans-filet {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.panneau-m__titres {
+  min-width: 0;
+}
+.panneau-m__ligne-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+}
+.panneau-m__titre {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-weight: 600;
+}
+.panneau-m__sur-titre {
+  margin-bottom: 2px;
+  color: var(--encre-2);
+  font-size: var(--t-s);
+}
+.panneau-m__sous-titre {
+  margin: var(--e-1) 0 0;
+  color: var(--encre-2);
+  font-size: var(--t-s);
+}
+.panneau-m__corps {
+  padding: var(--e-6) 28px 28px;
+}
+@media (max-width: 700px) {
+  .panneau-m__entete,
+  .panneau-m__corps {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+.coin {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-color: var(--or);
+  border-style: solid;
+  pointer-events: none;
+}
+.coin--hg {
+  top: 14px;
+  left: 14px;
+  border-width: 3px 0 0 3px;
+}
+.coin--hd {
+  top: 14px;
+  right: 14px;
+  border-width: 3px 3px 0 0;
+}
+.coin--bg {
+  bottom: 14px;
+  left: 14px;
+  border-width: 0 0 3px 3px;
+}
+.coin--bd {
+  bottom: 14px;
+  right: 14px;
+  border-width: 0 3px 3px 0;
+}
+.lien-panneau {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 36px;
+  color: var(--bleu);
+  font-size: var(--t-s);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.lien-panneau:hover {
+  color: var(--encre);
+  text-decoration: underline;
+}
+.note-m {
+  margin: var(--e-3) 0 0;
+  color: var(--encre-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.note-m--filet {
+  margin-top: var(--e-4);
+  padding-top: 14px;
+  border-top: 1px solid var(--trait);
+}
+.note-source {
+  margin: 0;
+  padding: var(--e-3) var(--e-4);
+  border-left: 4px solid var(--or);
+  border-radius: var(--r-s);
+  background: var(--or-pale);
+  font-size: var(--t-s);
+}
+.chevron {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.drapeau {
+  margin-right: var(--e-1);
+  vertical-align: -1px;
+  fill: var(--or-texte);
+}
+.h3-m {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.h4-m {
+  margin: 0 0 var(--e-1);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* --- Bloc « grand chiffre + cartes » ------------------------------------------------------------------------ */
+.duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr);
+}
+.duo__principal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: var(--e-6) 28px 28px;
+  border-right: 1px solid var(--trait);
+}
+.duo__cartes {
+  padding: var(--e-6) 28px 28px;
+}
+@media (max-width: 1100px) {
+  .duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .duo__principal {
+    border-right: 0;
+    border-bottom: 1px solid var(--trait);
+  }
+}
+@media (max-width: 700px) {
+  .duo__principal,
+  .duo__cartes {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+.grand-chiffre p {
+  margin: 0;
+}
+.grand-chiffre__ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--e-3);
+}
+.grand-chiffre__valeur {
+  font-size: var(--t-hero);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.grand-chiffre__unite,
+.grand-chiffre__detail {
+  color: var(--encre-2);
+  font-size: var(--t-m);
+}
+
+/* --- Répartition, légende, jauge ---------------------------------------------------------------------------- */
+.repartition {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--trait);
+}
+.repartition > span {
+  flex-basis: 0;
+  min-width: 3px;
+}
+.legende-m {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--encre-2);
+  font-size: 12.5px;
+}
+.legende-m li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.legende-m i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.legende-m i.legende-m__ligne {
+  width: 16px;
+  height: 3px;
+}
+.legende-m strong {
+  color: var(--encre);
+  font-weight: 600;
+}
+.jauge {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--trait);
+}
+.jauge > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.couleur--bleu {
+  background: var(--bleu);
+}
+.couleur--serie-1 {
+  background: var(--serie-1);
+}
+.couleur--bleu-clair {
+  background: var(--seq-2);
+}
+.couleur--bleu-pale {
+  background: var(--seq-1);
+}
+.couleur--bleu-fonce {
+  background: var(--seq-4);
+}
+.couleur--or {
+  background: var(--or);
+}
+.couleur--en-cours {
+  background: var(--statut-en-cours);
+}
+.couleur--orange {
+  background: var(--statut-echoue);
+}
+.couleur--rouge {
+  background: var(--danger);
+}
+.couleur--rouge-fonce {
+  background: var(--rouge-fonce);
+}
+.couleur--vert {
+  background: var(--serie-3);
+}
+.couleur--gris {
+  background: var(--trait);
+}
+
+/* --- Carte d'indicateur ------------------------------------------------------------------------------------- */
+.indicateur {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: var(--e-4) 18px;
+  border: 1px solid color-mix(in srgb, var(--or) 45%, var(--surface));
+  border-radius: var(--r-m);
+  background: var(--surface);
+  box-shadow: var(--ombre-1);
+  color: inherit;
+  text-decoration: none;
+}
+.indicateur > .icone {
+  flex-shrink: 0;
+}
+.indicateur--lien:hover {
+  border-color: var(--or);
+  box-shadow: var(--ombre-2);
+}
+.indicateur__corps {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.indicateur__nom {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--bleu);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.indicateur__nom i {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.indicateur__valeur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
+  font-size: var(--t-2xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.indicateur__unite {
+  color: var(--encre-2);
+  font-size: var(--t-s);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.indicateur__detail {
+  color: var(--encre-2);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.indicateur__detail strong {
+  color: var(--encre);
+  font-weight: 600;
+}
+.indicateur--grande {
+  gap: var(--e-5);
+  padding: 22px 26px;
+}
+.indicateur--grande > .icone {
+  width: 48px;
+  height: 48px;
+}
+.indicateur--grande .indicateur__nom,
+.indicateur--module .indicateur__nom {
+  font-size: 15px;
+}
+.indicateur--grande .indicateur__valeur {
+  font-size: 32px;
+}
+.indicateur--module .indicateur__valeur {
+  font-size: var(--t-kpi);
+}
+
+/* --- Tableaux ----------------------------------------------------------------------------------------------- */
+.tableau-m-defile {
+  overflow-x: auto;
+}
+.tableau-m {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.tableau-m caption {
+  margin-bottom: var(--e-2);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+.tableau-m th,
+.tableau-m td {
+  padding: 11px var(--e-2);
+  border-bottom: 1px solid var(--trait);
+  text-align: right;
+  white-space: nowrap;
+}
+.tableau-m thead th {
+  padding: var(--e-2);
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
+.tableau-m th:first-child,
+.tableau-m td:first-child,
+.tableau-m .gauche {
+  text-align: left;
+}
+.tableau-m tbody th {
+  font-weight: 600;
+}
+.tableau-m tr.total th,
+.tableau-m tr.total td {
+  border-top: 1px solid var(--bord-champ);
+  border-bottom: 0;
+  font-weight: 600;
+}
+.tableau-m tr.choisie th,
+.tableau-m tr.choisie td {
+  background: var(--bleu-clair);
+}
+.tableau-m .fort {
+  font-weight: 600;
+}
+.bouton-zone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bleu);
+  font: 600 var(--t-m) var(--police);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.bouton-zone:hover {
+  color: var(--encre);
+}
+
+/* --- Classement --------------------------------------------------------------------------------------------- */
+.classement {
+  width: 100%;
+  border-collapse: collapse;
+}
+.classement thead th {
+  padding: var(--e-2) 0;
+  border-bottom: 1px solid var(--trait);
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+  font-weight: 400;
+  text-align: left;
+}
+.classement th:last-child,
+.classement td:last-child {
+  text-align: right;
+}
+.classement td,
+.classement tbody th {
+  padding: var(--e-3) 0;
+  border-bottom: 1px solid var(--trait);
+  vertical-align: middle;
+  text-align: left;
+  font-weight: 400;
+}
+.classement__rang {
+  width: 48px;
+  color: var(--encre-2);
+}
+.classement__nom,
+.classement__lieu,
+.classement__valeur,
+.classement__detail {
+  display: block;
+}
+.classement__nom {
+  font-size: var(--t-m);
+}
+.classement__lieu,
+.classement__detail {
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.classement__valeur {
+  font-weight: 600;
+}
+
+/* --- Barres horizontales ------------------------------------------------------------------------------------ */
+.barres-h {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.barres-h__ligne {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--e-4);
+  font-size: var(--t-s);
+}
+.barres-h__piste {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.barres-h__barre {
+  height: 14px;
+  min-width: 2px;
+  border-radius: 3px;
+}
+.barres-h__valeur {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* --- Graphique hebdomadaire --------------------------------------------------------------------------------- */
+.lecture--rouge {
+  border-left-color: var(--danger);
+}
+.graphique-hebdo .lecture {
+  margin: 0 0 var(--e-3);
+  padding-left: var(--e-3);
+  border-left: 3px solid var(--serie-1);
+  font-size: var(--t-s);
+}
+.graphique-hebdo .lecture--rouge {
+  border-left-color: var(--danger);
+}
+
+/* --- Lecture, équivalent tableau, tableaux simples (aussi page Enrôlement) --- */
+/* Lecture d'un graphique ou d'une carte (aria-live) */
+.lecture {
+  margin: 0 0 var(--e-3);
+  padding-left: var(--e-3);
+  border-left: 3px solid var(--bleu);
+  font-size: var(--t-s);
+}
+
+/* Équivalent tableau d'un graphique */
+.equivalent {
+  margin-top: var(--e-3);
+  font-size: var(--t-s);
+}
+.equivalent summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--bleu);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Tableaux de la page */
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-s);
+}
+.tableau th,
+.tableau td {
+  padding: var(--e-3) var(--e-2);
+  border-bottom: 1px solid var(--trait);
+  text-align: left;
+  vertical-align: middle;
+}
+.tableau thead th {
+  padding-top: var(--e-2);
+  padding-bottom: var(--e-2);
+  color: var(--encre-2);
+  font-weight: 500;
+}
+.tableau tbody th {
+  font-weight: 500;
+}
+.tableau .tableau__nombre {
+  text-align: right;
+  white-space: nowrap;
+}
+.tableau tr.hors-periode {
+  color: var(--encre-2);
+}
+
+/* --- Chiffres d'une zone (en-tête des blocs territoire) ------------------------------------------------------ */
+.chiffres-zone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-4) var(--e-6);
+  margin: 0 0 var(--e-5);
+}
+.chiffres-zone > div + div {
+  padding-left: var(--e-6);
+  border-left: 1px solid var(--trait);
+}
+.chiffres-zone dt,
+.chiffres-zone dd {
+  margin: 0;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.chiffres-zone dt {
+  font-size: 12.5px;
+}
+.chiffres-zone dd.chiffre {
+  color: var(--encre);
+  font-size: var(--t-kpi);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* --- Divers ------------------------------------------------------------------------------------------------- */
+.etape__barre {
+  width: 45%;
+}
+.etape__barre .repartition {
+  min-width: 200px;
+  height: 14px;
+  border-radius: 0;
+}
+.erreur__jauge {
+  width: 40%;
+  padding-right: var(--e-4);
+}
+.erreur__jauge .jauge {
+  height: 10px;
+}
+.non-disponible-m {
+  margin: 0;
+  padding: var(--e-6);
+  border: 1px dashed var(--bord-champ);
+  border-radius: var(--r-m);
+  color: var(--encre-2);
+  font-size: var(--t-s);
+  text-align: center;
+}

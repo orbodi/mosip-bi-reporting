@@ -29,3 +29,9 @@ export function usePlageApi(source: CodeSource): { choix: ChoixPeriode; plage?: 
   const depuisLeDebut = choix === 'tout';
   return { choix, plage: depuisLeDebut ? undefined : plage, prete: depuisLeDebut || !!plage };
 }
+
+/** Dernier jour à montrer dans les graphiques : fin de la période, sinon dernière donnée de la source, sinon aujourd'hui. */
+export function useFinPeriode(source: CodeSource): string {
+  const { plage, donnees } = usePlagePeriode(source);
+  return plage?.au ?? donnees?.au ?? new Date().toISOString().slice(0, 10);
+}

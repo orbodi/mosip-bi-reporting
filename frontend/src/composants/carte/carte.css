@@ -1,0 +1,113 @@
+/* Carte du Togo (composants/carte/CarteZones.tsx). Jetons de styles/jetons.css uniquement. */
+.carte-territoire {
+  display: grid;
+  grid-template-columns: minmax(170px, 2fr) minmax(0, 3fr);
+  gap: var(--e-4);
+  align-items: start;
+}
+@media (max-width: 700px) {
+  .carte-territoire {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.carte-territoire__titre-liste {
+  margin: 0 0 var(--e-2);
+  font-size: var(--t-s);
+  font-weight: 500;
+}
+.carte-territoire__lecture {
+  min-height: 64px;
+  margin: 0 0 var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  border-radius: var(--r-m);
+  background: var(--fond);
+  font-size: var(--t-s);
+}
+.carte-territoire__zones {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.zone-choix {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: 40px;
+  padding: var(--e-1) var(--e-3);
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--r-s);
+  background: transparent;
+  color: var(--encre);
+  font: 600 var(--t-s) var(--police);
+  text-align: left;
+}
+.zone-choix--active {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-left-color: var(--or);
+  background: var(--bleu);
+  color: var(--sur-bleu);
+}
+.zone-choix--bouton {
+  cursor: pointer;
+}
+.zone-choix--bouton:hover,
+.zone-choix--survol {
+  background: var(--bleu-clair);
+}
+.zone-choix__nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.classe-carte {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.classe-carte--0 {
+  background: var(--seq-1);
+}
+.classe-carte--1 {
+  background: var(--seq-2);
+}
+.classe-carte--2 {
+  background: var(--seq-3);
+}
+.classe-carte--3 {
+  background: var(--seq-4);
+}
+.classe-carte--aucune {
+  background: var(--trait);
+}
+.carte-territoire__carte {
+  margin: 0;
+}
+.carte-territoire__legende-titre {
+  margin: var(--e-3) 0 var(--e-1);
+  font-size: var(--t-xs);
+}
+.carte-territoire__legende {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.carte-territoire__legende .classe-carte {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin-bottom: var(--e-1);
+  border-radius: 0;
+}
+.carte-territoire__note,
+.carte-territoire__source {
+  margin: var(--e-2) 0 0;
+  font-size: var(--t-xs);
+}

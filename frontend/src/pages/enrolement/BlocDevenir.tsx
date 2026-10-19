@@ -1,9 +1,19 @@
 import { useDevenirInscriptions } from '../../api/enrolement';
+import { Icone } from '../../composants/blocs/Icone';
 import { devenirInconnu, estConnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlagePeriode } from '../../lib/usePlagePeriode';
 import './enrolement.css';
+
+/** Pictogrammes des cartes de statut (maquette). */
+const ICONE_STATUT: Record<Statut['cle'], string> = {
+  niu: 'diese',
+  'en-cours': 'cycle',
+  echoue: 'alerte',
+  rejete: 'croix',
+  'non-classe': 'document',
+};
 
 interface Statut {
   cle: 'niu' | 'en-cours' | 'echoue' | 'rejete' | 'non-classe';
@@ -91,12 +101,15 @@ export function BlocDevenir() {
       <ul className="cartes-statuts">
         {statuts.map((s) => (
           <li key={s.cle} className="carte-statut">
-            <span className="carte-statut__libelle">
-              <i className={`puce-statut statut--${s.cle}`} aria-hidden="true" />
-              {s.libelle}
-            </span>
-            <span className="chiffre carte-statut__valeur">{nf(s.valeur)}</span>
-            <span className="texte-2 carte-statut__part">{pct(part(s.valeur, total))}</span>
+            <Icone nom={ICONE_STATUT[s.cle]} />
+            <div className="carte-statut__corps">
+              <span className="carte-statut__libelle">
+                <i className={`puce-statut statut--${s.cle}`} aria-hidden="true" />
+                {s.libelle}
+              </span>
+              <span className="chiffre carte-statut__valeur">{nf(s.valeur)}</span>
+              <span className="texte-2 carte-statut__part">{pct(part(s.valeur, total))}</span>
+            </div>
           </li>
         ))}
       </ul>

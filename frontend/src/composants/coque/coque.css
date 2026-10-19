@@ -186,6 +186,12 @@
   font-weight: 600;
   line-height: 1.2;
 }
+.bandeau__chapeau {
+  max-width: 760px;
+  margin: var(--e-3) 0 0;
+  color: var(--sur-bleu-2);
+  font-size: var(--t-l);
+}
 .bandeau__filtres {
   display: flex;
   flex-wrap: wrap;
