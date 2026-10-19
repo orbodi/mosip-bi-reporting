@@ -68,5 +68,9 @@ services:
 
 volumes:
   donnees-bi:
+  # Caches partagés avec l'environnement de main (deploy/docker-compose.yml) : sur un serveur sans accès direct à
+  # Maven Central ni à npm, les dépendances déjà téléchargées par main suffisent à démarrer.
   cache-maven:
+    name: bi-anid_cache-maven
   modules-front:
+    name: bi-anid_modules-front
