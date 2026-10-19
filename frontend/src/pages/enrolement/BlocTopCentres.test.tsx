@@ -45,4 +45,13 @@ describe('Top des centres', () => {
     const centres = appels.filter((u) => u.pathname.endsWith('/enrolement/centres'));
     expect(centres.at(-1)?.searchParams.get('zone')).toBe('GLO');
   });
+
+  it('sans réponse de l’API, garde les cinq rangs du classement', async () => {
+    simulerApi({ '/enrolement/centres': undefined });
+    afficher('/enrolement');
+
+    const b = await blocAffiche();
+    expect(await b.findByRole('alert')).toHaveTextContent('Classement indisponible');
+    expect(b.getAllByRole('row')).toHaveLength(6);
+  });
 });

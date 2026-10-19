@@ -54,4 +54,14 @@ describe('Inscriptions et NIU par semaine', () => {
       within(bloc().getByRole('list', { name: 'Légende' })).queryByText('NIU générés'),
     ).not.toBeInTheDocument();
   });
+
+  it('sans réponse de l’API, garde le graphique et les 12 semaines, sans chiffres', async () => {
+    simulerApi({ '/enrolement/semaines': undefined });
+    afficher('/enrolement');
+
+    const b = await blocAffiche();
+    expect(await b.findByRole('alert')).toHaveTextContent('Chiffres indisponibles');
+    expect(b.getByText('Semaine du 5 janvier : chiffres indisponibles.')).toBeInTheDocument();
+    expect(b.getByRole('img', { name: /par semaine, du 20\/10\/2025 au 05\/01\/2026/ })).toBeInTheDocument();
+  });
 });

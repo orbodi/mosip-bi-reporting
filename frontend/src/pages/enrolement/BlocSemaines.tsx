@@ -3,11 +3,12 @@ import type { InscriptionsParSemaine } from '../../api/client';
 import { useSemaines } from '../../api/enrolement';
 import { Graphique } from '../../composants/graphique/Graphique';
 import type { EChartsCoreOption } from '../../composants/graphique/echarts';
+import { estConnu, semainesInconnues } from '../../lib/blocsVides';
 import { dateFr, jourMoisCourt, nf } from '../../lib/format';
 import { jeton } from '../../lib/jetons';
 import { lectureSemaine } from '../../lib/semaines';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
-import { usePlageApi } from '../../lib/usePlagePeriode';
+import { usePlageApi, usePlagePeriode } from '../../lib/usePlagePeriode';
 import { PastillePortee } from './PastillePortee';
 
 function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOption {
@@ -19,6 +20,8 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
     texte: jeton('--encre-2'),
     trait: jeton('--trait'),
   };
+  const valeur = (n: number) => (estConnu(n) ? n : null);
+  const connu = donnees.semaines.some((s) => estConnu(s.inscriptions));
   return {
     animation: false,
     grid: { left: 8, right: 8, top: 16, bottom: 8, containLabel: true },
@@ -33,7 +36,10 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: couleurs.texte, fontSize: 12, formatter: (v: number) => nf(v) },
+      // Échelle fictive sans chiffres, pour garder les lignes de la grille.
+      ...(connu ? {} : { min: 0, max: 4, interval: 1 }),
+      // Sans chiffres, l'échelle n'aurait aucun sens : on garde la grille, sans graduations.
+      axisLabel: { show: connu, color: couleurs.texte, fontSize: 12, formatter: (v: number) => nf(v) },
       splitLine: { lineStyle: { color: couleurs.trait } },
     },
     series: [
@@ -42,7 +48,7 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
         type: 'bar',
         barMaxWidth: 28,
         data: donnees.semaines.map((s, i) => ({
-          value: s.inscriptions,
+          value: valeur(s.inscriptions),
           itemStyle: {
             color: i === active ? couleurs.active : s.dansLaPeriode ? couleurs.barre : couleurs.horsPeriode,
             borderRadius: [3, 3, 0, 0],
@@ -55,7 +61,7 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
             {
               name: 'NIU générés',
               type: 'line',
-              data: donnees.semaines.map((s) => s.niuGeneres),
+              data: donnees.semaines.map((s) => valeur(s.niuGeneres)),
               symbol: 'circle',
               symbolSize: (_v: number, p: { dataIndex: number }) => (p.dataIndex === active ? 9 : 0),
               lineStyle: { color: couleurs.courbe, width: 2 },
@@ -75,14 +81,19 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
  */
 export function BlocSemaines() {
   const { plage, prete, choix } = usePlageApi('enrolement');
+  const { donnees } = usePlagePeriode('enrolement');
   const { actif } = useFiltreRegion();
-  const { data, isPending, isError } = useSemaines(plage, prete);
+  const requete = useSemaines(plage, prete);
+  const { isPending, isError } = requete;
   const [survol, setSurvol] = useState<number | null>(null);
 
-  const semaines = data?.semaines ?? [];
+  // Sans réponse de l'API : les 12 semaines attendues, sans chiffres (fin de période, dernière donnée ou aujourd'hui).
+  const fin = plage?.au ?? donnees?.au ?? new Date().toISOString().slice(0, 10);
+  const data = useMemo(() => requete.data ?? semainesInconnues(fin), [requete.data, fin]);
+  const semaines = data.semaines;
   const derniere = semaines.length - 1;
   const active = survol !== null && survol <= derniere ? survol : derniere;
-  const graphique = useMemo(() => (data ? option(data, active) : undefined), [data, active]);
+  const graphique = useMemo(() => option(data, active), [data, active]);
 
   return (
     <section className="panneau bloc-semaines" aria-labelledby="titre-semaines">
@@ -92,7 +103,7 @@ export function BlocSemaines() {
             <h2 id="titre-semaines" className="titre-bloc">
               Inscriptions et NIU par semaine
             </h2>
-            {actif && <PastillePortee perimetre={data?.perimetre} />}
+            {actif && <PastillePortee perimetre={data.perimetre} />}
           </div>
           <p className="texte-2 bloc__sous-titre">
             {choix === 'tout'
@@ -105,7 +116,7 @@ export function BlocSemaines() {
             <i className="legende__barre" aria-hidden="true" />
             Inscriptions
           </li>
-          {data?.niuDisponibles !== false && (
+          {data.niuDisponibles && (
             <li>
               <i className="legende__courbe" aria-hidden="true" />
               NIU générés
@@ -114,15 +125,15 @@ export function BlocSemaines() {
         </ul>
       </div>
 
-      {isPending && <p className="texte-2">Chargement des chiffres…</p>}
+      {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
       {isError && (
-        <p role="alert" className="alerte-donnees">
+        <p role="alert" className="alerte-donnees alerte-donnees--haut">
           Chiffres indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
         </p>
       )}
-      {data && semaines.length === 0 && <p className="texte-2">Aucune inscription pour le moment.</p>}
+      {semaines.length === 0 && <p className="texte-2">Aucune inscription pour le moment.</p>}
 
-      {data && semaines.length > 0 && graphique && (
+      {semaines.length > 0 && (
         <>
           <p className="lecture" aria-live="polite">
             {lectureSemaine(semaines[active], data.niuDisponibles)}

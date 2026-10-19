@@ -1,4 +1,5 @@
 import { useDevenirInscriptions } from '../../api/enrolement';
+import { devenirInconnu, estConnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlagePeriode } from '../../lib/usePlagePeriode';
@@ -25,18 +26,19 @@ export function BlocDevenir() {
     depuisLeDebut || !!plage,
   );
 
-  const statuts: Statut[] = data
-    ? [
-        { cle: 'niu', libelle: 'NIU générés', valeur: data.niuGeneres },
-        { cle: 'en-cours', libelle: 'En cours', valeur: data.enCours },
-        { cle: 'echoue', libelle: 'Échoués', valeur: data.echouees },
-        { cle: 'rejete', libelle: 'Rejetés', valeur: data.rejetees },
-        ...(data.nonClassees > 0
-          ? [{ cle: 'non-classe' as const, libelle: 'Non classés', valeur: data.nonClassees }]
-          : []),
-      ]
-    : [];
-  const total = data?.inscriptions ?? 0;
+  // Sans réponse de l'API, les cartes restent en place avec « – » (lib/blocsVides.ts).
+  const d = data ?? devenirInconnu();
+  const connu = estConnu(d.inscriptions);
+  const statuts: Statut[] = [
+    { cle: 'niu', libelle: 'NIU générés', valeur: d.niuGeneres },
+    { cle: 'en-cours', libelle: 'En cours', valeur: d.enCours },
+    { cle: 'echoue', libelle: 'Échoués', valeur: d.echouees },
+    { cle: 'rejete', libelle: 'Rejetés', valeur: d.rejetees },
+    ...(d.nonClassees > 0
+      ? [{ cle: 'non-classe' as const, libelle: 'Non classés', valeur: d.nonClassees }]
+      : []),
+  ];
+  const total = d.inscriptions;
   const description = statuts.map((s) => `${s.libelle} ${pct(part(s.valeur, total))}`).join(', ');
 
   return (
@@ -54,51 +56,55 @@ export function BlocDevenir() {
       </div>
       <p className="texte-2 bloc-devenir__note">Actualisé automatiquement toutes les 30 secondes.</p>
 
-      {isPending && <p className="texte-2">Chargement des chiffres…</p>}
+      {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
       {isError && (
-        <p role="alert" className="alerte-donnees">
+        <p role="alert" className="alerte-donnees alerte-donnees--haut">
           Chiffres indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
         </p>
       )}
       {data && total === 0 && <p className="texte-2">Aucune inscription sur la période.</p>}
 
-      {data && total > 0 && (
-        <>
-          <p className="bloc-devenir__principal">
-            <span className="chiffre bloc-devenir__valeur">{nf(data.niuGeneres)}</span>
-            <span className="bloc-devenir__unite">
-              NIU générés, soit {pct(part(data.niuGeneres, total))} des {nf(total)} inscriptions
+      <p className="bloc-devenir__principal">
+        <span className="chiffre bloc-devenir__valeur">{nf(d.niuGeneres)}</span>
+        <span className="bloc-devenir__unite">
+          NIU générés, soit {pct(part(d.niuGeneres, total))} des {nf(total)} inscriptions
+        </span>
+      </p>
+      <div
+        className="barre-statuts"
+        role="img"
+        aria-label={
+          connu ? `Devenir des inscriptions : ${description}` : 'Devenir des inscriptions : non disponible'
+        }
+      >
+        {connu &&
+          total > 0 &&
+          statuts.map((s) => (
+            <span
+              key={s.cle}
+              className={`barre-statuts__part statut--${s.cle}`}
+              style={{ flexGrow: s.valeur }}
+              title={`${s.libelle} : ${nf(s.valeur)}`}
+            />
+          ))}
+      </div>
+      <ul className="cartes-statuts">
+        {statuts.map((s) => (
+          <li key={s.cle} className="carte-statut">
+            <span className="carte-statut__libelle">
+              <i className={`puce-statut statut--${s.cle}`} aria-hidden="true" />
+              {s.libelle}
             </span>
-          </p>
-          <div className="barre-statuts" role="img" aria-label={`Devenir des inscriptions : ${description}`}>
-            {statuts.map((s) => (
-              <span
-                key={s.cle}
-                className={`barre-statuts__part statut--${s.cle}`}
-                style={{ flexGrow: s.valeur }}
-                title={`${s.libelle} : ${nf(s.valeur)}`}
-              />
-            ))}
-          </div>
-          <ul className="cartes-statuts">
-            {statuts.map((s) => (
-              <li key={s.cle} className="carte-statut">
-                <span className="carte-statut__libelle">
-                  <i className={`puce-statut statut--${s.cle}`} aria-hidden="true" />
-                  {s.libelle}
-                </span>
-                <span className="chiffre carte-statut__valeur">{nf(s.valeur)}</span>
-                <span className="texte-2 carte-statut__part">{pct(part(s.valeur, total))}</span>
-              </li>
-            ))}
-          </ul>
-          {data.nonClassees > 0 && (
-            <p className="alerte-donnees" role="note">
-              {nf(data.nonClassees)} inscriptions ont un statut MOSIP sans correspondance validée : elles sont
-              comptées à part en attendant la règle de l’équipe MOSIP.
-            </p>
-          )}
-        </>
+            <span className="chiffre carte-statut__valeur">{nf(s.valeur)}</span>
+            <span className="texte-2 carte-statut__part">{pct(part(s.valeur, total))}</span>
+          </li>
+        ))}
+      </ul>
+      {d.nonClassees > 0 && (
+        <p className="alerte-donnees" role="note">
+          {nf(d.nonClassees)} inscriptions ont un statut MOSIP sans correspondance validée : elles sont
+          comptées à part en attendant la règle de l’équipe MOSIP.
+        </p>
       )}
     </section>
   );

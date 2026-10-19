@@ -62,11 +62,23 @@ describe('Territoire', () => {
     await waitFor(() => expect(routeur.state.location.search).not.toHaveProperty('region'));
   });
 
-  it('signale les données indisponibles sans afficher de zéros', async () => {
+  it('sans réponse de l’API, garde la carte et le tableau des régions avec des tirets', async () => {
     simulerApi({ '/enrolement/territoire': undefined });
     afficher('/enrolement');
 
-    expect(await (await blocAffiche()).findByRole('alert')).toHaveTextContent('Chiffres indisponibles');
-    expect(bloc().queryByRole('table')).not.toBeInTheDocument();
+    const b = await blocAffiche();
+    expect(await b.findByRole('alert')).toHaveTextContent('Chiffres indisponibles');
+    const tableau = within(b.getByRole('table', { name: 'Régions' }));
+    expect(tableau.getAllByRole('rowheader').map((c) => c.textContent)).toEqual([
+      'Savanes',
+      'Kara',
+      'Centrale',
+      'Plateaux',
+      'Maritime',
+      'Grand Lomé',
+    ]);
+    expect(tableau.queryByText('0')).not.toBeInTheDocument();
+    expect(b.getByText('Togo : chiffres indisponibles')).toBeInTheDocument();
+    expect(b.getByRole('img', { name: /Carte des régions du Togo/ })).toBeInTheDocument();
   });
 });

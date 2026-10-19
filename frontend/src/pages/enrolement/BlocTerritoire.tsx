@@ -1,6 +1,7 @@
 import type { LigneZone } from '../../api/client';
 import { useTerritoire } from '../../api/enrolement';
 import { CARTE_REGIONS, carteRegion } from '../../composants/carte/fondsDeCarte';
+import { territoireInconnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
 import { SEUIL_ALERTE_REJET, alerteRejet, tauxNiu, tauxRejet } from '../../lib/territoire';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
@@ -22,13 +23,25 @@ function Chevron() {
  */
 export function BlocTerritoire() {
   const { plage, prete } = usePlageApi('enrolement');
-  const { code, region, regional, choisir } = useFiltreRegion();
-  const { data, isPending, isError } = useTerritoire(plage, code, prete);
+  const { code, region, regions, regional, choisir } = useFiltreRegion();
+  const requete = useTerritoire(plage, code, prete);
+  const { isPending, isError } = requete;
   // Total national pour situer une région (« 31,1 % du total national ») ; sans objet pour un utilisateur régional.
   const national = useTerritoire(plage, undefined, prete && !!code && !regional);
 
-  const nomZone = code ? (region?.nom ?? data?.perimetre ?? '') : undefined;
-  const ouvrir = !code && !regional ? (l: LigneZone) => choisir(l.code, { historique: true }) : undefined;
+  const nomZone = code ? (region?.nom ?? requete.data?.perimetre ?? code) : undefined;
+  // Sans réponse de l'API : les zones attendues (régions du filtre, ou contours de la carte), chiffres « – ».
+  const vide = !requete.data;
+  const zonesAttendues = nomZone
+    ? (carteRegion(nomZone)?.contours ?? []).map((c) => ({ code: c.nom, nom: c.nom }))
+    : regions.length > 1
+      ? regions
+      : CARTE_REGIONS.contours.map((c) => ({ code: c.nom, nom: c.nom }));
+  const data =
+    requete.data ??
+    territoireInconnu(nomZone ?? 'Ensemble du Togo', zonesAttendues, nomZone ? 'prefecture' : 'region');
+  const peutOuvrir = !code && !regional && (!vide || regions.length > 1);
+  const ouvrir = peutOuvrir ? (l: LigneZone) => choisir(l.code, { historique: true }) : undefined;
   const lignes = data?.lignes ?? [];
   const regionsComptees = lignes.filter((l) => !l.horsReferentiel).length;
   const totalNational =
@@ -85,9 +98,9 @@ export function BlocTerritoire() {
         )}
       </div>
 
-      {isPending && <p className="texte-2">Chargement des chiffres…</p>}
+      {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
       {isError && (
-        <p role="alert" className="alerte-donnees">
+        <p role="alert" className="alerte-donnees alerte-donnees--haut">
           Chiffres indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
         </p>
       )}

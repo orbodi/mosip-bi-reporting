@@ -55,6 +55,7 @@ export function cleNom(nom: string): string {
 
 /** Lecture d'une zone (carte) : « Kara : 92,6 % de NIU générés, 386 004 inscriptions ». */
 export function lectureZone(nom: string, z: ChiffresZone): string {
+  if (!Number.isFinite(z.inscriptions)) return `${nom} : chiffres indisponibles`;
   if (z.inscriptions === 0) return `${nom} : aucune inscription sur la période`;
   return `${nom} : ${pct(tauxNiu(z))} de NIU générés, ${nf(z.inscriptions)} inscriptions`;
 }

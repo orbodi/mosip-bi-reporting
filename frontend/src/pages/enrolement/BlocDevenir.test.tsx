@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DevenirInscriptions } from '../../api/client';
 import { RAFRAICHISSEMENT_MS } from '../../api/client';
@@ -77,9 +77,28 @@ describe('Devenir des inscriptions', () => {
     expect(bloc.getByText('Ensemble du Togo')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /NIU générés 93,3/ })).toBeInTheDocument();
     for (const libelle of ['En cours', 'Échoués', 'Rejetés']) {
-      expect(screen.getByText(libelle)).toBeInTheDocument();
+      expect(bloc.getByText(libelle)).toBeInTheDocument();
     }
     expect(screen.queryByText('Non classés')).not.toBeInTheDocument();
+  });
+
+  it('garde ses cartes, avec des tirets, quand l’API ne répond pas', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: URL) =>
+        url.pathname.endsWith('/meta')
+          ? new Response(JSON.stringify(META), { headers: { 'Content-Type': 'application/json' } })
+          : new Response('', { status: 503 }),
+      ),
+    );
+    afficher('/enrolement');
+
+    const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
+    expect(await bloc.findByRole('alert')).toHaveTextContent('Chiffres indisponibles');
+    expect(bloc.getAllByRole('listitem')).toHaveLength(4);
+    expect(bloc.getByRole('img', { name: 'Devenir des inscriptions : non disponible' })).toBeInTheDocument();
+    expect(bloc.queryByText('0')).not.toBeInTheDocument();
+    expect(bloc.getAllByText('–').length).toBeGreaterThanOrEqual(5);
   });
 
   it('signale les inscriptions non classées sans les répartir', async () => {
@@ -95,8 +114,9 @@ describe('Devenir des inscriptions', () => {
     const appels = simulerApi(DEVENIR);
     afficher('/enrolement?periode=7j');
 
-    await screen.findByText('Rejetés');
-    expect(appels.some((u) => u.includes('/enrolement/devenir?du=2026-10-10&au=2026-10-16'))).toBe(true);
+    await waitFor(() =>
+      expect(appels.some((u) => u.includes('/enrolement/devenir?du=2026-10-10&au=2026-10-16'))).toBe(true),
+    );
   });
 
   it('se met à jour seul toutes les 30 secondes (pipeline temps réel)', async () => {

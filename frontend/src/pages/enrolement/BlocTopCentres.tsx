@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
+import type { CentreClasse } from '../../api/client';
 import { useTopCentres, type ClassementCentres } from '../../api/enrolement';
 import { nf } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
@@ -11,20 +12,22 @@ const ONGLETS: { id: ClassementCentres; libelle: string; colonne: string }[] = [
   { id: 'rejets', libelle: 'Plus de rejets', colonne: 'Rejets' },
 ];
 
+const CENTRES_INCONNUS: CentreClasse[] = [1, 2, 3, 4, 5].map((rang) => ({
+  rang,
+  code: `inconnu-${rang}`,
+  nom: '–',
+  prefecture: null,
+  region: null,
+  valeur: Number.NaN,
+  inscriptions: Number.NaN,
+}));
+
 function Classement({ classement, colonne }: { classement: ClassementCentres; colonne: string }) {
   const { plage, prete } = usePlageApi('enrolement');
   const { code, region } = useFiltreRegion();
   const { data, isPending, isError } = useTopCentres(plage, code, classement, prete);
 
-  if (isPending) return <p className="texte-2">Chargement des chiffres…</p>;
-  if (isError) {
-    return (
-      <p role="alert" className="alerte-donnees">
-        Classement indisponible pour le moment. Il réapparaîtra dès que l’API répondra.
-      </p>
-    );
-  }
-  if (data.centres.length === 0) {
+  if (data && data.centres.length === 0) {
     return (
       <p className="texte-2">
         {region
@@ -33,35 +36,46 @@ function Classement({ classement, colonne }: { classement: ClassementCentres; co
       </p>
     );
   }
+  // Sans réponse de l'API, le tableau garde ses cinq rangs, chiffres « – ».
+  const centres = data?.centres ?? CENTRES_INCONNUS;
   return (
-    <table className="tableau tableau-centres">
-      <caption className="visuellement-cache">
-        {ONGLETS.find((o) => o.id === classement)?.libelle} : {data.perimetre}
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">Rang</th>
-          <th scope="col">Centre</th>
-          <th scope="col" className="tableau__nombre">
-            {colonne}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.centres.map((c) => (
-          <tr key={c.code}>
-            <td className="tableau-centres__rang">{c.rang}</td>
-            <th scope="row" className="tableau-centres__centre">
-              <span className="tableau-centres__nom">{c.nom}</span>
-              <span className="texte-2 tableau-centres__lieu">
-                {[c.prefecture, c.region].filter(Boolean).join(', ')}
-              </span>
+    <>
+      {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
+      {isError && (
+        <p role="alert" className="alerte-donnees alerte-donnees--haut">
+          Classement indisponible pour le moment. Il réapparaîtra dès que l’API répondra.
+        </p>
+      )}
+      <table className="tableau tableau-centres">
+        <caption className="visuellement-cache">
+          {ONGLETS.find((o) => o.id === classement)?.libelle} :{' '}
+          {data?.perimetre ?? region?.nom ?? 'Ensemble du Togo'}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Rang</th>
+            <th scope="col">Centre</th>
+            <th scope="col" className="tableau__nombre">
+              {colonne}
             </th>
-            <td className="chiffre tableau__nombre tableau-centres__valeur">{nf(c.valeur)}</td>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {centres.map((c) => (
+            <tr key={c.code}>
+              <td className="tableau-centres__rang">{c.rang}</td>
+              <th scope="row" className="tableau-centres__centre">
+                <span className="tableau-centres__nom">{c.nom}</span>
+                <span className="texte-2 tableau-centres__lieu">
+                  {[c.prefecture, c.region].filter(Boolean).join(', ')}
+                </span>
+              </th>
+              <td className="chiffre tableau__nombre tableau-centres__valeur">{nf(c.valeur)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
 
