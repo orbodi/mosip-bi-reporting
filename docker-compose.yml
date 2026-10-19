@@ -1,0 +1,66 @@
+# Tableau de bord seul : base BI, API et interface, avec des données FICTIVES (profils Spring dev + demo).
+# Aucun lien avec MOSIP : ni pipeline, ni Kafka, ni Keycloak (sécurité désactivée en développement).
+#
+#   docker compose up -d                 démarrer (premier démarrage : quelques minutes)
+#   docker compose logs -f api           suivre le démarrage de l'API
+#   docker compose down                  arrêter (les données restent)
+#   docker compose down -v               arrêter et effacer la base (régénérée au prochain démarrage)
+#
+#   Interface : http://localhost:5173/enrolement
+#   API       : http://localhost:8080/swagger-ui.html
+name: bi-anid-dashboard
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: bi
+      POSTGRES_USER: bi
+      POSTGRES_PASSWORD: bi
+    ports:
+      - "5432:5432"
+    volumes:
+      - donnees-bi:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bi -d bi"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # API Spring Boot. Au démarrage, Flyway crée le schéma (V1 à V3), charge le référentiel de développement
+  # (régions, préfectures, centres) puis génère environ deux ans d'inscriptions fictives (db/demo).
+  api:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /backend
+    command: ["mvn", "-q", "spring-boot:run", "-Dspring-boot.run.profiles=dev,demo"]
+    environment:
+      BI_DB_URL: jdbc:postgresql://postgres:5432/bi
+      BI_ORIGINES_AUTORISEES: http://localhost:5173
+    volumes:
+      - ./backend:/backend
+      - cache-maven:/root/.m2
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Interface React (Vite) ; les appels /api sont redirigés vers le service api.
+  front:
+    image: node:22-alpine
+    working_dir: /frontend
+    command: ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0"]
+    environment:
+      API_PROXY_CIBLE: http://api:8080
+    volumes:
+      - ./frontend:/frontend
+      - modules-front:/frontend/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  donnees-bi:
+  cache-maven:
+  modules-front:
