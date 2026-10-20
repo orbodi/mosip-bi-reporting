@@ -85,6 +85,12 @@
 .carte-territoire__carte {
   margin: 0;
 }
+/* Empreinte digitale et repères dorés de la maquette (assets/empreinte-carte.svg), centrés derrière la carte, à sa
+   hauteur. Image décorative : la carte ECharts garde un fond transparent. */
+.carte-territoire__empreinte {
+  padding: 10px;
+  background: url('../../assets/empreinte-carte.svg') no-repeat center / auto 100%;
+}
 .carte-territoire__legende-titre {
   margin: var(--e-3) 0 var(--e-1);
   font-size: var(--t-xs);

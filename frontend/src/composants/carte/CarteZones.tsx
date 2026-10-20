@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cleNom } from '../../lib/territoire';
 import { jeton } from '../../lib/jetons';
 import { Graphique } from '../graphique/Graphique';
 import type { EChartsCoreOption } from '../graphique/echarts';
-import { contourDe, type FondDeCarte } from './fondsDeCarte';
+import { cadrage, contourDe, type FondDeCarte } from './fondsDeCarte';
 import './carte.css';
 
 /** Jetons des quatre classes de couleur de la maquette, de la plus claire à la plus foncée. */
@@ -55,6 +55,18 @@ export function CarteZones({
   onOuvrir,
 }: Props) {
   const [survol, setSurvol] = useState<string | null>(null);
+  const hauteur = fond && fond.contours.length > 6 ? 380 : 440;
+  // Largeur du cadre de la carte, pour garder les proportions du Togo (fondsDeCarte.cadrage).
+  const cadre = useRef<HTMLDivElement>(null);
+  const [largeur, setLargeur] = useState(0);
+  const avecCarte = !!fond;
+  useEffect(() => {
+    const element = cadre.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    const observateur = new ResizeObserver(([e]) => setLargeur(Math.round(e.contentRect.width)));
+    observateur.observe(element);
+    return () => observateur.disconnect();
+  }, [avecCarte]);
   const zoneDe = (nom: string) => zones.find((z) => cleNom(z.nom) === cleNom(nom));
   const ciblee = survol ? zoneDe(survol) : undefined;
 
@@ -71,10 +83,7 @@ export function CarteZones({
           roam: false,
           selectedMode: false,
           aspectScale: 1,
-          left: 4,
-          right: 4,
-          top: 4,
-          bottom: 4,
+          ...cadrage(fond, largeur, hauteur),
           label: {
             show: true,
             color: jeton('--encre'),
@@ -106,7 +115,7 @@ export function CarteZones({
         },
       ],
     };
-  }, [fond, zones, selection]);
+  }, [fond, zones, selection, largeur, hauteur]);
 
   const sansContour = fond ? zones.filter((z) => !contourDe(fond, z.nom)) : [];
 
@@ -153,18 +162,21 @@ export function CarteZones({
 
       <figure className="carte-territoire__carte">
         {fond && option ? (
-          <Graphique
-            option={option}
-            carte={fond}
-            hauteur={fond.contours.length > 6 ? 380 : 440}
-            libelle={libelleCarte}
-            onSurvol={(c) => setSurvol(c?.nom ?? null)}
-            onClic={(c) => {
-              const z = c.nom ? zoneDe(c.nom) : undefined;
-              if (z && onOuvrir && z.ouvrable) onOuvrir(z.code);
-              else setSurvol(c.nom ?? null);
-            }}
-          />
+          // Empreinte digitale de la maquette derrière la carte (signe de l'ANID, comme le bandeau).
+          <div className="carte-territoire__empreinte" ref={cadre}>
+            <Graphique
+              option={option}
+              carte={fond}
+              hauteur={hauteur}
+              libelle={libelleCarte}
+              onSurvol={(c) => setSurvol(c?.nom ?? null)}
+              onClic={(c) => {
+                const z = c.nom ? zoneDe(c.nom) : undefined;
+                if (z && onOuvrir && z.ouvrable) onOuvrir(z.code);
+                else setSurvol(c.nom ?? null);
+              }}
+            />
+          </div>
         ) : (
           <p className="texte-2">Pas de contour disponible pour cette zone.</p>
         )}
