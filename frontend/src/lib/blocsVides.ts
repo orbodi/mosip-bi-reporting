@@ -2,8 +2,8 @@ import type { DevenirInscriptions, InscriptionsParSemaine, LigneZone, Territoire
 
 /**
  * Données de remplacement quand l'API ne répond pas (ou pas encore) : les blocs gardent leur mise en page (cartes,
- * axes, carte, tableau) avec des valeurs inconnues. NaN s'affiche « – » (lib/format.ts) et ne colore rien : on ne
- * montre jamais de zéro inventé.
+ * axes, carte, tableau) avec des valeurs inconnues. NaN s'affiche 0 (lib/format.ts, décision du 20/10/2026) mais ne
+ * colore rien et ne dessine aucune barre : la forme des graphiques n'est jamais estimée.
  */
 const INCONNU = Number.NaN;
 
@@ -76,7 +76,7 @@ export interface SemaineValeurs {
   valeurs: Record<string, number>;
 }
 
-/** Les 12 semaines complètes jusqu'à {@code fin}, chaque série à « – ». */
+/** Les 12 semaines complètes jusqu'à {@code fin}, chaque série inconnue (affichée 0). */
 export function semainesVides(fin: string, cles: string[]): SemaineValeurs[] {
   return lundisDesSemainesCompletes(fin).map((lundi) => ({
     lundi,
@@ -84,7 +84,7 @@ export function semainesVides(fin: string, cles: string[]): SemaineValeurs[] {
   }));
 }
 
-/** Valeur inconnue (API absente) : affichée « – », jamais 0. */
+/** Valeur inconnue (API absente ou source non raccordée) : affichée 0 (décision du 20/10/2026). */
 export const INCONNUE = INCONNU;
 
 /** Tranches d'âge de la pyramide, de la plus âgée à la plus jeune (libellés de la maquette Enrôlement). */

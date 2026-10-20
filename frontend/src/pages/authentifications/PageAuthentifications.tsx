@@ -1,21 +1,29 @@
 import { GraphiqueHebdo } from '../../composants/blocs/GraphiqueHebdo';
 import { Drapeau } from '../../composants/blocs/Icone';
 import { CarteIndicateur, GrandChiffre } from '../../composants/blocs/Indicateur';
-import { NoteSource } from '../../composants/blocs/NoteSource';
 import { Panneau } from '../../composants/blocs/Panneau';
-import { Legende, Repartition } from '../../composants/blocs/Repartition';
+import { Jauge, Legende, Repartition } from '../../composants/blocs/Repartition';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
 import { INCONNUE, semainesVides } from '../../lib/blocsVides';
-import { jourMoisFr } from '../../lib/format';
+import { jourMoisFr, nf, pct } from '../../lib/format';
 import { useFinPeriode, usePlagePeriode } from '../../lib/usePlagePeriode';
 import type { DefinitionPage } from '../pages';
 
 const TYPES = ['Biométrique', 'Code à usage unique', 'Démographique', 'Combinée'];
+/** Causes d'échec de la maquette, du plus fréquent au moins fréquent (codes d'erreur IDA à regrouper). */
+const CAUSES = [
+  'Empreinte non concordante',
+  'Qualité de capture insuffisante',
+  'NIU ou identifiant virtuel invalide ou inactif',
+  'Code OTP expiré ou erroné',
+  'Autres causes',
+];
 
 /**
  * Authentifications (maquette/pages/Usage.dc.html). Base mosip_ida pas encore raccordée : mise en page de la
- * maquette, chiffres « – ». Les causes d'échec (A-CAUSE) restent à définir avec les codes d'erreur IDA.
+ * maquette, indicateurs à 0 (décision du 20/10/2026). Les causes d'échec (A-CAUSE) restent à définir avec les codes
+ * d'erreur IDA.
  */
 export function PageAuthentifications({ page }: { page: DefinitionPage }) {
   const fin = useFinPeriode(page.source);
@@ -28,8 +36,7 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
         <Panneau id="titre-requetes" titre="Requêtes d’authentification" coins sansMarge>
           <div className="duo">
             <div className="duo__principal">
-              <NoteSource source="Authentifications (mosip_ida)" />
-              <GrandChiffre valeur="–" detail="requêtes de vérification d’identité reçues" />
+              <GrandChiffre valeur={nf(INCONNUE)} detail="requêtes de vérification d’identité reçues" />
               <Repartition
                 libelle="Requêtes réussies et échouées"
                 parts={[
@@ -46,26 +53,41 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
             </div>
             <div className="duo__cartes">
               <div className="cartes-m cartes-m--3">
-                <CarteIndicateur icone="personneOk" nom="Réussies" valeur="–" detail="– des requêtes" />
-                <CarteIndicateur icone="croix" nom="Échouées" valeur="–" detail="– des requêtes" />
-                <CarteIndicateur icone="empreinte" nom="Biométriques" valeur="–" detail="– des requêtes" />
+                <CarteIndicateur
+                  icone="personneOk"
+                  nom="Réussies"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des requêtes`}
+                />
+                <CarteIndicateur
+                  icone="croix"
+                  nom="Échouées"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des requêtes`}
+                />
+                <CarteIndicateur
+                  icone="empreinte"
+                  nom="Biométriques"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des requêtes`}
+                />
                 <CarteIndicateur
                   icone="telephone"
                   nom="Code à usage unique"
-                  valeur="–"
-                  detail="– des requêtes"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des requêtes`}
                 />
                 <CarteIndicateur
                   icone="carteId"
                   nom="Démographiques et combinées"
-                  valeur="–"
-                  detail="– des requêtes"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des requêtes`}
                 />
                 <CarteIndicateur
                   icone="immeuble"
                   nom="Partenaires raccordés"
-                  valeur="–"
-                  detail="Partenaire principal : –"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des requêtes`}
                 />
               </div>
             </div>
@@ -101,18 +123,18 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                   {TYPES.map((t) => (
                     <tr key={t}>
                       <th scope="row">{t}</th>
-                      <td>–</td>
-                      <td>–</td>
-                      <td>–</td>
-                      <td>–</td>
+                      <td>{nf(INCONNUE)}</td>
+                      <td>{pct(INCONNUE)}</td>
+                      <td>{nf(INCONNUE)}</td>
+                      <td>{pct(INCONNUE)}</td>
                     </tr>
                   ))}
                   <tr className="total">
                     <th scope="row">Total</th>
-                    <td>–</td>
-                    <td>–</td>
-                    <td>–</td>
-                    <td>–</td>
+                    <td>{nf(INCONNUE)}</td>
+                    <td>{pct(INCONNUE)}</td>
+                    <td>{nf(INCONNUE)}</td>
+                    <td>{pct(INCONNUE)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -125,12 +147,28 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
           <Panneau
             id="titre-causes"
             titre="Causes des échecs"
-            sousTitre="– échecs, du plus fréquent au moins fréquent."
+            sousTitre={`${nf(INCONNUE)} échecs, du plus fréquent au moins fréquent.`}
           >
-            <p className="non-disponible-m">
-              Non disponible : les codes d’erreur de l’authentification (IDA) restent à exposer et à regrouper
-              en causes lisibles.
-            </p>
+            <table className="classement">
+              <caption className="visuellement-cache">Causes des échecs</caption>
+              <tbody>
+                {CAUSES.map((c, i) => (
+                  <tr key={c}>
+                    <td className="classement__rang">{i + 1}</td>
+                    <th scope="row">
+                      <span className="classement__nom">{c}</span>
+                    </th>
+                    <td className="erreur__jauge">
+                      <Jauge valeur={INCONNUE} max={1} couleur="rouge" />
+                    </td>
+                    <td>
+                      <span className="classement__valeur chiffre">{nf(INCONNUE)}</span>
+                      <span className="classement__detail">{pct(INCONNUE)}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </Panneau>
         </div>
 
@@ -159,7 +197,9 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
               { cle: 'reussies', libelle: 'Réussies', couleur: 'serie-1', type: 'pile' },
               { cle: 'echouees', libelle: 'Échouées', couleur: 'rouge', type: 'pile' },
             ]}
-            lecture={(s) => `Semaine du ${jourMoisFr(s.lundi)} : chiffres indisponibles.`}
+            lecture={(s) =>
+              `Semaine du ${jourMoisFr(s.lundi)} : ${nf(s.valeurs.reussies)} réussies, ${nf(s.valeurs.echouees)} échouées.`
+            }
           />
         </Panneau>
       </div>

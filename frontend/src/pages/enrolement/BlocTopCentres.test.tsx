@@ -51,7 +51,8 @@ describe('Top des centres', () => {
     afficher('/enrolement');
 
     const b = await blocAffiche();
-    expect(await b.findByRole('alert')).toHaveTextContent('Classement indisponible');
     expect(b.getAllByRole('row')).toHaveLength(6);
+    expect(b.queryByRole('alert')).not.toBeInTheDocument();
+    expect(b.getAllByText('0')).toHaveLength(5);
   });
 });

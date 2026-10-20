@@ -12,7 +12,7 @@ const JETONS_CLASSES = ['--seq-1', '--seq-2', '--seq-3', '--seq-4'] as const;
 export interface ZoneCarte {
   code: string;
   nom: string;
-  /** Valeur affichée dans la liste (« 92,6 % », « – »). */
+  /** Valeur affichée dans la liste (« 92,6 % »). */
   valeur: string;
   /** Classe de couleur 0 à 3, ou -1 sans donnée (gris). */
   classe: number;

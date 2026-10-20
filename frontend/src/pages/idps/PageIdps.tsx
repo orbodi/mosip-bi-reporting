@@ -1,13 +1,12 @@
 import { GraphiqueHebdo } from '../../composants/blocs/GraphiqueHebdo';
 import { CarteIndicateur, GrandChiffre } from '../../composants/blocs/Indicateur';
-import { NoteSource } from '../../composants/blocs/NoteSource';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Jauge, Legende, Repartition } from '../../composants/blocs/Repartition';
 import { CARTE_REGIONS } from '../../composants/carte/fondsDeCarte';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
 import { INCONNUE, semainesVides } from '../../lib/blocsVides';
-import { jourMoisFr } from '../../lib/format';
+import { jourMoisFr, nf, pct } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { useFinPeriode } from '../../lib/usePlagePeriode';
 import type { DefinitionPage } from '../pages';
@@ -17,7 +16,7 @@ const TYPES_ERREUR = ['Supervision', 'Contrôle qualité', 'Personnalisation'];
 
 /**
  * IDPS (maquette/pages/Idps.dc.html) : nouveau circuit d'impression, en pilote. Journaux IDPS pas encore raccordés :
- * mise en page de la maquette, chiffres « – ».
+ * mise en page de la maquette, indicateurs à 0 (décision du 20/10/2026).
  */
 export function PageIdps({ page }: { page: DefinitionPage }) {
   const fin = useFinPeriode(page.source);
@@ -39,8 +38,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
         >
           <div className="duo">
             <div className="duo__principal">
-              <NoteSource source="IDPS" />
-              <GrandChiffre valeur="–" detail="ordres d’impression reçus depuis MOSIP" />
+              <GrandChiffre valeur={nf(INCONNUE)} detail="ordres d’impression reçus depuis MOSIP" />
               <Repartition
                 libelle="Répartition des ordres"
                 parts={[
@@ -51,22 +49,32 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
               />
               <Legende
                 elements={[
-                  { libelle: 'Imprimés', couleur: 'bleu', note: '–' },
-                  { libelle: 'En attente', couleur: 'en-cours', note: '–' },
-                  { libelle: 'En erreur', couleur: 'rouge', note: '–' },
+                  { libelle: 'Imprimés', couleur: 'bleu', note: pct(INCONNUE) },
+                  { libelle: 'En attente', couleur: 'en-cours', note: pct(INCONNUE) },
+                  { libelle: 'En erreur', couleur: 'rouge', note: pct(INCONNUE) },
                 ]}
               />
             </div>
             <div className="duo__cartes">
               <div className="cartes-m cartes-m--3">
-                <CarteIndicateur icone="sablier" nom="En attente" valeur="–" detail="– des ordres reçus" />
+                <CarteIndicateur
+                  icone="sablier"
+                  nom="En attente"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des ordres reçus`}
+                />
                 <CarteIndicateur
                   icone="carteId"
                   nom="Cartes imprimées"
-                  valeur="–"
-                  detail="– des ordres reçus"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des ordres reçus`}
                 />
-                <CarteIndicateur icone="alerte" nom="Erreurs" valeur="–" detail="– des ordres reçus" />
+                <CarteIndicateur
+                  icone="alerte"
+                  nom="Erreurs"
+                  valeur={nf(INCONNUE)}
+                  detail={`${pct(INCONNUE)} des ordres reçus`}
+                />
               </div>
             </div>
           </div>
@@ -76,7 +84,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
           <Panneau
             id="titre-etapes"
             titre="Où les ordres échouent"
-            sousTitre="Étapes de production d’une carte, dans l’ordre, sur les – ordres reçus."
+            sousTitre={`Étapes de production d’une carte, dans l’ordre, sur les ${nf(INCONNUE)} ordres reçus.`}
             aside={
               <Legende
                 elements={[
@@ -99,7 +107,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
                     <th scope="col">Étape</th>
                     <th scope="col">Ordres entrés</th>
                     <th scope="col" className="gauche">
-                      Sur les – ordres reçus
+                      Sur les {nf(INCONNUE)} ordres reçus
                     </th>
                     <th scope="col">Erreurs</th>
                   </tr>
@@ -108,7 +116,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
                   {ETAPES.map((e) => (
                     <tr key={e}>
                       <th scope="row">{e}</th>
-                      <td>–</td>
+                      <td>{nf(INCONNUE)}</td>
                       <td className="gauche etape__barre">
                         <Repartition
                           libelle={`${e} : ordres qui passent et erreurs`}
@@ -118,7 +126,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
                           ]}
                         />
                       </td>
-                      <td>–</td>
+                      <td>{nf(INCONNUE)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -128,7 +136,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
           <Panneau
             id="titre-types-erreur"
             titre="Erreurs par type"
-            sousTitre="– erreurs au total sur la période."
+            sousTitre={`${nf(INCONNUE)} erreurs au total sur la période.`}
           >
             <table className="classement">
               <caption className="visuellement-cache">Erreurs par type</caption>
@@ -144,7 +152,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
                       <Jauge valeur={INCONNUE} max={1} couleur="rouge" />
                     </td>
                     <td>
-                      <span className="classement__valeur chiffre">–</span>
+                      <span className="classement__valeur chiffre">{nf(INCONNUE)}</span>
                     </td>
                   </tr>
                 ))}
@@ -180,18 +188,18 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
                   {nomsRegions.map((r) => (
                     <tr key={r}>
                       <th scope="row">{r}</th>
-                      <td>–</td>
-                      <td>–</td>
-                      <td>–</td>
-                      <td>–</td>
+                      <td>{nf(INCONNUE)}</td>
+                      <td>{nf(INCONNUE)}</td>
+                      <td>{nf(INCONNUE)}</td>
+                      <td>{nf(INCONNUE)}</td>
                     </tr>
                   ))}
                   <tr className="total">
                     <th scope="row">Togo</th>
-                    <td>–</td>
-                    <td>–</td>
-                    <td>–</td>
-                    <td>–</td>
+                    <td>{nf(INCONNUE)}</td>
+                    <td>{nf(INCONNUE)}</td>
+                    <td>{nf(INCONNUE)}</td>
+                    <td>{nf(INCONNUE)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -218,7 +226,9 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
                 { cle: 'recus', libelle: 'Ordres reçus', couleur: 'serie-1', type: 'barre' },
                 { cle: 'erreurs', libelle: 'Erreurs', couleur: 'rouge', type: 'barre' },
               ]}
-              lecture={(s) => `Semaine du ${jourMoisFr(s.lundi)} : chiffres indisponibles.`}
+              lecture={(s) =>
+                `Semaine du ${jourMoisFr(s.lundi)} : ${nf(s.valeurs.recus)} ordres reçus, ${nf(s.valeurs.erreurs)} erreurs.`
+              }
             />
           </Panneau>
         </div>

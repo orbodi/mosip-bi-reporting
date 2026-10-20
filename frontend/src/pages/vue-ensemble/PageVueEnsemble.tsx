@@ -30,7 +30,7 @@ const COULEURS_BANDES = ['bleu', 'bleu-vif', 'bleu', 'bleu-vif', 'bleu', 'bleu-v
 /**
  * Vue d'ensemble du parcours citoyen (maquette/pages/Main.dc.html). Les étapes d'enrôlement viennent de l'API
  * (bloc « Devenir des inscriptions ») ; pré-inscription, demandes, impression et remise attendent leurs sources
- * (« – »).
+ * (0, décision du 20/10/2026).
  */
 export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
   const { plage, prete, choix } = usePlageApi(page.source);
@@ -79,7 +79,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
         inscriptions: number;
         niuGeneres: number;
       }[]);
-  const lectureRegion = (nom: string) => `${nom} : part des inscrits ayant reçu leur carte non disponible`;
+  const lectureRegion = (nom: string) => `${nom} : ${pct(INCONNUE)} des inscrits ont reçu leur carte`;
 
   return (
     <>
@@ -109,11 +109,6 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               </span>
             </p>
           </div>
-          {devenir.isError && (
-            <p role="alert" className="alerte-donnees alerte-donnees--haut parcours__alerte">
-              Chiffres d’enrôlement indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
-            </p>
-          )}
           <ol className="frise">
             {etapes.map((e, i) => {
               const bas = i % 2 === 0;
@@ -220,11 +215,11 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               lien="/impression-cartes"
               icone="carteId"
               nom="Impression des cartes"
-              valeur="–"
+              valeur={nf(INCONNUE)}
               unite="cartes remises"
               detail={
                 <>
-                  <strong>–</strong> cartes expédiées encore à remettre
+                  <strong>{nf(INCONNUE)}</strong> cartes expédiées encore à remettre
                 </>
               }
             />
@@ -233,11 +228,11 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               lien="/abis"
               icone="empreinte"
               nom="ABIS"
-              valeur="–"
+              valeur={nf(INCONNUE)}
               unite="recherches de doublons"
               detail={
                 <>
-                  <strong>–</strong> des inscriptions dédupliquées
+                  <strong>{pct(INCONNUE)}</strong> des inscriptions dédupliquées
                 </>
               }
             />
@@ -246,20 +241,24 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               lien="/idps"
               icone="imprimante"
               nom="IDPS"
-              valeur="–"
+              valeur={nf(INCONNUE)}
               unite="ordres d’impression"
-              detail="Source pas encore raccordée"
+              detail={
+                <>
+                  <strong>{nf(INCONNUE)} en erreur</strong>, {nf(INCONNUE)} carte imprimée
+                </>
+              }
             />
             <CarteIndicateur
               taille="module"
               lien="/authentifications"
               icone="bouclier"
               nom="Authentifications"
-              valeur="–"
+              valeur={nf(INCONNUE)}
               unite="requêtes"
               detail={
                 <>
-                  <strong>–</strong> réussies, – échouées
+                  <strong>{pct(INCONNUE)}</strong> réussies, {pct(INCONNUE)} échouées
                 </>
               }
             />
@@ -282,7 +281,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
         <Panneau
           id="titre-parcours-regions"
           titre="Le parcours par région"
-          sousTitre="Part des inscrits qui ont reçu leur carte, par région (moyenne nationale : –)."
+          sousTitre={`Part des inscrits qui ont reçu leur carte, par région (moyenne nationale : ${pct(INCONNUE)}).`}
           aside={
             <Link to="/impression-cartes" search={(precedent) => precedent} className="lien-panneau">
               Détail des cartes par région <Chevron />
@@ -294,13 +293,13 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               fond={CARTE_REGIONS}
               zone={{
                 nom: 'Togo',
-                valeur: '–',
-                lecture: 'Togo : part des inscrits ayant reçu leur carte non disponible',
+                valeur: pct(INCONNUE),
+                lecture: lectureRegion('Togo'),
               }}
               zones={lignesRegions.map((r) => ({
                 code: r.code,
                 nom: r.nom,
-                valeur: '–',
+                valeur: pct(INCONNUE),
                 classe: -1,
                 lecture: lectureRegion(r.nom),
                 ouvrable: !regional && regions.length > 0,
@@ -341,17 +340,14 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
                           <th scope="row">{r.nom}</th>
                           <td>{nf(r.inscriptions)}</td>
                           <td>{nf(r.niuGeneres)}</td>
-                          <td>–</td>
-                          <td>–</td>
+                          <td>{nf(INCONNUE)}</td>
+                          <td>{pct(INCONNUE)}</td>
                         </tr>
                       ))}
                   </tbody>
                 </table>
               </div>
               <p className="note-m">En gras : régions où moins de 50 % des inscrits ont reçu leur carte.</p>
-              <p className="note-m">
-                Cartes remises : source pas encore raccordée (partenaire de distribution, hors MOSIP).
-              </p>
             </div>
           </div>
         </Panneau>

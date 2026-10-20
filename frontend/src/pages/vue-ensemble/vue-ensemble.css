@@ -34,9 +34,6 @@
   font-size: var(--t-s);
   line-height: 1.35;
 }
-.parcours__alerte {
-  margin: var(--e-3) 40px 0;
-}
 .parcours__note {
   margin: 0 40px 28px;
 }
@@ -306,7 +303,6 @@
     padding-left: 18px;
     padding-right: 18px;
   }
-  .parcours__alerte,
   .parcours__note {
     margin-left: 18px;
     margin-right: 18px;

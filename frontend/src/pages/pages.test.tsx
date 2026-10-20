@@ -7,24 +7,21 @@ describe('Pages de la maquette', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it.each([
-    ['/impression-cartes', 'Impression et remise', 'Impression des cartes'],
-    ['/abis', 'Transactions ABIS', 'ABIS (journaux IN Groupe)'],
-    ['/idps', 'Ordres d’impression', 'IDPS'],
-    ['/authentifications', 'Requêtes d’authentification', 'Authentifications (mosip_ida)'],
-  ])(
-    '%s : mise en page de la maquette, source signalée, aucun zéro inventé',
-    async (chemin, bloc, source) => {
-      simulerApi();
-      afficher(chemin);
+    ['/impression-cartes', 'Impression et remise'],
+    ['/abis', 'Transactions ABIS'],
+    ['/idps', 'Ordres d’impression'],
+    ['/authentifications', 'Requêtes d’authentification'],
+  ])('%s : mise en page de la maquette, indicateurs à 0, sans note de source', async (chemin, bloc) => {
+    simulerApi();
+    afficher(chemin);
 
-      const premier = within(await screen.findByRole('region', { name: bloc }));
-      expect(premier.getByRole('note')).toHaveTextContent(`Source « ${source} » pas encore raccordée`);
-      expect(premier.queryByText('0')).not.toBeInTheDocument();
-      expect(premier.getAllByText('–').length).toBeGreaterThanOrEqual(2);
-    },
-  );
+    const premier = within(await screen.findByRole('region', { name: bloc }));
+    expect(premier.getAllByText('0').length).toBeGreaterThanOrEqual(2);
+    expect(premier.queryByText('–')).not.toBeInTheDocument();
+    expect(screen.queryByText(/pas encore raccordée|non disponible|indisponible/i)).not.toBeInTheDocument();
+  });
 
-  it('Vue d’ensemble : étapes d’enrôlement de l’API, autres étapes « – »', async () => {
+  it('Vue d’ensemble : étapes d’enrôlement de l’API, autres étapes à 0', async () => {
     simulerApi();
     afficher('/');
 

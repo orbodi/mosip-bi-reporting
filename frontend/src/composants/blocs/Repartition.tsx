@@ -7,15 +7,12 @@ export interface Part {
   couleur: Couleur;
 }
 
-/**
- * Barre de répartition horizontale. Sans valeurs connues (NaN, API indisponible), la barre reste grise et
- * l'équivalent texte le dit.
- */
+/** Barre de répartition horizontale. Sans valeurs connues (NaN, API indisponible), la barre reste grise. */
 export function Repartition({ parts, libelle }: { parts: Part[]; libelle: string }) {
   const connues = parts.every((p) => Number.isFinite(p.valeur));
   const total = connues ? parts.reduce((t, p) => t + p.valeur, 0) : 0;
   return (
-    <div className="repartition" role="img" aria-label={connues ? libelle : `${libelle} : non disponible`}>
+    <div className="repartition" role="img" aria-label={libelle}>
       {total > 0 &&
         parts
           .filter((p) => p.valeur > 0)

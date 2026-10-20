@@ -31,12 +31,12 @@ export function BlocDevenir() {
   // Ne suit pas le filtre Région (décision P3 de docs/plans/enrolement.md) : la pastille le signale.
   const filtreRegion = useFiltreRegion();
   const depuisLeDebut = choix === 'tout';
-  const { data, isPending, isError } = useDevenirInscriptions(
+  const { data, isPending } = useDevenirInscriptions(
     depuisLeDebut ? undefined : plage,
     depuisLeDebut || !!plage,
   );
 
-  // Sans réponse de l'API, les cartes restent en place avec « – » (lib/blocsVides.ts).
+  // Sans réponse de l'API, les cartes restent en place avec des chiffres à 0 (lib/blocsVides.ts).
   const d = data ?? devenirInconnu();
   const connu = estConnu(d.inscriptions);
   const statuts: Statut[] = [
@@ -67,11 +67,6 @@ export function BlocDevenir() {
       <p className="texte-2 bloc-devenir__note">Actualisé automatiquement toutes les 30 secondes.</p>
 
       {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
-      {isError && (
-        <p role="alert" className="alerte-donnees alerte-donnees--haut">
-          Chiffres indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
-        </p>
-      )}
       {data && total === 0 && <p className="texte-2">Aucune inscription sur la période.</p>}
 
       <p className="bloc-devenir__principal">
@@ -80,13 +75,7 @@ export function BlocDevenir() {
           NIU générés, soit {pct(part(d.niuGeneres, total))} des {nf(total)} inscriptions
         </span>
       </p>
-      <div
-        className="barre-statuts"
-        role="img"
-        aria-label={
-          connu ? `Devenir des inscriptions : ${description}` : 'Devenir des inscriptions : non disponible'
-        }
-      >
+      <div className="barre-statuts" role="img" aria-label={`Devenir des inscriptions : ${description}`}>
         {connu &&
           total > 0 &&
           statuts.map((s) => (

@@ -115,7 +115,7 @@ function telechargerCsv(nom: string, lignes: string[][]) {
 /**
  * Exploration des données (maquette/pages/Technique.dc.html) : 24 indicateurs de 5 sources, filtres, ventilation et
  * export CSV. Seule la source Enrôlement a une API (par région ou par préfecture, sans filtre de profil) ; ailleurs
- * le tableau garde sa forme, chiffres « – ».
+ * le tableau garde sa forme, indicateurs à 0 (décision du 20/10/2026).
  */
 export function PageExploration({ page }: { page: DefinitionPage }) {
   return (
@@ -222,7 +222,6 @@ function Explorateur() {
   const totaux = reel && territoire.data ? valeursDe(territoire.data) : choisis.map(() => Number.NaN);
 
   const cellule = (v: number, j: number, ligne: number[]) => {
-    if (!Number.isFinite(v)) return '–';
     if (modeEffectif === 'pt') return pct(part(v, totaux[j]));
     if (modeEffectif === 'pf' && j > 0) return pct(part(v, ligne[0]));
     return nf(v);
@@ -262,11 +261,9 @@ function Explorateur() {
 
   const exporter = () => {
     const brut = (v: number, j: number, ligne: number[]) =>
-      !Number.isFinite(v)
-        ? ''
-        : modeEffectif === 'n'
-          ? String(v)
-          : cellule(v, j, ligne).replace(/[\u00a0\u202f]/g, ' ');
+      modeEffectif === 'n'
+        ? String(Number.isFinite(v) ? v : 0)
+        : cellule(v, j, ligne).replace(/[\u00a0\u202f]/g, ' ');
     telechargerCsv(`exploration-${cleSource}-${parEffectif}.csv`, [
       [libellePar || 'Total', ...choisis.map((i) => i.libelle)],
       ...lignes.map((l) => [l.libelle, ...l.valeurs.map((v, j) => brut(v, j, l.valeurs))]),
@@ -447,18 +444,6 @@ function Explorateur() {
           ) : undefined
         }
       >
-        {!reel && (
-          <p className="note-source xp-resultat__note" role="note">
-            {cleSource === 'enrol'
-              ? 'Ventilation pas encore disponible : seules les ventilations par région et par préfecture, sans filtre de profil ni de type, ont une API.'
-              : `Source « ${source.libelle} » pas encore raccordée au BI : le tableau garde sa forme, chiffres « – ».`}
-          </p>
-        )}
-        {reel && territoire.isError && (
-          <p role="alert" className="alerte-donnees alerte-donnees--haut">
-            Chiffres indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
-          </p>
-        )}
         <GrandChiffre valeur={nf(totaux[0])} unite={`${choisis[0]?.libelle.toLowerCase()} au total`} />
         {parEffectif !== 'total' && (
           <div

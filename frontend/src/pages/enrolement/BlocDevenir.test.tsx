@@ -82,7 +82,7 @@ describe('Devenir des inscriptions', () => {
     expect(screen.queryByText('Non classés')).not.toBeInTheDocument();
   });
 
-  it('garde ses cartes, avec des tirets, quand l’API ne répond pas', async () => {
+  it('garde ses cartes, chiffres à 0 et sans message, quand l’API ne répond pas', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: URL) =>
@@ -94,11 +94,11 @@ describe('Devenir des inscriptions', () => {
     afficher('/enrolement');
 
     const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
-    expect(await bloc.findByRole('alert')).toHaveTextContent('Chiffres indisponibles');
+    await waitFor(() => expect(bloc.queryByText('Chargement des chiffres…')).not.toBeInTheDocument());
+    expect(bloc.queryByRole('alert')).not.toBeInTheDocument();
     expect(bloc.getAllByRole('listitem')).toHaveLength(4);
-    expect(bloc.getByRole('img', { name: 'Devenir des inscriptions : non disponible' })).toBeInTheDocument();
-    expect(bloc.queryByText('0')).not.toBeInTheDocument();
-    expect(bloc.getAllByText('–').length).toBeGreaterThanOrEqual(5);
+    expect(bloc.getAllByText('0').length).toBeGreaterThanOrEqual(5);
+    expect(bloc.queryByText('–')).not.toBeInTheDocument();
   });
 
   it('signale les inscriptions non classées sans les répartir', async () => {

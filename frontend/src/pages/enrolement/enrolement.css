@@ -393,10 +393,7 @@
   font-weight: 700;
 }
 
-/* États sans données : le bloc garde sa mise en page, la note se place en haut */
-.alerte-donnees--haut {
-  margin: 0 0 var(--e-4);
-}
+/* Chargement : le bloc garde sa mise en page */
 .etat-chargement {
   margin: 0 0 var(--e-2);
   font-size: var(--t-xs);

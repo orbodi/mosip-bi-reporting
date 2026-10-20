@@ -3,7 +3,7 @@ import type { InscriptionsParSemaine } from '../../api/client';
 import { useSemaines } from '../../api/enrolement';
 import { Graphique } from '../../composants/graphique/Graphique';
 import type { EChartsCoreOption } from '../../composants/graphique/echarts';
-import { estConnu, semainesInconnues } from '../../lib/blocsVides';
+import { INCONNUE, estConnu, semainesInconnues } from '../../lib/blocsVides';
 import { dateFr, jourMoisCourt, nf } from '../../lib/format';
 import { jeton } from '../../lib/jetons';
 import { lectureSemaine } from '../../lib/semaines';
@@ -56,20 +56,16 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
         })),
         emphasis: { disabled: true },
       },
-      ...(donnees.niuDisponibles
-        ? [
-            {
-              name: 'NIU générés',
-              type: 'line',
-              data: donnees.semaines.map((s) => valeur(s.niuGeneres)),
-              symbol: 'circle',
-              symbolSize: (_v: number, p: { dataIndex: number }) => (p.dataIndex === active ? 9 : 0),
-              lineStyle: { color: couleurs.courbe, width: 2 },
-              itemStyle: { color: couleurs.courbe, borderColor: jeton('--surface'), borderWidth: 2 },
-              emphasis: { disabled: true },
-            },
-          ]
-        : []),
+      {
+        name: 'NIU générés',
+        type: 'line',
+        data: donnees.semaines.map((s) => valeur(s.niuGeneres)),
+        symbol: 'circle',
+        symbolSize: (_v: number, p: { dataIndex: number }) => (p.dataIndex === active ? 9 : 0),
+        lineStyle: { color: couleurs.courbe, width: 2 },
+        itemStyle: { color: couleurs.courbe, borderColor: jeton('--surface'), borderWidth: 2 },
+        emphasis: { disabled: true },
+      },
     ],
   };
 }
@@ -84,12 +80,16 @@ export function BlocSemaines() {
   const { donnees } = usePlagePeriode('enrolement');
   const { actif } = useFiltreRegion();
   const requete = useSemaines(plage, prete);
-  const { isPending, isError } = requete;
+  const { isPending } = requete;
   const [survol, setSurvol] = useState<number | null>(null);
 
   // Sans réponse de l'API : les 12 semaines attendues, sans chiffres (fin de période, dernière donnée ou aujourd'hui).
   const fin = plage?.au ?? donnees?.au ?? new Date().toISOString().slice(0, 10);
-  const data = useMemo(() => requete.data ?? semainesInconnues(fin), [requete.data, fin]);
+  const data = useMemo(() => {
+    const d = requete.data ?? semainesInconnues(fin);
+    // NIU par date de génération pas encore alimentés : affichés à 0, sans courbe (décision du 20/10/2026).
+    return d.niuDisponibles ? d : { ...d, semaines: d.semaines.map((s) => ({ ...s, niuGeneres: INCONNUE })) };
+  }, [requete.data, fin]);
   const semaines = data.semaines;
   const derniere = semaines.length - 1;
   const active = survol !== null && survol <= derniere ? survol : derniere;
@@ -116,41 +116,28 @@ export function BlocSemaines() {
             <i className="legende__barre" aria-hidden="true" />
             Inscriptions
           </li>
-          {data.niuDisponibles && (
-            <li>
-              <i className="legende__courbe" aria-hidden="true" />
-              NIU générés
-            </li>
-          )}
+          <li>
+            <i className="legende__courbe" aria-hidden="true" />
+            NIU générés
+          </li>
         </ul>
       </div>
 
       {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
-      {isError && (
-        <p role="alert" className="alerte-donnees alerte-donnees--haut">
-          Chiffres indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
-        </p>
-      )}
       {semaines.length === 0 && <p className="texte-2">Aucune inscription pour le moment.</p>}
 
       {semaines.length > 0 && (
         <>
           <p className="lecture" aria-live="polite">
-            {lectureSemaine(semaines[active], data.niuDisponibles)}
+            {lectureSemaine(semaines[active])}
           </p>
           <Graphique
             option={graphique}
             hauteur={260}
-            libelle={`Inscriptions${data.niuDisponibles ? ' et NIU générés' : ''} par semaine, du ${dateFr(semaines[0].lundi)} au ${dateFr(semaines[derniere].lundi)}`}
+            libelle={`Inscriptions et NIU générés par semaine, du ${dateFr(semaines[0].lundi)} au ${dateFr(semaines[derniere].lundi)}`}
             onSurvol={(c) => setSurvol(c?.indice ?? null)}
             onClic={(c) => setSurvol(c.indice ?? null)}
           />
-          {!data.niuDisponibles && (
-            <p className="alerte-donnees" role="note">
-              NIU par date de génération : source pas encore alimentée. La courbe s’affichera quand le
-              pipeline la remplira (règle à valider avec l’équipe MOSIP).
-            </p>
-          )}
           <details className="equivalent">
             <summary>Voir le tableau des 12 semaines</summary>
             <table className="tableau">
@@ -159,7 +146,7 @@ export function BlocSemaines() {
                 <tr>
                   <th scope="col">Semaine du</th>
                   <th scope="col">Inscriptions</th>
-                  {data.niuDisponibles && <th scope="col">NIU générés</th>}
+                  <th scope="col">NIU générés</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,7 +154,7 @@ export function BlocSemaines() {
                   <tr key={s.lundi} className={s.dansLaPeriode ? undefined : 'hors-periode'}>
                     <th scope="row">{dateFr(s.lundi)}</th>
                     <td className="chiffre">{nf(s.inscriptions)}</td>
-                    {data.niuDisponibles && <td className="chiffre">{nf(s.niuGeneres)}</td>}
+                    <td className="chiffre">{nf(s.niuGeneres)}</td>
                   </tr>
                 ))}
               </tbody>

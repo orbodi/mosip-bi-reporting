@@ -62,12 +62,13 @@ describe('Territoire', () => {
     await waitFor(() => expect(routeur.state.location.search).not.toHaveProperty('region'));
   });
 
-  it('sans réponse de l’API, garde la carte et le tableau des régions avec des tirets', async () => {
+  it('sans réponse de l’API, garde la carte et le tableau des régions, chiffres à 0', async () => {
     simulerApi({ '/enrolement/territoire': undefined });
     afficher('/enrolement');
 
     const b = await blocAffiche();
-    expect(await b.findByRole('alert')).toHaveTextContent('Chiffres indisponibles');
+    await waitFor(() => expect(b.queryByText('Chargement des chiffres…')).not.toBeInTheDocument());
+    expect(b.queryByRole('alert')).not.toBeInTheDocument();
     const tableau = within(b.getByRole('table', { name: 'Régions' }));
     expect(tableau.getAllByRole('rowheader').map((c) => c.textContent)).toEqual([
       'Savanes',
@@ -77,8 +78,9 @@ describe('Territoire', () => {
       'Maritime',
       'Grand Lomé',
     ]);
-    expect(tableau.queryByText('0')).not.toBeInTheDocument();
-    expect(b.getByText('Togo : chiffres indisponibles')).toBeInTheDocument();
+    expect(tableau.queryByText('–')).not.toBeInTheDocument();
+    expect(tableau.getAllByText('0').length).toBeGreaterThanOrEqual(6);
+    expect(b.getByText(/^Togo : 0,0\s%\sde NIU générés, 0 inscriptions$/)).toBeInTheDocument();
     expect(b.getByRole('img', { name: /Carte des régions du Togo/ })).toBeInTheDocument();
   });
 });

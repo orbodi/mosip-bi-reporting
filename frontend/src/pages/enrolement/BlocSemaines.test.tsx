@@ -42,17 +42,19 @@ describe('Inscriptions et NIU par semaine', () => {
     expect(bloc().getByText(/12 semaines complètes jusqu’à la fin de la période/)).toBeInTheDocument();
   });
 
-  it('n’affiche pas de NIU tant que leur source n’est pas alimentée', async () => {
+  it('affiche 0 NIU, sans message, tant que leur source n’est pas alimentée', async () => {
     simulerApi({ '/enrolement/semaines': { ...SEMAINES, niuDisponibles: false } });
     afficher('/enrolement');
 
     expect(
-      await (await blocAffiche()).findByText(texte('Semaine du 5 janvier : 20 230 inscriptions.')),
+      await (
+        await blocAffiche()
+      ).findByText(texte('Semaine du 5 janvier : 20 230 inscriptions, 0 NIU générés (0,0 %).')),
     ).toBeInTheDocument();
-    expect(bloc().getByRole('note')).toHaveTextContent('source pas encore alimentée');
+    expect(bloc().queryByRole('note')).not.toBeInTheDocument();
     expect(
-      within(bloc().getByRole('list', { name: 'Légende' })).queryByText('NIU générés'),
-    ).not.toBeInTheDocument();
+      within(bloc().getByRole('list', { name: 'Légende' })).getByText('NIU générés'),
+    ).toBeInTheDocument();
   });
 
   it('sans réponse de l’API, garde le graphique et les 12 semaines, sans chiffres', async () => {
@@ -60,8 +62,10 @@ describe('Inscriptions et NIU par semaine', () => {
     afficher('/enrolement');
 
     const b = await blocAffiche();
-    expect(await b.findByRole('alert')).toHaveTextContent('Chiffres indisponibles');
-    expect(b.getByText('Semaine du 5 janvier : chiffres indisponibles.')).toBeInTheDocument();
+    expect(
+      await b.findByText(texte('Semaine du 5 janvier : 0 inscriptions, 0 NIU générés (0,0 %).')),
+    ).toBeInTheDocument();
+    expect(b.queryByRole('alert')).not.toBeInTheDocument();
     expect(b.getByRole('img', { name: /par semaine, du 20\/10\/2025 au 05\/01\/2026/ })).toBeInTheDocument();
   });
 });

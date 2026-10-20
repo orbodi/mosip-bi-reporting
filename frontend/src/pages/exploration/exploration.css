@@ -179,9 +179,6 @@
   color: var(--or-texte);
   font-size: var(--t-s);
 }
-.xp-resultat__note {
-  margin-bottom: var(--e-4);
-}
 .xp-tableau {
   max-width: 900px;
   margin-top: var(--e-4);

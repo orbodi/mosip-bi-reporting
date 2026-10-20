@@ -25,7 +25,7 @@ const CENTRES_INCONNUS: CentreClasse[] = [1, 2, 3, 4, 5].map((rang) => ({
 function Classement({ classement, colonne }: { classement: ClassementCentres; colonne: string }) {
   const { plage, prete } = usePlageApi('enrolement');
   const { code, region } = useFiltreRegion();
-  const { data, isPending, isError } = useTopCentres(plage, code, classement, prete);
+  const { data, isPending } = useTopCentres(plage, code, classement, prete);
 
   if (data && data.centres.length === 0) {
     return (
@@ -36,16 +36,11 @@ function Classement({ classement, colonne }: { classement: ClassementCentres; co
       </p>
     );
   }
-  // Sans réponse de l'API, le tableau garde ses cinq rangs, chiffres « – ».
+  // Sans réponse de l'API, le tableau garde ses cinq rangs, chiffres à 0.
   const centres = data?.centres ?? CENTRES_INCONNUS;
   return (
     <>
       {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
-      {isError && (
-        <p role="alert" className="alerte-donnees alerte-donnees--haut">
-          Classement indisponible pour le moment. Il réapparaîtra dès que l’API répondra.
-        </p>
-      )}
       <table className="tableau tableau-centres">
         <caption className="visuellement-cache">
           {ONGLETS.find((o) => o.id === classement)?.libelle} :{' '}

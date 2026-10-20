@@ -6,8 +6,8 @@ describe('nf', () => {
     expect(nf(3278239)).toBe('3\u202f278\u202f239');
     expect(nf(14)).toBe('14');
   });
-  it('affiche un tiret pour une valeur non calculable', () => {
-    expect(nf(Number.NaN)).toBe('–');
+  it('affiche 0 pour une valeur indisponible', () => {
+    expect(nf(Number.NaN)).toBe('0');
   });
 });
 
@@ -16,8 +16,8 @@ describe('pct', () => {
     expect(pct(1770796 / 3278239)).toBe('54,0\u00a0%');
     expect(pct(0.577)).toBe('57,7\u00a0%');
   });
-  it('affiche un tiret quand le dénominateur est nul', () => {
-    expect(pct(part(3, 0))).toBe('–');
+  it('affiche 0,0 % quand le dénominateur est nul', () => {
+    expect(pct(part(3, 0))).toBe('0,0\u00a0%');
   });
 });
 

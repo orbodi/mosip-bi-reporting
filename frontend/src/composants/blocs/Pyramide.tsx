@@ -7,13 +7,12 @@ const somme = (valeurs: number[]) => valeurs.reduce((a, v) => a + v, 0);
 /**
  * Pyramide des âges (maquette Enrôlement, « NIU générés par âge et par sexe ») : femmes à gauche, hommes à droite,
  * tranches de la plus âgée à la plus jeune. Tableau ARIA : chaque tranche se lit « femmes, tranche, hommes ».
- * Valeur inconnue : « – » et piste grise à la place de la barre, jamais de zéro ni de forme estimée.
+ * Valeur inconnue : 0 et piste grise à la place de la barre, jamais de forme estimée.
  */
 export function Pyramide({ lignes, libelle }: { lignes: TrancheSexe[]; libelle: string }) {
   const femmes = somme(lignes.map((l) => l.femmes));
   const hommes = somme(lignes.map((l) => l.hommes));
   const total = femmes + hommes;
-  const totalConnu = estConnu(total);
 
   const barre = (valeur: number, sexe: 'femmes' | 'hommes') => (
     <span
@@ -28,12 +27,12 @@ export function Pyramide({ lignes, libelle }: { lignes: TrancheSexe[]; libelle: 
         <span className="pyramide__sexe pyramide__sexe--femmes">
           <i className="pyramide__puce pyramide__barre--femmes" aria-hidden="true" />
           Femmes : <span className="chiffre">{nf(femmes)}</span>
-          {totalConnu && ` (${pct(part(femmes, total))})`}
+          {` (${pct(part(femmes, total))})`}
         </span>
         <span className="pyramide__sexe">
           <i className="pyramide__puce pyramide__barre--hommes" aria-hidden="true" />
           Hommes : <span className="chiffre">{nf(hommes)}</span>
-          {totalConnu && ` (${pct(part(hommes, total))})`}
+          {` (${pct(part(hommes, total))})`}
         </span>
       </p>
       <div role="table" aria-label={libelle} className="pyramide__tableau">

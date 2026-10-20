@@ -1,7 +1,7 @@
 import type { LigneZone } from '../../api/client';
 import { useTerritoire } from '../../api/enrolement';
 import { CARTE_REGIONS, carteRegion } from '../../composants/carte/fondsDeCarte';
-import { territoireInconnu } from '../../lib/blocsVides';
+import { INCONNUE, territoireInconnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
 import { SEUIL_ALERTE_REJET, alerteRejet, tauxNiu, tauxRejet } from '../../lib/territoire';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
@@ -25,7 +25,7 @@ export function BlocTerritoire() {
   const { plage, prete } = usePlageApi('enrolement');
   const { code, region, regions, regional, choisir } = useFiltreRegion();
   const requete = useTerritoire(plage, code, prete);
-  const { isPending, isError } = requete;
+  const { isPending } = requete;
   // Total national pour situer une région (« 31,1 % du total national ») ; sans objet pour un utilisateur régional.
   const national = useTerritoire(plage, undefined, prete && !!code && !regional);
 
@@ -99,11 +99,6 @@ export function BlocTerritoire() {
       </div>
 
       {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
-      {isError && (
-        <p role="alert" className="alerte-donnees alerte-donnees--haut">
-          Chiffres indisponibles pour le moment. Ils réapparaîtront dès que l’API répondra.
-        </p>
-      )}
 
       {data && (
         <div className="territoire__corps">
@@ -179,9 +174,7 @@ export function BlocTerritoire() {
                       </td>
                       <td className="chiffre tableau__nombre col-secondaire">{nf(l.echouees)}</td>
                       <td className="chiffre tableau__nombre col-secondaire">{nf(l.enCours)}</td>
-                      <td className="chiffre tableau__nombre col-secondaire" title="Non disponible">
-                        –
-                      </td>
+                      <td className="chiffre tableau__nombre col-secondaire">{nf(INCONNUE)} j</td>
                     </tr>
                   );
                 })}
@@ -193,9 +186,6 @@ export function BlocTerritoire() {
               </span>{' '}
               Taux de rejet de {pct(SEUIL_ALERTE_REJET / 100)} ou plus (rejets rapportés aux inscriptions de
               la zone).
-            </p>
-            <p className="texte-2 tableau-zones__note">
-              Délai médian : non disponible tant que les délais jusqu’au NIU ne sont pas calculés.
             </p>
             {data.nonClassees > 0 && (
               <p className="alerte-donnees" role="note">

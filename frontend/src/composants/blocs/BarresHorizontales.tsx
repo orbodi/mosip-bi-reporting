@@ -1,7 +1,7 @@
 import { nf } from '../../lib/format';
 import { classeCouleur, type Couleur } from './couleurs';
 
-/** Barres horizontales (ancienneté, répartition) ; valeurs « – » quand elles sont inconnues. */
+/** Barres horizontales (ancienneté, répartition) ; valeurs à 0 quand elles sont inconnues. */
 export function BarresHorizontales({
   elements,
   libelle,

@@ -18,14 +18,14 @@ describe('données de remplacement', () => {
     expect(lundisDesSemainesCompletes('2026-01-12')[11]).toBe('2026-01-05');
   });
 
-  it('affiche des tirets, jamais des zéros', () => {
+  it('affiche 0 pour les valeurs inconnues', () => {
     const d = devenirInconnu();
-    expect(nf(d.inscriptions)).toBe('–');
-    expect(pct(part(d.niuGeneres, d.inscriptions))).toBe('–');
+    expect(nf(d.inscriptions)).toBe('0');
+    expect(pct(part(d.niuGeneres, d.inscriptions))).toBe('0,0\u00a0%');
     expect(semainesInconnues('2026-01-14').semaines.every((s) => Number.isNaN(s.inscriptions))).toBe(true);
   });
 
-  it('pyramide : 8 tranches de la plus âgée à la plus jeune, chiffres « – » et barres vides', () => {
+  it('pyramide : 8 tranches de la plus âgée à la plus jeune, chiffres à 0 et barres vides', () => {
     const lignes = pyramideInconnue();
     expect(lignes.map((l) => l.tranche)).toEqual([
       '60 ans et +',
@@ -37,7 +37,7 @@ describe('données de remplacement', () => {
       '6 à 14',
       '0 à 5',
     ]);
-    expect(lignes.every((l) => nf(l.femmes) === '–' && nf(l.hommes) === '–')).toBe(true);
+    expect(lignes.every((l) => nf(l.femmes) === '0' && nf(l.hommes) === '0')).toBe(true);
     expect(lignes.every((l) => largeurPyramide(l.femmes, lignes) === 0)).toBe(true);
   });
 

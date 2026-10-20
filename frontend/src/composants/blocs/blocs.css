@@ -156,14 +156,6 @@
   padding-top: 14px;
   border-top: 1px solid var(--trait);
 }
-.note-source {
-  margin: 0;
-  padding: var(--e-3) var(--e-4);
-  border-left: 4px solid var(--or);
-  border-radius: var(--r-s);
-  background: var(--or-pale);
-  font-size: var(--t-s);
-}
 .chevron {
   fill: none;
   stroke: currentColor;
@@ -672,15 +664,6 @@
 }
 .erreur__jauge .jauge {
   height: 10px;
-}
-.non-disponible-m {
-  margin: 0;
-  padding: var(--e-6);
-  border: 1px dashed var(--bord-champ);
-  border-radius: var(--r-m);
-  color: var(--encre-2);
-  font-size: var(--t-s);
-  text-align: center;
 }
 
 /* --- Pyramide des âges (maquette Enrôlement) --------------------------------------------------------------- */

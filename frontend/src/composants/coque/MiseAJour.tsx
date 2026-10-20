@@ -4,9 +4,8 @@ import { miseAJourFr } from '../../lib/format';
 /** Pastille jaune « Dernière mise à jour : 14/01/2026 à 11h59 » (heure de la dernière donnée de la source). */
 export function MiseAJour({ source }: { source: CodeSource }) {
   const { fraicheur, isPending, isError } = useFraicheur(source);
-  let texte = 'Dernière mise à jour : …';
-  if (isError) texte = 'Date de mise à jour indisponible';
-  else if (!isPending && fraicheur?.derniereDonnee)
+  let texte = isError ? 'Dernière mise à jour : –' : 'Dernière mise à jour : …';
+  if (!isError && !isPending && fraicheur?.derniereDonnee)
     texte = `Dernière mise à jour : ${miseAJourFr(fraicheur.derniereDonnee)}`;
 
   return (

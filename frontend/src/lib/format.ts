@@ -28,23 +28,24 @@ const formatHeure = new Intl.DateTimeFormat('fr-FR', {
 
 const espacesFines = (texte: string) => texte.replace(/[\s\u00a0\u202f]/g, ESPACE_FINE);
 
-/** 3278239 → « 3 278 239 » (espace fine insécable). */
+/**
+ * 3278239 → « 3 278 239 » (espace fine insécable). Valeur indisponible (NaN : API absente ou source non raccordée)
+ * → « 0 » (décision du 20/10/2026, docs/decisions.md).
+ */
 export function nf(n: number): string {
-  if (!Number.isFinite(n)) return '–';
-  return espacesFines(formatNombre.format(n));
+  return espacesFines(formatNombre.format(Number.isFinite(n) ? n : 0));
 }
 
-/** Ratio 0,54 → « 54,0 % ». Renvoie « – » si le dénominateur était nul. */
+/** Ratio 0,54 → « 54,0 % ». Ratio indisponible (dénominateur nul, valeur inconnue) → « 0,0 % ». */
 export function pct(ratio: number, decimales = 1): string {
-  if (!Number.isFinite(ratio)) return '–';
   const valeur = new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: decimales,
     maximumFractionDigits: decimales,
-  }).format(ratio * 100);
+  }).format(Number.isFinite(ratio) ? ratio * 100 : 0);
   return `${espacesFines(valeur)}${ESPACE_INSECABLE}%`;
 }
 
-/** Part sûre : renvoie NaN (affiché « – ») quand le dénominateur est nul. */
+/** Part sûre : renvoie NaN (affiché « 0,0 % ») quand le dénominateur est nul. */
 export function part(numerateur: number, denominateur: number): number {
   return denominateur === 0 ? Number.NaN : numerateur / denominateur;
 }
