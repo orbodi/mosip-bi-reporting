@@ -1,7 +1,7 @@
 /**
  * Types de l'API, générés par openapi-typescript depuis /v3/api-docs (npm run api:types, backend démarré).
  * Amorce écrite à la main pour /api/v1/meta, /api/v1/meta/regions et /api/v1/enrolement/* (devenir, semaines,
- * territoire, centres) : la régénérer dès que le backend tourne.
+ * territoire, centres, preinscriptions, age-sexe) : la régénérer dès que le backend tourne.
  * Ne pas modifier à la main ensuite.
  */
 export interface paths {
@@ -76,6 +76,41 @@ export interface paths {
         200: {
           content: {
             'application/json': components['schemas']['Territoire'];
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/enrolement/preinscriptions': {
+    get: {
+      parameters: {
+        query?: {
+          du?: string;
+          au?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['Preinscriptions'];
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/enrolement/age-sexe': {
+    get: {
+      parameters: {
+        query?: {
+          du?: string;
+          au?: string;
+          zone?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['AgeSexe'];
           };
         };
       };
@@ -202,6 +237,52 @@ export interface components {
       perimetre: string;
       classement: string;
       centres: components['schemas']['CentreClasse'][];
+    };
+    Preinscriptions: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      disponible: boolean;
+      /** Format: int64 */
+      demandes?: number | null;
+      /** Format: int64 */
+      rendezVousReserves?: number | null;
+      /** Format: int64 */
+      enAttenteRendezVous?: number | null;
+      /** Format: int64 */
+      expirees?: number | null;
+      /** Format: int64 */
+      annulees?: number | null;
+      /** Format: int64 */
+      honorees?: number | null;
+      /** Format: int64 */
+      nonClassees?: number | null;
+      /** Format: int64 */
+      femmes?: number | null;
+      /** Format: int64 */
+      hommes?: number | null;
+      /** Format: date-time */
+      derniereDemande?: string | null;
+    };
+    AgeSexe: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      disponible: boolean;
+      tranches: components['schemas']['Tranche'][];
+      /** Format: int64 */
+      nonRenseignes?: number | null;
+    };
+    Tranche: {
+      tranche: string;
+      /** Format: int64 */
+      femmes?: number | null;
+      /** Format: int64 */
+      hommes?: number | null;
     };
     CentreClasse: {
       /** Format: int32 */

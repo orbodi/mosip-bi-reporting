@@ -2,7 +2,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
-import type { InscriptionsParSemaine, LigneZone, Region, Territoire, TopCentres } from '../api/client';
+import type {
+  AgeSexe,
+  InscriptionsParSemaine,
+  LigneZone,
+  Preinscriptions,
+  Region,
+  Territoire,
+  TopCentres,
+} from '../api/client';
 import { creerRouteur } from '../routeur';
 
 /** Réponses de l'API pour les tests des pages (chiffres de la maquette Enrôlement, dernière donnée le 14/01/2026). */
@@ -156,6 +164,38 @@ export const CENTRES: Record<string, TopCentres> = {
   rejets: { perimetre: 'Ensemble du Togo', classement: 'rejets', centres: [] },
 };
 
+export const PREINSCRIPTIONS: Preinscriptions = {
+  perimetre: 'Ensemble du Togo',
+  disponible: true,
+  demandes: 606850,
+  rendezVousReserves: 546964,
+  enAttenteRendezVous: 59886,
+  expirees: 0,
+  annulees: 0,
+  honorees: 450123,
+  nonClassees: 0,
+  femmes: null,
+  hommes: null,
+  derniereDemande: '2026-01-14T11:28:00Z',
+};
+
+/** Pyramide de la maquette (en NIU), de la plus jeune à la plus âgée, comme l'API. */
+export const AGE_SEXE: AgeSexe = {
+  perimetre: 'Ensemble du Togo',
+  disponible: true,
+  nonRenseignes: 0,
+  tranches: [
+    { tranche: '0-5', femmes: 33647, hommes: 36707 },
+    { tranche: '6-14', femmes: 131532, hommes: 140709 },
+    { tranche: '15-18', femmes: 116238, hommes: 113178 },
+    { tranche: '19-25', femmes: 287535, hommes: 256946 },
+    { tranche: '26-35', femmes: 385419, hommes: 339538 },
+    { tranche: '36-45', femmes: 284476, hommes: 247770 },
+    { tranche: '46-60', femmes: 256946, hommes: 220240 },
+    { tranche: '60+', femmes: 125415, hommes: 82590 },
+  ],
+};
+
 type Reponse = unknown | ((url: URL) => unknown);
 
 const PAR_DEFAUT: Record<string, Reponse> = {
@@ -174,6 +214,19 @@ const PAR_DEFAUT: Record<string, Reponse> = {
   '/enrolement/territoire': (url: URL) =>
     url.searchParams.get('zone') === 'SAV' ? TERRITOIRE_SAVANES : TERRITOIRE_NATIONAL,
   '/enrolement/centres': (url: URL) => CENTRES[url.searchParams.get('classement') ?? 'inscriptions'],
+  '/enrolement/preinscriptions': PREINSCRIPTIONS,
+  '/enrolement/age-sexe': (url: URL) =>
+    url.searchParams.get('zone') === 'SAV'
+      ? {
+          ...AGE_SEXE,
+          perimetre: 'Savanes',
+          tranches: AGE_SEXE.tranches.map((t) => ({
+            ...t,
+            femmes: Math.round((t.femmes ?? 0) * 0.14),
+            hommes: Math.round((t.hommes ?? 0) * 0.14),
+          })),
+        }
+      : AGE_SEXE,
 };
 
 /**

@@ -26,13 +26,15 @@ export function Pyramide({ lignes, libelle }: { lignes: TrancheSexe[]; libelle: 
       <p className="pyramide__legende">
         <span className="pyramide__sexe pyramide__sexe--femmes">
           <i className="pyramide__puce pyramide__barre--femmes" aria-hidden="true" />
-          Femmes : <span className="chiffre">{nf(femmes)}</span>
-          {` (${pct(part(femmes, total))})`}
+          <span>
+            Femmes : <span className="chiffre">{nf(femmes)}</span> ({pct(part(femmes, total))})
+          </span>
         </span>
         <span className="pyramide__sexe">
           <i className="pyramide__puce pyramide__barre--hommes" aria-hidden="true" />
-          Hommes : <span className="chiffre">{nf(hommes)}</span>
-          {` (${pct(part(hommes, total))})`}
+          <span>
+            Hommes : <span className="chiffre">{nf(hommes)}</span> ({pct(part(hommes, total))})
+          </span>
         </span>
       </p>
       <div role="table" aria-label={libelle} className="pyramide__tableau">

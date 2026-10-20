@@ -10,11 +10,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import tg.anid.bi.commun.PorteeUtilisateur;
 import tg.anid.bi.commun.RequeteInvalide;
@@ -25,6 +31,17 @@ class EnrolementServiceTest {
 
     private final EnrolementRepository repository = mock(EnrolementRepository.class);
     private final EnrolementService service = new EnrolementService(repository, new PorteeUtilisateur());
+
+    @AfterEach
+    void nettoyer() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private static void connecterRegional(String zone) {
+        Jwt jeton = Jwt.withTokenValue("jeton").header("alg", "none").claim("zone", zone).build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new JwtAuthenticationToken(jeton, List.of(new SimpleGrantedAuthority("ROLE_BI_REGIONAL"))));
+    }
 
     @Test
     void douzeSemainesCompletesJusquAuDernierDimanche() {
@@ -122,7 +139,96 @@ class EnrolementServiceTest {
         when(repository.topCentres(any(), any(), any(), any(), anyInt())).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.semaines(du, au, null)).isInstanceOf(RequeteInvalide.class);
+        assertThatThrownBy(() -> service.preinscriptions(du, au)).isInstanceOf(RequeteInvalide.class);
+        assertThatThrownBy(() -> service.ageSexe(du, au, null)).isInstanceOf(RequeteInvalide.class);
         assertThatThrownBy(() -> service.territoire(du, au, null)).isInstanceOf(RequeteInvalide.class);
         assertThatThrownBy(() -> service.centres(du, au, null, "inscriptions")).isInstanceOf(RequeteInvalide.class);
+    }
+
+    @Test
+    void lesPreinscriptionsSontNationalesAvecLaDerniereDemandeEtSansSexe() {
+        OffsetDateTime derniere = OffsetDateTime.parse("2026-01-14T11:28:00Z");
+        when(repository.preinscriptionsDisponibles()).thenReturn(true);
+        when(repository.preinscriptions(null, null)).thenReturn(
+                new EnrolementRepository.TotauxPreinscription(606850, 546964, 59886, 0, 0, 450000, 0));
+        when(repository.derniereDemande()).thenReturn(Optional.of(derniere));
+
+        Preinscriptions p = service.preinscriptions(null, null);
+
+        assertThat(p.perimetre()).isEqualTo("Ensemble du Togo");
+        assertThat(p.disponible()).isTrue();
+        assertThat(p.demandes()).isEqualTo(606850);
+        assertThat(p.rendezVousReserves() + p.enAttenteRendezVous() + p.expirees() + p.annulees()
+                + p.nonClassees()).isEqualTo(p.demandes());
+        assertThat(p.honorees()).isEqualTo(450000);
+        assertThat(p.femmes()).isNull();
+        assertThat(p.hommes()).isNull();
+        assertThat(p.derniereDemande()).isEqualTo(derniere);
+    }
+
+    @Test
+    void sansDonneesDuPipelineLesPreinscriptionsSontNonDisponibles() {
+        when(repository.preinscriptionsDisponibles()).thenReturn(false);
+
+        Preinscriptions p = service.preinscriptions(null, null);
+
+        assertThat(p.disponible()).isFalse();
+        assertThat(p.demandes()).isNull();
+        assertThat(p.derniereDemande()).isNull();
+    }
+
+    @Test
+    void unUtilisateurRegionalNeRecoitPasLesPreinscriptionsNationales() {
+        connecterRegional("KAR");
+        when(repository.nomZone("KAR")).thenReturn(Optional.of("Kara"));
+        when(repository.preinscriptionsDisponibles()).thenReturn(true);
+
+        Preinscriptions p = service.preinscriptions(null, null);
+
+        assertThat(p.perimetre()).isEqualTo("Kara");
+        assertThat(p.disponible()).isFalse();
+        assertThat(p.demandes()).isNull();
+    }
+
+    @Test
+    void laPyramideALesHuitTranchesEtCompteLesNonRenseignesAPart() {
+        when(repository.profilsDisponibles()).thenReturn(true);
+        when(repository.niuParSexeEtAge(null, null, null)).thenReturn(List.of(
+                new EnrolementRepository.CaseProfil("F", "26-35", 126),
+                new EnrolementRepository.CaseProfil("H", "26-35", 111),
+                new EnrolementRepository.CaseProfil("H", "0-5", 12),
+                new EnrolementRepository.CaseProfil("I", "26-35", 7),
+                new EnrolementRepository.CaseProfil("F", "inconnu", 3)));
+
+        AgeSexe a = service.ageSexe(null, null, null);
+
+        assertThat(a.disponible()).isTrue();
+        assertThat(a.tranches()).extracting(AgeSexe.Tranche::tranche)
+                .containsExactly("0-5", "6-14", "15-18", "19-25", "26-35", "36-45", "46-60", "60+");
+        AgeSexe.Tranche t = a.tranches().get(4);
+        assertThat(t.femmes()).isEqualTo(126);
+        assertThat(t.hommes()).isEqualTo(111);
+        assertThat(a.tranches().getFirst().femmes()).isZero();
+        assertThat(a.tranches().getFirst().hommes()).isEqualTo(12);
+        assertThat(a.nonRenseignes()).isEqualTo(10);
+    }
+
+    @Test
+    void sansProfilsLaPyramideGardeSesTranchesSansChiffres() {
+        when(repository.profilsDisponibles()).thenReturn(false);
+
+        AgeSexe a = service.ageSexe(null, null, null);
+
+        assertThat(a.disponible()).isFalse();
+        assertThat(a.tranches()).hasSize(8).allSatisfy(t -> assertThat(t.femmes()).isNull());
+        assertThat(a.nonRenseignes()).isNull();
+    }
+
+    @Test
+    void laPyramideNExistePasPourUnePrefecture() {
+        when(repository.nomZone("SAV-02")).thenReturn(Optional.of("Tône"));
+        when(repository.estRegion("SAV-02")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.ageSexe(null, null, "SAV-02")).isInstanceOf(RequeteInvalide.class);
     }
 }

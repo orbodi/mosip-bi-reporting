@@ -53,6 +53,26 @@ public class EnrolementController {
         return service.territoire(du, au, zone);
     }
 
+    /**
+     * Pré-inscriptions (bloc national, sans paramètre de zone) : demandes, rendez-vous, en attente, expirées,
+     * honorées et dernière demande. Les chiffres valent null quand la source n'est pas disponible.
+     */
+    @GetMapping("/preinscriptions")
+    public Preinscriptions preinscriptions(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au) {
+        return service.preinscriptions(du, au);
+    }
+
+    /** NIU générés par sexe et par tranche d'âge (pyramide), pour le Togo ou une région. */
+    @GetMapping("/age-sexe")
+    public AgeSexe ageSexe(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone) {
+        return service.ageSexe(du, au, zone);
+    }
+
     /** Top des centres : les cinq premiers selon les inscriptions, les échecs ou les rejets. */
     @GetMapping("/centres")
     public TopCentres centres(

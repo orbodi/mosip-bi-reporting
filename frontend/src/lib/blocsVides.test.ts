@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { nf, part, pct } from './format';
 import {
+  depuisApi,
   devenirInconnu,
   largeurPyramide,
+  lignesPyramide,
   lundisDesSemainesCompletes,
   pyramideInconnue,
   semainesInconnues,
@@ -49,5 +51,24 @@ describe('données de remplacement', () => {
     expect(largeurPyramide(100, lignes)).toBe(70);
     expect(largeurPyramide(50, lignes)).toBe(35);
     expect(largeurPyramide(Number.NaN, lignes)).toBe(0);
+  });
+
+  it('pyramide depuis l’API : ordre de la maquette, null reste inconnu, 0 reste 0', () => {
+    const lignes = lignesPyramide({
+      disponible: true,
+      tranches: [
+        { tranche: '0-5', femmes: 11, hommes: 12 },
+        { tranche: '60+', femmes: 0, hommes: null },
+      ],
+    });
+    expect(lignes[0]).toEqual({ tranche: '60 ans et +', femmes: 0, hommes: Number.NaN });
+    expect(lignes[7]).toEqual({ tranche: '0 à 5', femmes: 11, hommes: 12 });
+    expect(Number.isNaN(lignes[3].femmes)).toBe(true);
+    expect(lignesPyramide({ disponible: false, tranches: [] }).every((l) => Number.isNaN(l.femmes))).toBe(
+      true,
+    );
+    expect(lignesPyramide(undefined)).toHaveLength(8);
+    expect(depuisApi(0)).toBe(0);
+    expect(Number.isNaN(depuisApi(null))).toBe(true);
   });
 });

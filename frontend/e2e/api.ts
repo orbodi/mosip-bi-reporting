@@ -108,7 +108,53 @@ const CENTRES: Record<string, unknown[]> = {
   rejets: [centre(1, '20105', 'Lycée Nassable', 'Tône', 'Savanes', 412)],
 };
 
+// Pyramide de la maquette (en NIU), de la plus jeune à la plus âgée, comme l'API.
+const PYRAMIDE: [string, number, number][] = [
+  ['0-5', 33647, 36707],
+  ['6-14', 131532, 140709],
+  ['15-18', 116238, 113178],
+  ['19-25', 287535, 256946],
+  ['26-35', 385419, 339538],
+  ['36-45', 284476, 247770],
+  ['46-60', 256946, 220240],
+  ['60+', 125415, 82590],
+];
+
 export async function simulerEnrolement(page: Page) {
+  await page.route('**/api/v1/enrolement/preinscriptions*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        disponible: true,
+        demandes: 606850,
+        rendezVousReserves: 546964,
+        enAttenteRendezVous: 59886,
+        expirees: 0,
+        annulees: 0,
+        honorees: 450123,
+        nonClassees: 0,
+        femmes: null,
+        hommes: null,
+        derniereDemande: '2026-01-14T11:28:00Z',
+      },
+    }),
+  );
+  await page.route('**/api/v1/enrolement/age-sexe*', (route) => {
+    const kara = new URL(route.request().url()).searchParams.get('zone') === 'KAR';
+    const part = kara ? 0.12 : 1;
+    route.fulfill({
+      json: {
+        perimetre: kara ? 'Kara' : 'Ensemble du Togo',
+        disponible: true,
+        nonRenseignes: 0,
+        tranches: PYRAMIDE.map(([tranche, femmes, hommes]) => ({
+          tranche,
+          femmes: Math.round(femmes * part),
+          hommes: Math.round(hommes * part),
+        })),
+      },
+    });
+  });
   await page.route('**/api/v1/meta/regions', (route) => route.fulfill({ json: REGIONS }));
   await page.route('**/api/v1/enrolement/semaines*', (route) =>
     route.fulfill({

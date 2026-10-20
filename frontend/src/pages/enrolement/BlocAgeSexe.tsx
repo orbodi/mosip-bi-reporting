@@ -1,15 +1,19 @@
+import { useAgeSexe } from '../../api/enrolement';
 import { Pyramide } from '../../composants/blocs/Pyramide';
-import { pyramideInconnue } from '../../lib/blocsVides';
+import { lignesPyramide } from '../../lib/blocsVides';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
+import { usePlageApi } from '../../lib/usePlagePeriode';
 
 /**
- * Bloc « NIU générés par âge et par sexe » : pyramide de la maquette. MOSIP 1.1.5 n'a pas de source anonymisée
- * (anonymous_profile à partir de 1.1.5.5) ; le Data Mart range tout en « inconnu » tant que la source n'est pas
- * décidée (docs/decisions.md, pipeline point 1). Indicateurs à 0 en attendant (décision du 20/10/2026), rien n'est
- * estimé.
+ * Bloc « NIU générés par âge et par sexe » : pyramide de la maquette, alimentée par le profil anonymisé de MOSIP
+ * (GET /api/v1/enrolement/age-sexe, décision du 20/10/2026). Suit les filtres Période et Région. Sans données, les
+ * huit tranches restent à 0, barres vides : rien n'est estimé.
  */
 export function BlocAgeSexe() {
-  const { region } = useFiltreRegion();
+  const { region, code } = useFiltreRegion();
+  const { plage, prete } = usePlageApi('enrolement');
+  const { data } = useAgeSexe(plage, code, prete);
+
   return (
     <section className="panneau bloc-age-sexe" aria-labelledby="titre-age-sexe">
       <h2 id="titre-age-sexe" className="titre-bloc">
@@ -18,7 +22,7 @@ export function BlocAgeSexe() {
       <p className="texte-2 bloc__sous-titre">
         {region ? `Région ${region.nom}` : 'Ensemble du Togo'}, nombre de NIU générés par tranche d’âge
       </p>
-      <Pyramide lignes={pyramideInconnue()} libelle="Répartition des NIU par tranche d’âge et par sexe" />
+      <Pyramide lignes={lignesPyramide(data)} libelle="Répartition des NIU par tranche d’âge et par sexe" />
     </section>
   );
 }

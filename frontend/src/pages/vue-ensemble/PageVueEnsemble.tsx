@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
-import { useDevenirInscriptions, useTerritoire } from '../../api/enrolement';
+import { useDevenirInscriptions, usePreinscriptions, useTerritoire } from '../../api/enrolement';
 import { CarteZones } from '../../composants/carte/CarteZones';
 import { CARTE_REGIONS } from '../../composants/carte/fondsDeCarte';
 import { Chevron, Icone } from '../../composants/blocs/Icone';
@@ -8,7 +8,7 @@ import { CarteIndicateur } from '../../composants/blocs/Indicateur';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
-import { INCONNUE, devenirInconnu } from '../../lib/blocsVides';
+import { INCONNUE, depuisApi, devenirInconnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi } from '../../lib/usePlagePeriode';
@@ -29,8 +29,8 @@ const COULEURS_BANDES = ['bleu', 'bleu-vif', 'bleu', 'bleu-vif', 'bleu', 'bleu-v
 
 /**
  * Vue d'ensemble du parcours citoyen (maquette/pages/Main.dc.html). Les étapes d'enrôlement viennent de l'API
- * (bloc « Devenir des inscriptions ») ; pré-inscription, demandes, impression et remise attendent leurs sources
- * (0, décision du 20/10/2026).
+ * (blocs « Devenir des inscriptions » et « Pré-inscription ») ; demandes, impression et remise attendent leurs
+ * sources (0, décision du 20/10/2026).
  */
 export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
   const { plage, prete, choix } = usePlageApi(page.source);
@@ -38,6 +38,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
   const devenir = useDevenirInscriptions(plage, prete);
   const d = devenir.data ?? devenirInconnu();
   const territoire = useTerritoire(plage, undefined, prete);
+  const preinscriptions = usePreinscriptions(plage, prete);
   const toutes = choix === 'tout';
 
   const ins = d.inscriptions;
@@ -48,7 +49,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
       nom: 'Pré-inscription',
       libelle: 'Pré-inscriptions',
       icone: 'calendrierOk',
-      valeur: INCONNUE,
+      valeur: depuisApi(preinscriptions.data?.demandes),
       part: true,
     },
     { nom: 'Inscription', libelle: 'Inscriptions', icone: 'personne', valeur: ins, part: false },

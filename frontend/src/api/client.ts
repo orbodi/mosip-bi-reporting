@@ -10,6 +10,9 @@ export type Territoire = components['schemas']['Territoire'];
 export type LigneZone = components['schemas']['LigneZone'];
 export type TopCentres = components['schemas']['TopCentres'];
 export type CentreClasse = components['schemas']['CentreClasse'];
+export type Preinscriptions = components['schemas']['Preinscriptions'];
+export type AgeSexe = components['schemas']['AgeSexe'];
+export type TrancheAgeSexe = components['schemas']['Tranche'];
 
 /**
  * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la

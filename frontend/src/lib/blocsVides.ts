@@ -120,3 +120,34 @@ export function largeurPyramide(valeur: number, lignes: TrancheSexe[]): number {
   const max = Math.max(0, ...connues);
   return estConnu(valeur) && max > 0 ? (valeur / max) * 70 : 0;
 }
+
+/** Nombre de l'API : null ou absent (« non disponible ») devient la valeur inconnue, affichée 0 ; 0 reste 0. */
+export const depuisApi = (n?: number | null): number => n ?? INCONNU;
+
+/** Codes de tranche de l'API (GET /api/v1/enrolement/age-sexe) → libellés de la pyramide. */
+const LIBELLE_TRANCHE: Record<string, (typeof TRANCHES_PYRAMIDE)[number]> = {
+  '60+': '60 ans et +',
+  '46-60': '46 à 60',
+  '36-45': '36 à 45',
+  '26-35': '26 à 35',
+  '19-25': '19 à 25',
+  '15-18': '15 à 18',
+  '6-14': '6 à 14',
+  '0-5': '0 à 5',
+};
+
+/**
+ * Lignes de la pyramide depuis l'API, de la plus âgée à la plus jeune. Sans réponse, ou source non disponible :
+ * les huit tranches sans chiffres. Une tranche absente de la réponse reste inconnue, jamais 0.
+ */
+export function lignesPyramide(api?: {
+  disponible: boolean;
+  tranches: { tranche: string; femmes?: number | null; hommes?: number | null }[];
+}): TrancheSexe[] {
+  if (!api?.disponible) return pyramideInconnue();
+  const parLibelle = new Map(api.tranches.map((t) => [LIBELLE_TRANCHE[t.tranche], t]));
+  return TRANCHES_PYRAMIDE.map((tranche) => {
+    const t = parLibelle.get(tranche);
+    return { tranche, femmes: depuisApi(t?.femmes), hommes: depuisApi(t?.hommes) };
+  });
+}

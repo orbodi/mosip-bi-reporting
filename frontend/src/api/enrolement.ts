@@ -3,7 +3,9 @@ import type { Plage } from '../lib/periode';
 import {
   RAFRAICHISSEMENT_MS,
   lireApi,
+  type AgeSexe,
   type DevenirInscriptions,
+  type Preinscriptions,
   type InscriptionsParSemaine,
   type Territoire,
   type TopCentres,
@@ -62,4 +64,14 @@ export function useTopCentres(
   active = true,
 ) {
   return useBlocEnrolement<TopCentres>('centres', plage, active, { zone, classement });
+}
+
+/** Pré-inscriptions, nationales (GET /api/v1/enrolement/preinscriptions). */
+export function usePreinscriptions(plage: Plage | undefined, active = true) {
+  return useBlocEnrolement<Preinscriptions>('preinscriptions', plage, active);
+}
+
+/** NIU générés par sexe et tranche d'âge, Togo ou une région (GET /api/v1/enrolement/age-sexe). */
+export function useAgeSexe(plage: Plage | undefined, zone: string | undefined, active = true) {
+  return useBlocEnrolement<AgeSexe>('age-sexe', plage, active, { zone });
 }

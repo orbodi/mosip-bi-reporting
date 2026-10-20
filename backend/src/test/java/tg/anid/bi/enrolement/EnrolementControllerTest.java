@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -127,9 +128,40 @@ class EnrolementControllerTest {
         when(service.semaines(any(), any(), eq("SAV"))).thenThrow(new AccessDeniedException("hors portée"));
         when(service.territoire(any(), any(), eq("SAV"))).thenThrow(new AccessDeniedException("hors portée"));
         when(service.centres(any(), any(), eq("SAV"), any())).thenThrow(new AccessDeniedException("hors portée"));
-        for (String bloc : List.of("semaines", "territoire", "centres")) {
+        when(service.ageSexe(any(), any(), eq("SAV"))).thenThrow(new AccessDeniedException("hors portée"));
+        for (String bloc : List.of("semaines", "territoire", "centres", "age-sexe")) {
             mvc.perform(get("/api/v1/enrolement/" + bloc).param("zone", "SAV"))
                     .andExpect(status().isForbidden());
         }
+    }
+
+    @Test
+    void renvoieLesPreinscriptionsEtNullPourLeSexe() throws Exception {
+        when(service.preinscriptions(isNull(), isNull())).thenReturn(new Preinscriptions("Ensemble du Togo", null,
+                null, true, 606850L, 546964L, 59886L, 0L, 0L, 450000L, 0L, null, null,
+                OffsetDateTime.parse("2026-01-14T11:28:00Z")));
+
+        mvc.perform(get("/api/v1/enrolement/preinscriptions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponible").value(true))
+                .andExpect(jsonPath("$.demandes").value(606850))
+                .andExpect(jsonPath("$.rendezVousReserves").value(546964))
+                .andExpect(jsonPath("$.enAttenteRendezVous").value(59886))
+                .andExpect(jsonPath("$.honorees").value(450000))
+                .andExpect(jsonPath("$.femmes").isEmpty())
+                .andExpect(jsonPath("$.derniereDemande").exists());
+    }
+
+    @Test
+    void renvoieLaPyramideParRegion() throws Exception {
+        when(service.ageSexe(isNull(), isNull(), eq("SAV"))).thenReturn(new AgeSexe("Savanes", null, null, true,
+                List.of(new AgeSexe.Tranche("0-5", 11L, 12L), new AgeSexe.Tranche("6-14", 43L, 46L)), 0L));
+
+        mvc.perform(get("/api/v1/enrolement/age-sexe").param("zone", "SAV"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.perimetre").value("Savanes"))
+                .andExpect(jsonPath("$.tranches[0].tranche").value("0-5"))
+                .andExpect(jsonPath("$.tranches[1].hommes").value(46))
+                .andExpect(jsonPath("$.nonRenseignes").value(0));
     }
 }
