@@ -1,6 +1,6 @@
 """Fixtures des tests du pipeline : un vrai PostgreSQL et une session Spark locale.
 
-Base de test créée à neuf, avec les VRAIES migrations du Data Mart (backend/src/main/resources/db) : V1, V2 puis
+Base de test créée à neuf, avec les VRAIES migrations du Data Mart (backend/src/main/resources/db) : V1 à V4 puis
 les données de démonstration R__. Variables :
 - DATAMART_DSN_TEST : DSN d'un PostgreSQL où l'on peut créer une base
   (défaut : host=localhost user=bi dbname=postgres) ;
@@ -49,12 +49,17 @@ def base(dsn: str):
     """Data Mart remis à l'état initial (migrations et données de démonstration) avant chaque test."""
     with psycopg.connect(dsn, autocommit=True) as connexion:
         connexion.execute(
-            "truncate etat.registration, pipeline.lot_traite, pipeline.evenement_rejete, pipeline.controle_qualite,"
-            " bi.fait_enrolement_jour"
+            "truncate etat.registration, etat.preinscription, etat.profil_anonyme, pipeline.lot_traite,"
+            " pipeline.evenement_rejete, pipeline.controle_qualite, bi.fait_enrolement_jour,"
+            " bi.fait_preinscription_jour, bi.fait_niu_profil_jour"
         )
         connexion.execute(
             "update bi.source_fraicheur set premiere_donnee = '2024-01-01',"
             " derniere_donnee = '2026-01-14 11:42:00+00', dernier_chargement = null where source = 'enrolement'"
+        )
+        connexion.execute(
+            "update bi.source_fraicheur set premiere_donnee = '2024-01-01',"
+            " derniere_donnee = '2026-01-14 11:28:00+00', dernier_chargement = null where source = 'preinscription'"
         )
     return dsn
 

@@ -142,10 +142,11 @@ def enveloppe(ligne: T.StructType) -> T.StructType:
 # ------------------------------------------------------------------------------------------------------------------
 # Transformations Spark (pures, testables sur un DataFrame statique)
 # ------------------------------------------------------------------------------------------------------------------
-def decoder(brut: DataFrame, ligne: T.StructType, cle: T.StructType) -> DataFrame:
+def decoder(brut: DataFrame, ligne: T.StructType, cle: T.StructType, champ_cle: str = "id") -> DataFrame:
     """Décode les messages Kafka (key/value binaires) et classe chaque événement.
 
     action : upsert | suppression | tombstone | truncate | ignore | rejet
+    `champ_cle` : colonne de la clé primaire MOSIP dans la clé du message (id, prereg_id…).
     """
     evt = F.from_json(F.col("valeur_json"), enveloppe(ligne))  # PERMISSIVE
     decode = (
@@ -159,7 +160,7 @@ def decoder(brut: DataFrame, ligne: T.StructType, cle: T.StructType) -> DataFram
         .withColumn("evt", evt)
         .withColumn("cle", F.from_json(F.col("cle_json"), cle))
     )
-    cle_ok = F.col("cle.id").isNotNull()
+    cle_ok = F.col(f"cle.{champ_cle}").isNotNull()
     lsn_ok = F.col("evt.source.lsn").isNotNull()
     action = (
         F.when(F.col("valeur_json").isNull(), F.lit("tombstone"))
@@ -181,7 +182,7 @@ def decoder(brut: DataFrame, ligne: T.StructType, cle: T.StructType) -> DataFram
         "topic",
         "partition",
         "offset",
-        F.col("cle.id").alias("cle_id"),
+        F.col(f"cle.{champ_cle}").alias("cle_id"),
         F.col("evt.op").alias("op"),
         F.col("evt.source.lsn").alias("lsn"),
         F.col("evt.source.ts_ms").alias("source_ts_ms"),
@@ -192,9 +193,12 @@ def decoder(brut: DataFrame, ligne: T.StructType, cle: T.StructType) -> DataFram
     )
 
 
-def dernier_par_cle(evenements: DataFrame) -> DataFrame:
-    """Garde, pour chaque clé, l'événement le plus récent du lot (LSN puis offset)."""
-    fenetre = Window.partitionBy("cle_id").orderBy(F.col("lsn").desc(), F.col("offset").desc())
+def dernier_par_cle(evenements: DataFrame, cles: tuple[str, ...] = ("cle_id",)) -> DataFrame:
+    """Garde, pour chaque clé, l'événement le plus récent du lot (LSN puis offset).
+
+    `cles` : colonnes qui identifient une ligne MOSIP ; ajouter « topic » quand un job lit plusieurs tables.
+    """
+    fenetre = Window.partitionBy(*cles).orderBy(F.col("lsn").desc(), F.col("offset").desc())
     return (
         evenements.where(F.col("action").isin("upsert", "suppression"))
         .withColumn("_rang", F.row_number().over(fenetre))
@@ -457,19 +461,27 @@ class JournalProgression(StreamingQueryListener):
 # ------------------------------------------------------------------------------------------------------------------
 # Démarrage
 # ------------------------------------------------------------------------------------------------------------------
-def attendre_datamart(connecter: Callable[[], Any], delai_s: int) -> None:
-    """Attend que les migrations Flyway du Data Mart soient passées (l'API les applique à son démarrage)."""
+def attendre_datamart(
+    connecter: Callable[[], Any],
+    delai_s: int,
+    fonction: str = "bi.recalculer_enrolement_jour(date[], text[])",
+    migration: str = "V2",
+) -> None:
+    """Attend que les migrations Flyway du Data Mart soient passées (l'API les applique à son démarrage).
+
+    `fonction` : fonction de recalcul dont le job a besoin, créée par la `migration` indiquée.
+    """
     limite = time.monotonic() + delai_s
     while True:
         try:
             with connecter() as connexion, connexion.cursor() as cur:
                 cur.execute(
-                    "select to_regclass('pipeline.lot_traite') is not null"
-                    " and to_regprocedure('bi.recalculer_enrolement_jour(date[], text[])') is not null"
+                    "select to_regclass('pipeline.lot_traite') is not null and to_regprocedure(%s) is not null",
+                    (fonction,),
                 )
                 if cur.fetchone()[0]:
                     return
-                attente = "migration V2 absente"
+                attente = f"migration {migration} absente"
         except Exception as erreur:  # base pas encore démarrée
             attente = type(erreur).__name__
         if time.monotonic() > limite:

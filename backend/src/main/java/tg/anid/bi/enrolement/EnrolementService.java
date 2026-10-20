@@ -21,6 +21,9 @@ public class EnrolementService {
     static final int NOMBRE_SEMAINES = 12;
     static final int TAILLE_TOP = 5;
     static final Set<String> CLASSEMENTS = Set.of("inscriptions", "echecs", "rejets");
+    /** Tranches d'âge de la pyramide (maquette Enrôlement), de la plus jeune à la plus âgée. */
+    static final List<String> TRANCHES_AGE = List.of("0-5", "6-14", "15-18", "19-25", "26-35", "36-45", "46-60",
+            "60+");
 
     private final EnrolementRepository repository;
     private final PorteeUtilisateur portee;
@@ -94,6 +97,61 @@ public class EnrolementService {
                 })
                 .toList();
         return new TopCentres(perimetre, classement, centres);
+    }
+
+    /**
+     * Pré-inscriptions créées sur la période. Nationales : une demande n'a pas de territoire, donc un utilisateur
+     * régional reçoit le bloc sans chiffres (jamais les chiffres nationaux). Sans données du pipeline, le bloc est
+     * signalé non disponible.
+     */
+    public Preinscriptions preinscriptions(LocalDate du, LocalDate au) {
+        verifierOrdre(du, au);
+        String zone = portee.zoneEffective(null);
+        if (zone != null) {
+            return Preinscriptions.nonDisponible(nomPerimetre(zone), du, au);
+        }
+        if (!repository.preinscriptionsDisponibles()) {
+            return Preinscriptions.nonDisponible(ENSEMBLE_DU_TOGO, du, au);
+        }
+        EnrolementRepository.TotauxPreinscription t = repository.preinscriptions(du, au);
+        return new Preinscriptions(ENSEMBLE_DU_TOGO, du, au, true, t.demandes(), t.reservees(), t.enAttente(),
+                t.expirees(), t.annulees(), t.honorees(), t.nonClassees(), null, null,
+                repository.derniereDemande().orElse(null));
+    }
+
+    /**
+     * NIU générés par sexe et tranche d'âge sur la période, dans la région demandée (ou celle de l'utilisateur). Le
+     * profil anonymisé ne situe un NIU qu'à la région : une préfecture ou un centre est refusé.
+     */
+    public AgeSexe ageSexe(LocalDate du, LocalDate au, String zoneDemandee) {
+        verifierOrdre(du, au);
+        String zone = portee.zoneEffective(zoneDemandee);
+        String perimetre = nomPerimetre(zone);
+        if (zone != null && !repository.estRegion(zone)) {
+            throw new RequeteInvalide("La répartition par âge et par sexe n'existe que par région.");
+        }
+        if (!repository.profilsDisponibles()) {
+            List<AgeSexe.Tranche> vides = TRANCHES_AGE.stream()
+                    .map(t -> new AgeSexe.Tranche(t, null, null))
+                    .toList();
+            return new AgeSexe(perimetre, du, au, false, vides, null);
+        }
+        List<EnrolementRepository.CaseProfil> cases = repository.niuParSexeEtAge(du, au, zone);
+        List<AgeSexe.Tranche> tranches = TRANCHES_AGE.stream()
+                .map(t -> new AgeSexe.Tranche(t, somme(cases, "F", t), somme(cases, "H", t)))
+                .toList();
+        long nonRenseignes = cases.stream()
+                .filter(c -> (!"F".equals(c.sexe()) && !"H".equals(c.sexe())) || !TRANCHES_AGE.contains(c.trancheAge()))
+                .mapToLong(EnrolementRepository.CaseProfil::niuGeneres)
+                .sum();
+        return new AgeSexe(perimetre, du, au, true, tranches, nonRenseignes);
+    }
+
+    private static long somme(List<EnrolementRepository.CaseProfil> cases, String sexe, String tranche) {
+        return cases.stream()
+                .filter(c -> sexe.equals(c.sexe()) && tranche.equals(c.trancheAge()))
+                .mapToLong(EnrolementRepository.CaseProfil::niuGeneres)
+                .sum();
     }
 
     /**

@@ -8,14 +8,19 @@
 -- bi.fait_niu_jour = total des NIU de bi.fait_enrolement_jour ; sexe « I » et tranche « inconnu » partout
 -- (docs/decisions.md, pipeline point 1).
 --
+-- Pré-inscriptions (≈ 607 000 demandes, bi.fait_preinscription_jour) et NIU par sexe et tranche d'âge
+-- (bi.fait_niu_profil_jour, répartition de la pyramide de la maquette appliquée aux NIU de bi.fait_niu_jour) : mêmes
+-- règles, fictives et déterministes. Total des profils « New » = total des NIU générés de type NEW.
+--
 -- Incompatible avec la chaîne temps réel (profil temps-reel) : ces faits ne viennent pas de etat.registration et le
 -- contrôle « état courant = faits » échouerait. Le script refuse donc de tourner sur une base déjà alimentée par le
 -- pipeline. Rejoué à chaque modification de ce fichier : il remplace tous les faits d'enrôlement et de NIU.
 
 do $$
 begin
-    if exists (select 1 from etat.registration) then
-        raise exception 'Volumes de démonstration refusés : etat.registration est alimentée par le pipeline. '
+    if exists (select 1 from etat.registration) or exists (select 1 from etat.preinscription)
+       or exists (select 1 from etat.profil_anonyme) then
+        raise exception 'Volumes de démonstration refusés : le schéma etat est alimenté par le pipeline. '
             'Repartir d''une base vide (docker compose -f deploy/docker-compose.yml down -v) ou retirer le profil demo.';
     end if;
 end;
@@ -207,3 +212,86 @@ from demo_niu x
 cross join (select derniere_donnee::date as d1 from bi.source_fraicheur where source = 'enrolement') b
 where x.jour_niu <= b.d1 and x.niu > 0
 group by x.jour_niu, x.centre_id, x.type_demande;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Pré-inscriptions fictives, du premier au dernier jour de la source « preinscription » (bi.source_fraicheur).
+-- Une demande ancienne a presque toujours son rendez-vous ; celles des deux derniers mois l'attendent plus souvent.
+-- Les demandes réservées depuis plus d'un mois sont en majorité reprises lors d'une inscription (« honorées »).
+-- ---------------------------------------------------------------------------------------------------------------
+create temporary table demo_preinscription on commit drop as
+with bornes as (
+    select premiere_donnee as d0, derniere_donnee::date as d1
+    from bi.source_fraicheur
+    where source = 'preinscription'
+),
+jours as (
+    select g.t::date as jour, b.d0, b.d1,
+           (case extract(isodow from g.t) when 6 then 0.6 when 7 then 0.35 else 1.0 end)
+         * least(1.0, 0.5 + 0.5 * (g.t::date - b.d0) / 120.0) as poids
+    from bornes b
+    cross join lateral generate_series(b.d0, b.d1, interval '1 day') as g (t)
+),
+volumes as (
+    select j.*,
+           floor(606850 * j.poids / sum(j.poids) over () * (0.85 + 0.3 * pg_temp.alea('prereg ' || j.jour))
+                 + pg_temp.alea('prereg arrondi ' || j.jour))::int as n
+    from jours j
+)
+select v.jour, v.n,
+       floor(v.n * (case when v.d1 - v.jour < 60 then 0.32 else 0.07 end)
+             + pg_temp.alea('attente ' || v.jour))::int as en_attente,
+       case when v.d1 - v.jour < 30 then 0.15 * (v.d1 - v.jour) / 30.0 else 0.82 end as part_honoree
+from volumes v;
+
+delete from bi.fait_preinscription_jour;
+
+insert into bi.fait_preinscription_jour (jour, statut, demandes, consommees)
+select d.jour, t.statut, t.demandes, t.consommees
+from demo_preinscription d
+cross join lateral (
+    values ('reservee', d.n - least(d.en_attente, d.n),
+            floor((d.n - least(d.en_attente, d.n)) * d.part_honoree)::int),
+           ('en_attente', least(d.en_attente, d.n), 0)
+) as t (statut, demandes, consommees)
+where t.demandes > 0;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- NIU générés par sexe et tranche d'âge : chaque (jour de génération, région) de bi.fait_niu_jour (type NEW) est
+-- réparti selon la pyramide de la maquette (en % des NIU, femmes puis hommes). Méthode des parts cumulées : la somme
+-- des seize cases redonne exactement le total du jour et de la région.
+-- ---------------------------------------------------------------------------------------------------------------
+create temporary table demo_pyramide (rang int primary key, sexe text, tranche_age text, part numeric)
+on commit drop;
+insert into demo_pyramide values
+    (1, 'F', '60+', 4.1),    (2, 'H', '60+', 2.7),
+    (3, 'F', '46-60', 8.4),  (4, 'H', '46-60', 7.2),
+    (5, 'F', '36-45', 9.3),  (6, 'H', '36-45', 8.1),
+    (7, 'F', '26-35', 12.6), (8, 'H', '26-35', 11.1),
+    (9, 'F', '19-25', 9.4),  (10, 'H', '19-25', 8.4),
+    (11, 'F', '15-18', 3.8), (12, 'H', '15-18', 3.7),
+    (13, 'F', '6-14', 4.3),  (14, 'H', '6-14', 4.6),
+    (15, 'F', '0-5', 1.1),   (16, 'H', '0-5', 1.2);
+
+delete from bi.fait_niu_profil_jour;
+
+with niu_region as (
+    select f.jour, r.id as region_id, sum(f.niu_generes) as n
+    from bi.fait_niu_jour f
+    join bi.zone c on c.id = f.centre_id
+    join bi.zone p on p.id = c.parent_id
+    join bi.zone r on r.id = p.parent_id and r.niveau = 'region'
+    where f.type_demande = 'NEW'
+    group by f.jour, r.id
+),
+cumul as (
+    select rang, sexe, tranche_age,
+           sum(part) over (order by rang) / sum(part) over () as fin,
+           (sum(part) over (order by rang) - part) / sum(part) over () as debut
+    from demo_pyramide
+)
+insert into bi.fait_niu_profil_jour (jour, zone_id, sexe, tranche_age, niu_generes)
+select n.jour, n.region_id, c.sexe, c.tranche_age, x.niu
+from niu_region n
+cross join cumul c
+cross join lateral (select (floor(n.n * c.fin) - floor(n.n * c.debut))::int as niu) x
+where x.niu > 0;

@@ -1,7 +1,7 @@
 # Plan : terminer la page Enrôlement (données de démonstration)
 
 Date : 19/10/2026. Statut : **en cours**. P2 et P3 retenus le 19/10/2026 (sans préférence de l'humain : propositions ci-dessous) ;
-P1 en attente.
+P1 tranché le 20/10/2026 (dérogation limitée, voir `docs/decisions.md`).
 
 ## Objet
 
@@ -22,7 +22,7 @@ n'est pas repris tel quel (pile et conventions différentes).
 | P2 | « Inscriptions et NIU par semaine » : lecture cohorte (NIU rattachés au jour de réception, table existante) ou flux (jour de génération du NIU, nouvelle table `bi.fait_niu_jour`) ? | Flux, comme la maquette (la courbe NIU décroche sur les semaines récentes) : créer `bi.fait_niu_jour` dès ce lot. |
 | P3 | Portée du filtre Région (point 2 de la revue UI/UX) : quels blocs le suivent ? | Comme la maquette : Territoire, Âge et sexe, Top des centres le suivent ; Pré-inscription (pas de centre), Devenir et semaines restent nationaux avec la pastille « Ensemble du Togo ». |
 
-Déjà tranché par les règles du projet : sexe et âge « non disponible » (décision 11) ; codes de région de `bi.zone`
+Déjà tranché : sexe et âge par le profil anonymisé `idrepo.anonymous_profile` (décision 11, 20/10/2026) ; codes de région de `bi.zone`
 (`GLO` pour Grand Lomé) ; aucune anomalie corrigée, seulement affichée et consignée.
 
 ## Anomalies relevées sur la base de pré-inscription (à consigner dans `docs/decisions.md`)
@@ -97,4 +97,6 @@ démarré) et les tests Playwright sont à lancer sur le poste de l'équipe.
   seulement contre des bouchons d'API (pas de Maven dans son environnement).
 - À lancer sur le poste : `mvn verify`, `npm run api:types` (backend démarré) puis `npm run typecheck`,
   `/verif-visuelle`.
-- Reste : bloc Pré-inscription (P1).
+- Fait le 20/10/2026 : migration `V4`, jobs `streaming/preinscription` et `streaming/profil`, API
+  `/enrolement/preinscriptions` et `/enrolement/age-sexe`, blocs Pré-inscription et pyramide branchés.
+- Reste : rendez-vous par centre (`bi.fait_rdv_jour`), chaîne locale Docker pour `mosip_prereg` et `mosip_idrepo`.

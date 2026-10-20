@@ -63,9 +63,12 @@ des données personnelles.
   pour `mosip_master`, `id-repository` pour `mosip_idrepo`, etc.). Chaque base `mosip_x` contient un schéma `x`
   (ex. `mosip_regprc` → `regprc`). Détails et colonnes relevées : [references/mosip-115.md](references/mosip-115.md).
 - **Pas de table `anonymous_profile` en 1.1.5.** `idrepo.anonymous_profile` apparaît en 1.1.5.5,
-  `regprc.anonymous_profile` en 1.2.0. Les indicateurs par **sexe** et **âge** n'ont donc pas de source anonyme
-  en 1.1.5 : c'est une décision à faire prendre (mise à niveau, flux anonymisé dédié…), jamais un déchiffrement
-  des données d'identité dans le pipeline.
+  `regprc.anonymous_profile` en 1.2.0. Décision du 20/10/2026 : le sexe et l'âge des NIU viennent de
+  `idrepo.anonymous_profile` (job `streaming/profil`), jamais d'un déchiffrement des données d'identité ; si
+  l'instance est en 1.1.5, mise à niveau ou agrégat livré par l'équipe MOSIP.
+- **Pré-inscriptions** (décision du 20/10/2026) : `prereg.applicant_demographic` et `_consumed` capturées sur
+  `prereg_id`, `status_code`, `cr_dtimes`, `upd_dtimes` seulement ; `demog_detail`, `demog_detail_hash` et
+  `cr_appuser_id` restent interdites (contrôlé par `scripts/verifier_connecteur.py`).
 - **Debezium 3.7** (stable) : `plugin.name` vaut `decoderbufs` par défaut, donc fixer `pgoutput` ; `snapshot.mode`
   n'accepte plus `never` (utiliser `no_data`) ; `skipped.operations` ignore les `TRUNCATE` par défaut ;
   `delete.handling.mode` du SMT d'aplatissement n'existe plus (remplacé par `delete.tombstone.handling.mode`).

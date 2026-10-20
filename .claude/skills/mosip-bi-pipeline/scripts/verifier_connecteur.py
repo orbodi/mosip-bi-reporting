@@ -15,6 +15,10 @@ from pathlib import Path
 
 # Colonnes jamais capturées (textes libres, contenus de requêtes, données d'identité ou biométriques).
 COLONNES_INTERDITES = {
+    # prereg.applicant_demographic(_consumed) : capturée sans ces colonnes seulement (décision du 20/10/2026).
+    "demog_detail",
+    "demog_detail_hash",
+    "cr_appuser_id",
     "req_text",
     "resp_text",
     "res_text",
@@ -50,7 +54,6 @@ TABLES_INTERDITES = {
     "uin_biometric_h",
     "uin_document",
     "uin_document_h",
-    "applicant_demographic",
     "applicant_document",
 }
 ENVIRONNEMENTS = ("dev", "test", "recette", "qualif", "preprod", "prod")

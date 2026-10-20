@@ -35,9 +35,10 @@ et reprend la maquette validée en octobre 2026 (dossier `maquette/`).
 - Données personnelles : aucune donnée nominative ni biométrique dans la base BI ni dans l'interface.
   RID et identifiants d'agents pseudonymisés (empreinte HMAC calculée dans le pipeline). Le RID passe en clair dans la
   clé des messages Kafka (Debezium ne masque pas les clés) : accès aux topics réservé au pipeline.
-- Sexe et âge : pas de source anonymisée en MOSIP 1.1.5 (`anonymous_profile` n'existe qu'à partir de 1.1.5.5).
-  Valeur « inconnu » dans le Data Mart et note « non disponible » dans le BI tant que la source n'est pas décidée.
-  Ne jamais lire pour cela `individual_demographic_dedup`, `uin_data` ni les paquets.
+- Sexe et âge : seule source, le profil anonymisé de MOSIP `idrepo.anonymous_profile` (1.1.5.5 et plus ; décision du
+  20/10/2026), réduit à processus, jour, genre, tranche d'âge et région. Sans lui, « inconnu » dans le Data Mart.
+  Ne jamais lire pour cela `individual_demographic_dedup`, `uin_data`, `demog_detail` ni les paquets.
+- Valeur indisponible : `null` dans l'API, affichée 0 dans le BI, sans note (décision du 20/10/2026).
 - Jamais d'écriture dans les bases MOSIP. Le BI les lit par réplication logique : rôle dédié sans superutilisateur,
   `SELECT` sur les seules tables capturées, publication créée par le DBA. Une écriture (tables de heartbeat ou de
   signal Debezium) demande une dérogation écrite dans `docs/decisions.md`. L'API et le front ne lisent que la base BI.

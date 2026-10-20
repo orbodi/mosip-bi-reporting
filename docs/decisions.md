@@ -51,6 +51,39 @@ Chaque décision : date, choix, raison. Ajouter les nouvelles en bas de la secti
   OpenStreetMap, geoBoundaries ; 37 préfectures), ECharts chargé à la demande (paquet séparé). Les zones de l'API sont
   reliées aux contours par leur nom en attendant les codes de `master.location` ; une zone sans contour est citée sous
   la carte. Préfectures et centres de développement : codes provisoires (`SAV-01`…) dans `R__donnees_dev.sql`.
+- 2026-10-20 : **Pré-inscriptions : dérogation limitée sur `prereg.applicant_demographic` et `_consumed`** (décision
+  du responsable du projet ; points 1 et 2 du pipeline CDC ci-dessous). Seules les colonnes `prereg_id` (empreinte
+  HMAC dans Spark), `status_code`, `cr_dtimes` et `upd_dtimes` sont capturées : `column.include.list` du connecteur
+  `prereg-dev.json`, publication et `SELECT` limités aux mêmes colonnes (`pipeline/cdc/connecteurs/prerequis-prereg.sql`).
+  `demog_detail` (chiffrée), `demog_detail_hash` et `cr_appuser_id` ne sont jamais lues. Raison donnée : les données
+  d'identité sont chiffrées et ne sont pas traitées. Statuts regroupés par `pipeline.correspondance_statut_preinscription`
+  (à valider par l'équipe MOSIP ; « non classées » sinon) ; « Honorées à l'inscription » = demandes passées dans
+  `_consumed`. Migration `V4`, job `streaming/preinscription`, API `GET /api/v1/enrolement/preinscriptions`. À faire
+  avant la recette : revue par le relecteur sécurité, exécution des prérequis par le DBA. Le sexe des pré-inscriptions
+  reste sans source (il n'est que dans `demog_detail`) : « Femmes pré-inscrites » non disponible.
+- 2026-10-20 : **Sexe et âge des NIU : profil anonymisé de MOSIP** (`idrepo.anonymous_profile`, MOSIP 1.1.5.5 et plus ;
+  point 1 du pipeline CDC). Option recommandée retenue, sans préférence exprimée. Un profil « New » = un NIU généré,
+  au jour du champ `date` du profil ; âge = année de ce jour − `yearOfBirth` ; région résolue depuis `bi.zone` à
+  partir de `location`. Minimisation : le JSON, l'année de naissance et les codes de lieux ne sont jamais écrits
+  (`etat.profil_anonyme` ne garde que processus, jour, genre, tranche et région). Genre regroupé par
+  `pipeline.correspondance_sexe` (à valider ; « I » sinon). Migration `V4`, job `streaming/profil`, API
+  `GET /api/v1/enrolement/age-sexe` (Togo ou une région). Préalable : vérifier que l'instance a la table (partie A de
+  `prerequis-idrepo.sql`) ; sinon mise à niveau en 1.1.5.5, ou agrégat quotidien livré par l'équipe MOSIP chargé dans
+  la même table `bi.fait_niu_profil_jour`. Le profil contient d'autres champs (biométrie, documents) qui transitent
+  par Kafka : topic à accès restreint comme les autres ; vérifier avec la sécurité le correctif MOSIP de l'anomalie
+  « Anonymous Profile - Possible Data Leakage » (id-repository, ticket 1685) sur la version déployée.
+- 2026-10-20 : **Tranches d'âge : les 8 de la maquette** (0-5, 6-14, 15-18, 19-25, 26-35, 36-45, 46-60, 60 et +), au
+  lieu des 5 du dictionnaire. Les libellés de la maquette se chevauchent à 60 ans : 60 ans compte dans « 46 à 60 »,
+  « 60 ans et + » à partir de 61 ans. Recommandation retenue, sans préférence exprimée.
+- 2026-10-20 : **Valeurs indisponibles affichées 0 dans le BI, sans note** (demande du responsable du projet) : plus de
+  « – » ni de notes « source pas encore raccordée », « non disponible » ou « chiffres indisponibles ». Les barres, la
+  carte et la pyramide restent vides (aucune forme estimée) ; noms et dates inconnus gardent « – ». L'API garde la
+  différence : `null` (indisponible) n'est jamais 0. Revient sur la note « non disponible » de la règle Sexe et âge
+  (CLAUDE.md mis à jour). Risque accepté : un 0 affiché ne se distingue plus d'un vrai zéro.
+- 2026-10-20 : **Front des sept pages (branche `dashboard`)** : l'Exploration garde ses choix (source, indicateurs,
+  ventilation) dans l'état de la page et non dans l'adresse, par exception à la règle du front ; jetons ajoutés
+  `--serie-3` (vert des hommes et des courbes) et `--rouge-fonce` ; le chiffre clé de la Vue d'ensemble passe en
+  `--encre-2` (contraste 4,5:1 sur le fond doré).
 
 ## Charte
 - Bleu ANID adouci `#1F4E8C` (remplace `#013781` depuis le 9 oct. 2026), bleu nuit `#071B35` pour le texte,
@@ -94,12 +127,13 @@ Chaque décision : date, choix, raison. Ajouter les nouvelles en bas de la secti
 8. Responsive (2 colonnes jusqu'à 900 px, menu et filtres mobiles).
 
 ## À trancher pour le pipeline CDC (16 oct. 2026)
-1. **Sexe et âge** : `anonymous_profile` n'existe pas en MOSIP 1.1.5 (`idrepo.anonymous_profile` à partir de 1.1.5.5,
-   `regprc.anonymous_profile` en 1.2.0). Options : vérifier la version exacte de l'instance, mise à niveau, ou flux
+1. **Sexe et âge** (tranché le 20/10/2026 : profil anonymisé, voir plus haut) : `anonymous_profile` n'existe pas en
+   MOSIP 1.1.5 (`idrepo.anonymous_profile` à partir de 1.1.5.5, `regprc.anonymous_profile` en 1.2.0). Options : vérifier la version exacte de l'instance, mise à niveau, ou flux
    anonymisé fourni par l'équipe MOSIP. Proposition en attendant : les filtres Genre et Âge et la pyramide des âges de
    la maquette affichent « non disponible ». `regprc.individual_demographic_dedup` (seule colonne de sexe en 1.1.5)
    reste exclue : elle contient des données d'identité.
-2. **Sources des pré-inscriptions et des NIU** : `prereg.applicant_demographic` et `idrepo.uin` portent des données
+2. **Sources des pré-inscriptions et des NIU** (pré-inscriptions tranchées le 20/10/2026 : dérogation limitée, voir
+   plus haut ; NIU : toujours ouvert) : `prereg.applicant_demographic` et `idrepo.uin` portent des données
    d'identité ; le skill `mosip-bi-pipeline` les exclut de la capture. Trouver une autre source (ex. `reg_appointment`,
    `registration` aboutie) ou accorder une dérogation limitée à quelques colonnes (identifiant, statut, dates),
    validée par la sécurité.

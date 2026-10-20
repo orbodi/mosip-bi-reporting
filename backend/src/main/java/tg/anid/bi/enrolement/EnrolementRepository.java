@@ -1,6 +1,7 @@
 package tg.anid.bi.enrolement;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,8 +11,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Lecture des agrégats d'enrôlement : bi.fait_enrolement_jour (pipeline temps réel, lecture cohorte) et
- * bi.fait_niu_jour (NIU au jour de génération, lecture flux).
+ * Lecture des agrégats d'enrôlement : bi.fait_enrolement_jour (pipeline temps réel, lecture cohorte),
+ * bi.fait_niu_jour (NIU au jour de génération, lecture flux), bi.fait_preinscription_jour (pré-inscriptions) et
+ * bi.fait_niu_profil_jour (NIU par sexe et tranche d'âge, profil anonymisé MOSIP).
  */
 @Repository
 public class EnrolementRepository {
@@ -41,6 +43,15 @@ public class EnrolementRepository {
 
     /** Un centre et ses chiffres sur la période, avec sa préfecture et sa région. */
     public record Centre(String code, String nom, String prefecture, String region, long valeur, long inscriptions) {
+    }
+
+    /** Pré-inscriptions par statut regroupé (pipeline.correspondance_statut_preinscription). */
+    public record TotauxPreinscription(long demandes, long reservees, long enAttente, long expirees, long annulees,
+                                       long honorees, long nonClassees) {
+    }
+
+    /** NIU générés d'un sexe (F, H ou I) et d'une tranche d'âge (ou « inconnu »). */
+    public record CaseProfil(String sexe, String trancheAge, long niuGeneres) {
     }
 
     /** Nom de la zone (région, préfecture… centre) qui porte ce code. */
@@ -263,6 +274,87 @@ public class EnrolementRepository {
                         rs.getString("region"),
                         rs.getLong("valeur"),
                         rs.getLong("inscriptions")))
+                .list();
+    }
+
+    /** Vrai dès que bi.fait_preinscription_jour contient au moins une ligne (source alimentée). */
+    public boolean preinscriptionsDisponibles() {
+        return jdbc.sql("select exists (select 1 from bi.fait_preinscription_jour)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    /** Pré-inscriptions créées sur la période (bornes incluses, null = non bornée), par statut regroupé. */
+    public TotauxPreinscription preinscriptions(LocalDate du, LocalDate au) {
+        return jdbc.sql("""
+                        select coalesce(sum(f.demandes), 0)                                          as demandes,
+                               coalesce(sum(f.demandes) filter (where f.statut = 'reservee'), 0)   as reservees,
+                               coalesce(sum(f.demandes) filter (where f.statut = 'en_attente'), 0) as en_attente,
+                               coalesce(sum(f.demandes) filter (where f.statut = 'expiree'), 0)    as expirees,
+                               coalesce(sum(f.demandes) filter (where f.statut = 'annulee'), 0)    as annulees,
+                               coalesce(sum(f.consommees), 0)                                        as honorees,
+                               coalesce(sum(f.demandes) filter (where f.statut = 'non_classe'), 0) as non_classees
+                        from bi.fait_preinscription_jour f
+                        where (cast(:du as date) is null or f.jour >= cast(:du as date))
+                          and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .query((rs, ligne) -> new TotauxPreinscription(
+                        rs.getLong("demandes"),
+                        rs.getLong("reservees"),
+                        rs.getLong("en_attente"),
+                        rs.getLong("expirees"),
+                        rs.getLong("annulees"),
+                        rs.getLong("honorees"),
+                        rs.getLong("non_classees")))
+                .single();
+    }
+
+    /** Création de la pré-inscription la plus récente (bi.source_fraicheur, source « preinscription »). */
+    public Optional<OffsetDateTime> derniereDemande() {
+        return jdbc.sql("""
+                        select derniere_donnee
+                        from bi.source_fraicheur
+                        where source = 'preinscription' and derniere_donnee is not null
+                        """)
+                .query((rs, ligne) -> rs.getObject("derniere_donnee", OffsetDateTime.class))
+                .optional();
+    }
+
+    /** Vrai si ce code désigne une région de bi.zone. */
+    public boolean estRegion(String code) {
+        return jdbc.sql("select exists (select 1 from bi.zone where code = :code and niveau = 'region')")
+                .param("code", code)
+                .query(Boolean.class)
+                .single();
+    }
+
+    /** Vrai dès que bi.fait_niu_profil_jour contient au moins une ligne (source alimentée). */
+    public boolean profilsDisponibles() {
+        return jdbc.sql("select exists (select 1 from bi.fait_niu_profil_jour)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    /** NIU générés sur la période et dans la région (tout le Togo si null), par sexe et tranche d'âge. */
+    public List<CaseProfil> niuParSexeEtAge(LocalDate du, LocalDate au, String region) {
+        return jdbc.sql("""
+                        select f.sexe, f.tranche_age, sum(f.niu_generes) as niu_generes
+                        from bi.fait_niu_profil_jour f
+                        where (cast(:du as date) is null or f.jour >= cast(:du as date))
+                          and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                          and (cast(:region as text) is null
+                               or f.zone_id = (select z.id from bi.zone z where z.code = cast(:region as text)))
+                        group by f.sexe, f.tranche_age
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .param("region", region)
+                .query((rs, ligne) -> new CaseProfil(
+                        rs.getString("sexe"),
+                        rs.getString("tranche_age"),
+                        rs.getLong("niu_generes")))
                 .list();
     }
 }

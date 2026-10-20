@@ -14,14 +14,31 @@ Guide de conception et d'exploitation : skill `/mosip-bi-pipeline` (`.claude/ski
 | `sources/ddl/` | DDL officiels MOSIP v1.1.5 copiés sans modification (source et date en tête de fichier) |
 | `cdc/connecteurs/` | Configurations Debezium sans secret (`regprc-dev.json` pour l'environnement local) |
 | `streaming/enrolement/` | Job temps réel de l'enrôlement ; tests dans `streaming/tests/` (vrai PostgreSQL, vraies migrations) |
+| `streaming/preinscription/` | Job des pré-inscriptions (`prereg.applicant_demographic` et `_consumed`, colonnes sans identité) |
+| `streaming/profil/` | Job du profil anonymisé des NIU (`idrepo.anonymous_profile`, MOSIP 1.1.5.5 et plus) |
 | `simulateur/` | Simulateur d'activité MOSIP pour le développement (inscriptions fictives) |
 | `outils/` | Enregistrement du connecteur, vérification de bout en bout |
 | `Dockerfile` | Image de développement (Python 3.12, Java 17, PySpark 4.2, connecteur Kafka de Spark) |
 | `journaux/` | Scripts des journaux ABIS et IDPS (hors MOSIP) |
 | `models/`, `extraction/`, `tests/`, `publier.sql`, `dbt_project.yml` | Ébauche par lots antérieure (dbt) : ne pas l'étendre, ne plus lancer `publier.sql` (il écraserait les faits du pipeline) |
 
-Les tables du Data Mart (`etat`, `pipeline`, colonnes de `bi`) sont créées par la migration Flyway
-`backend/src/main/resources/db/migration/V2__pipeline_temps_reel_enrolement.sql`, appliquée par l'API au démarrage.
+Les tables du Data Mart (`etat`, `pipeline`, colonnes de `bi`) sont créées par les migrations Flyway
+`backend/src/main/resources/db/migration/V2__pipeline_temps_reel_enrolement.sql` et
+`V4__preinscriptions_et_profil_des_niu.sql`, appliquées par l'API au démarrage.
+
+### Pré-inscriptions et profil des NIU (décisions du 20/10/2026)
+
+| Job | Connecteur | Topics | Écrit | Lancement |
+|---|---|---|---|---|
+| `streaming.preinscription.job` | `cdc/connecteurs/prereg-dev.json` | `<prefixe>.prereg.applicant_demographic`, `<prefixe>.prereg.applicant_demographic_consumed` | `etat.preinscription` → `bi.fait_preinscription_jour`, fraîcheur `preinscription` | `python -m streaming.preinscription.job` (ex. `NOM_REQUETE=etat_prereg@g1`) |
+| `streaming.profil.job` | `cdc/connecteurs/idrepo-dev.json` | `<prefixe>.idrepo.anonymous_profile` | `etat.profil_anonyme` → `bi.fait_niu_profil_jour` | `python -m streaming.profil.job` (ex. `NOM_REQUETE=etat_profil@g1`) |
+
+Mêmes variables d'environnement que le job de l'enrôlement (`TOPICS`, `CHECKPOINT_LOCATION`, `NOM_REQUETE`,
+`DATAMART_DSN`, `CLE_HMAC`, `KAFKA_BOOTSTRAP`…). Prérequis base à faire passer par le DBA :
+`cdc/connecteurs/prerequis-prereg.sql` et `cdc/connecteurs/prerequis-idrepo.sql` (partie A en lecture seule d'abord).
+Les correspondances `pipeline.correspondance_statut_preinscription` et `pipeline.correspondance_sexe` restent vides
+hors développement tant que l'équipe MOSIP ne les a pas validées : les demandes comptent alors en « non classées » et
+les NIU en sexe « I ». La chaîne locale Docker (`--profile temps-reel`) ne simule pas encore ces deux bases.
 
 ## Environnement local temps réel (Docker Desktop)
 

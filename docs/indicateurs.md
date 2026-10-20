@@ -12,16 +12,21 @@ de non-régression sur un instantané des données : le nouveau BI doit les retr
 |---|---|---|
 | Territoire | Togo → région (6) → préfecture (39 officielles ; 37 dans geoBoundaries) → commune → canton → localité → centre (CSC) → machine | `master.location`, `master.registration_center` ; centre et machine lus dans le RID (5 + 5 premiers chiffres) |
 | Temps | jour, semaine (lundi), mois, année | horodatages des tables sources |
-| Sexe | Femmes, Hommes | à décider : pas de `anonymous_profile` en MOSIP 1.1.5 (voir `docs/decisions.md`) ; « inconnu » en attendant |
-| Tranche d'âge | 0-5, 6-14, 15-18, 19-25, > 25 (ordre numérique, jamais alphabétique) | à décider, comme le sexe |
+| Sexe | Femmes, Hommes | `idrepo.anonymous_profile` (MOSIP 1.1.5.5 et plus), champ `gender` regroupé par `pipeline.correspondance_sexe` ; « inconnu » sans correspondance validée (décision du 20/10/2026) |
+| Tranche d'âge | 0-5, 6-14, 15-18, 19-25, 26-35, 36-45, 46-60, 60 et + (61 ans et plus) ; ordre numérique, jamais alphabétique | `idrepo.anonymous_profile`, année du jour − `yearOfBirth` (décision du 20/10/2026) |
 | Type de demande | 8 types (nouvelle inscription ≈ 99 %, mise à jour, perte…) | `registration.reg_type` |
 | Statut du paquet | 9 statuts MOSIP regroupés (règle à valider) | `status_code` / `latest_trn_status_code`, regroupés par `pipeline.correspondance_statut` |
 
 ## Enrôlement
 | Code | Indicateur | Définition et calcul | Source probable | Référence | Statut |
 |---|---|---|---|---|---|
-| E-PRE | Pré-inscriptions | demandes de pré-inscription créées | `mosip_prereg.applicant_demographic` (données d'identité : exclue de la capture ; autre source ou dérogation à décider) | 606 850 | à confirmer |
-| E-PRE-RDV | Rendez-vous réservés | pré-inscriptions avec rendez-vous ; le BI actuel affiche 0 (anomalie) | `mosip_prereg.reg_appointment` | ≈ 546 964 | à confirmer |
+| E-PRE | Pré-inscriptions | demandes de pré-inscription créées (une par `prereg_id`, tables active et `_consumed`), au jour de création `cr_dtimes` | `mosip_prereg.applicant_demographic` et `_consumed`, colonnes sans identité (dérogation limitée du 20/10/2026) | 606 850 | à confirmer |
+| E-PRE-RDV | Rendez-vous réservés | demandes au statut regroupé « réservée » (`Booked`) ; % = / demandes | idem, `status_code` regroupé par `pipeline.correspondance_statut_preinscription` | ≈ 546 964 | à confirmer |
+| E-PRE-ATT | En attente de rendez-vous | demandes au statut regroupé « en attente » (`Pending_Appointment`) ; % = / demandes | idem | 59 886 | à confirmer |
+| E-PRE-EXP | Expirées | demandes au statut regroupé « expirée » (`Expired`, absent de l'instance au 14/10/2026) | idem | 0 | à confirmer |
+| E-PRE-HON | Honorées à l'inscription | demandes passées dans `applicant_demographic_consumed` (reprises lors d'une inscription en centre) ; % = / demandes | idem | — | à confirmer |
+| E-PRE-DER | Dernière demande | date et heure de création de la demande la plus récente | `cr_dtimes` (fraîcheur de la source « preinscription ») | 14/01/2026 à 11h28 | à confirmer |
+| E-PRE-F | Femmes pré-inscrites | non disponible : le sexe d'une pré-inscription n'est que dans `demog_detail` (jamais capturée) | — | — | sans source |
 | E-INS | Inscriptions | paquets d'inscription reçus | `mosip_regprc.registration` | 3 278 239 | à confirmer |
 | E-NIU | NIU générés | inscriptions abouties avec NIU ; % = NIU / inscriptions | `registration` traitée (NEW) ; `mosip_idrepo.uin` exclue de la capture (NIU, données d'identité) sauf dérogation | 3 058 886 (93,3 %) | à confirmer |
 | E-COURS | En cours | inscriptions ni abouties, ni échouées, ni rejetées | `registration` | 123 639 | à confirmer |
@@ -32,6 +37,10 @@ de non-régression sur un instantané des données : le nouveau BI doit les retr
 | E-MAJ | Mises à jour | `reg_type` UPDATE (et RES_UPDATE ?) | `registration` | 12 689 | à confirmer |
 | E-PERTE | Récupérations de NIU | `reg_type` LOST | `registration` | 2 051 | à confirmer |
 | E-DELAI | Délai médian inscription → NIU | médiane (date NIU − date d'inscription), en jours | `registration` (date du NIU sans `uin` : à définir) | 6,5 j | test |
+| E-NIU-PROFIL | NIU générés par âge et par sexe | profils anonymisés de processus « New », au jour du profil, par sexe (F, H) et tranche d'âge ; NIU sans sexe ou sans âge comptés à part (« non renseignés ») ; par région (lieu du profil) | `mosip_idrepo.anonymous_profile` (1.1.5.5 et plus) | F 53,0 % / H 47,0 % (maquette) | test |
+
+Contrôle E-NIU-PROFIL : sur toute la durée, le total des profils « New » doit rester proche des NIU générés de type NEW
+(sources différentes : un écart s'affiche et se consigne, il ne se corrige pas).
 
 Contrôle : pour chaque zone et chaque période, NIU + rejetées + échouées + en cours (+ non classées) = inscriptions.
 
@@ -54,7 +63,11 @@ Mise en œuvre de la page (19/10/2026, `docs/plans/enrolement.md`), données de 
   ▲ : taux de rejet de la zone (E-REJ) arrondi à une décimale ≥ 3,5 %. Délai médian (E-DELAI) non disponible.
 - Top des centres (`GET /api/v1/enrolement/centres`) : 5 premiers centres par inscriptions, échecs (E-ECH) ou rejets
   (E-REJ) ; un centre à zéro n'est pas classé ; à égalité, ordre alphabétique.
-- NIU par âge et par sexe : « non disponible » (règle Sexe et âge de CLAUDE.md).
+- NIU par âge et par sexe (`GET /api/v1/enrolement/age-sexe`, 20/10/2026) : `bi.fait_niu_profil_jour`, huit tranches,
+  Togo ou une région (une préfecture est refusée : le profil ne situe un NIU qu'à la région).
+- Pré-inscription (`GET /api/v1/enrolement/preinscriptions`, 20/10/2026) : `bi.fait_preinscription_jour`, national ;
+  un utilisateur régional reçoit le bloc sans chiffres (une pré-inscription n'a pas de territoire).
+- Valeur indisponible : `null` dans l'API, 0 à l'écran (décision du 20/10/2026).
 
 ## Impression des cartes
 | Code | Indicateur | Définition et calcul | Source probable | Référence | Statut |

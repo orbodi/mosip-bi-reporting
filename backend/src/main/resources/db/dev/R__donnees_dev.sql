@@ -6,7 +6,8 @@ insert into bi.source_fraicheur (source, libelle, ordre, premiere_donnee, dernie
     ('cartes',            'Impression des cartes', 2, '2024-02-01', '2026-01-14 11:59:00+00', null),
     ('abis',              'ABIS',                  3, '2024-01-01', '2026-07-13 11:59:00+00', null),
     ('idps',              'IDPS',                  4, '2026-07-03', '2026-07-03 17:09:00+00', null),
-    ('authentifications', 'Authentifications',     5, '2025-02-01', '2026-01-14 11:05:00+00', null)
+    ('authentifications', 'Authentifications',     5, '2025-02-01', '2026-01-14 11:05:00+00', null),
+    ('preinscription',    'Pré-inscription',       6, '2024-01-01', '2026-01-14 11:28:00+00', null)
 on conflict (source) do update
     set libelle = excluded.libelle,
         ordre = excluded.ordre,
@@ -110,4 +111,25 @@ insert into pipeline.correspondance_statut (status_code, statut_regroupe, valide
     ('REPROCESS_FAILED', 'echoue',   null, null, 'démonstration, à valider par l''équipe MOSIP')
 on conflict (status_code) do update
     set statut_regroupe = excluded.statut_regroupe,
+        commentaire = excluded.commentaire;
+
+-- Regroupement des statuts de pré-inscription : DÉMONSTRATION SEULEMENT. Codes relevés sur mosip_prereg le
+-- 14/10/2026 (Booked, Pending_Appointment ; Expired attendu par MOSIP, absent de l'instance). La correspondance réelle
+-- reste à valider par l'équipe MOSIP et n'est jamais chargée en recette ni en production par ce fichier.
+insert into pipeline.correspondance_statut_preinscription (status_code, statut_regroupe, valide_par, valide_le,
+                                                           commentaire) values
+    ('Pending_Appointment', 'en_attente', null, null, 'démonstration, à valider par l''équipe MOSIP'),
+    ('Booked',              'reservee',   null, null, 'démonstration, à valider par l''équipe MOSIP'),
+    ('Expired',             'expiree',    null, null, 'démonstration, à valider par l''équipe MOSIP')
+on conflict (status_code) do update
+    set statut_regroupe = excluded.statut_regroupe,
+        commentaire = excluded.commentaire;
+
+-- Genre du profil anonymisé → sexe : DÉMONSTRATION SEULEMENT (valeurs du simulateur et des volumes de démonstration).
+-- Les valeurs réelles de « gender » se relèvent sur idrepo.anonymous_profile et se font valider par l'équipe MOSIP.
+insert into pipeline.correspondance_sexe (genre, sexe, valide_par, valide_le, commentaire) values
+    ('Female', 'F', null, null, 'démonstration, à valider par l''équipe MOSIP'),
+    ('Male',   'H', null, null, 'démonstration, à valider par l''équipe MOSIP')
+on conflict (genre) do update
+    set sexe = excluded.sexe,
         commentaire = excluded.commentaire;

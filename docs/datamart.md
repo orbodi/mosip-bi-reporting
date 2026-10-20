@@ -80,7 +80,7 @@ flowchart LR
 | `bi.type_demande` | `reg_type` → libellé affiché, ordre | 8 codes de l'énumération `RegistrationType` v1.1.5 (NEW, UPDATE, RES_UPDATE, CORRECTION, ACTIVATED, DEACTIVATED, LOST, RES_REPRINT) ; libellés à valider | à créer |
 | `bi.centre_info` | Attributs d'un centre : type (`cntrtyp_code` → `reg_center_type`), coordonnées (`latitude`, `longitude`), nombre de postes (`number_of_kiosks`), actif | `master.registration_center` | à créer |
 | `bi.partenaire` | Partenaire : identifiant, nom de l'organisation, type, statut d'approbation, actif | `pms.partner`, `pms.partner_type` | à créer |
-| Sexe, tranche d'âge | Colonnes des faits (`I` / `inconnu`) | aucune source anonymisée en 1.1.5 (décision 11) | en place |
+| Sexe, tranche d'âge | `bi.fait_niu_profil_jour` (F, H, I ; 8 tranches) ; colonnes `sexe`, `tranche_age` des autres faits (`I` / `inconnu`) | `idrepo.anonymous_profile` (1.1.5.5 et plus, décision 11 tranchée le 20/10/2026) | V4 |
 
 Correspondances (dans `pipeline`, **vides hors développement tant qu'elles ne sont pas validées** ; un code absent
 compte en « non classé » et déclenche une alerte) :
@@ -90,7 +90,8 @@ compte en « non classé » et déclenche une alerte) :
 | `pipeline.correspondance_statut` | `regprc.registration.status_code` | abouti, en cours, échoué, rejeté (existe, V2) |
 | `pipeline.correspondance_motif_rejet` | (`trn_type_code`, `status_code`, `sub_status_code`) de `registration_transaction` | technique, superviseur, doublon, autre |
 | `pipeline.correspondance_transaction` | `trn_type_code` + `status_code` de `registration_transaction` | événement métier : NIU généré, demande d'impression envoyée… |
-| `pipeline.correspondance_statut_preinscription` | `prereg.applicant_demographic.status_code` | en attente de rendez-vous, réservée, expirée, annulée, consommée |
+| `pipeline.correspondance_statut_preinscription` | `prereg.applicant_demographic.status_code` | en attente, réservée, expirée, annulée (existe, V4 ; la consommation se lit dans la table `_consumed`) |
+| `pipeline.correspondance_sexe` | `gender` du profil anonymisé | F, H (existe, V4) |
 | `pipeline.correspondance_statut_carte` | `credential.credential_transaction.status_code` | envoyée, en attente, rejetée, échouée |
 | `pipeline.correspondance_statut_auth` | `ida.auth_transaction.status_code` | réussie, échouée |
 | `pipeline.seuil_qualite_bio` | modalité | bornes Excellent / Moyen / Faible (à fournir par IN Groupe) |
@@ -117,7 +118,7 @@ masque pas les clés) : topics à accès restreint, empreinte HMAC dans Spark.
 ### mosip_prereg
 | Table | Clé | Retenues | Exclues | Sert à |
 |---|---|---|---|---|
-| `applicant_demographic` et `applicant_demographic_consumed` | `prereg_id` → HMAC | `status_code`, `cr_dtimes`, `upd_dtimes`, `lang_code` | `demog_detail` (identité), `demog_detail_hash`, `cr_appuser_id` (e-mail ou téléphone du demandeur), `cr_by`, `upd_by` | demandes et statuts — **décision 1** (table aujourd'hui classée interdite) |
+| `applicant_demographic` et `applicant_demographic_consumed` | `prereg_id` → HMAC | `status_code`, `cr_dtimes`, `upd_dtimes`, `lang_code` | `demog_detail` (identité), `demog_detail_hash`, `cr_appuser_id` (e-mail ou téléphone du demandeur), `cr_by`, `upd_by` | demandes et statuts — **décision 1 accordée le 20/10/2026** : `prereg_id`, `status_code`, `cr_dtimes`, `upd_dtimes` seulement (`prereg-dev.json`) |
 | `reg_appointment` et `reg_appointment_consumed` | `id` | `regcntr_id`, `prereg_id` → HMAC, `booking_dtimes`, `appointment_date`, `slot_from_time`, `cr_dtimes`, `upd_dtimes` | `cr_by`, `upd_by` | rendez-vous par centre et par date, rendez-vous honorés |
 | `reg_available_slot` | (`regcntr_id`, `availability_date`, `slot_from_time`) | `slot_to_time`, `available_kiosks`, `is_deleted` | — | capacité offerte |
 | `processed_prereg_list` | `prereg_id` → HMAC | `first_received_dtimes`, `status_code`, `cr_dtimes`, `upd_dtimes`, `is_deleted` | `status_comments` | pré-inscriptions reçues par le traitement des paquets |
@@ -125,6 +126,11 @@ masque pas les clés) : topics à accès restreint, empreinte HMAC dans Spark.
 Les tables `*_consumed` reçoivent, d'après leur DDL, les pré-inscriptions et rendez-vous « consommés ». Si MOSIP les
 retire en même temps de la table active (à vérifier en recette), l'événement `d` de la table active signifie
 « consommée », pas « supprimée » : les recalculs prennent l'union des deux tables, la table `_consumed` prévalant.
+
+### mosip_idrepo
+| Table | Clé | Retenues | Exclues | Sert à |
+|---|---|---|---|---|
+| `anonymous_profile` (1.1.5.5 et plus) | `id` → HMAC | `profile` (JSON lu par Spark : processus, jour, genre, année de naissance → tranche, lieux → région ; jamais écrit), `cr_dtimes`, `is_deleted` | `cr_by`, `upd_by`, `upd_dtimes`, `del_dtimes` | NIU par sexe, âge et région (décision 11) |
 
 ### mosip_credential
 | Table | Clé | Retenues | Exclues | Sert à |
@@ -155,7 +161,7 @@ retire en même temps de la table active (à vérifier en recette), l'événemen
 Les clés de `master` contiennent `lang_code` : une ligne par langue. Toujours filtrer la langue de référence.
 
 ### Jamais capturées
-`idrepo.*` (NIU, données d'identité chiffrées, documents, biométrie), `regprc.individual_demographic_dedup` (seule
+`idrepo.*` sauf `anonymous_profile` (NIU, données d'identité chiffrées, documents, biométrie), `regprc.individual_demographic_dedup` (seule
 colonne de sexe en 1.1.5, à côté du nom, de la date de naissance et des coordonnées), `prereg.applicant_document*`,
 `master.user_detail` (nom, NIU, e-mail des opérateurs), `ida.identity_cache`, `ida.otp_transaction`, tout contenu
 `bytea` ou JSON de requête.
@@ -167,12 +173,12 @@ Indicateurs : E-PRE, E-PRE-RDV, en attente de rendez-vous, expirées, honorées 
 
 | Table | Grain | Mesures | Règles |
 |---|---|---|---|
-| `etat.prereg_applicant_demographic`, `etat.prereg_applicant_demographic_consumed` | une pré-inscription | statut, création, mise à jour, consommée | si décision 1 acceptée |
+| `etat.preinscription` | une pré-inscription × table (active, `_consumed`) | statut, création, mise à jour | existe (V4) ; la ligne `_consumed` prévaut |
 | `etat.prereg_reg_appointment`, `etat.prereg_reg_appointment_consumed`, `etat.prereg_reg_available_slot`, `etat.prereg_processed_prereg_list` | une ligne source | — | — |
-| `bi.fait_preinscription_jour` | jour de création × statut regroupé | demandes, consommées | national : une demande n'a pas de centre |
+| `bi.fait_preinscription_jour` | jour de création × statut regroupé | demandes, consommées | existe (V4) ; national : une demande n'a pas de centre |
 | `bi.fait_rdv_jour` | date du rendez-vous × centre | rendez-vous réservés, honorés (consommés), places offertes (`available_kiosks` des créneaux) | « réservés » devient exact (aujourd'hui estimé) |
 
-Sans décision 1 : seuls les rendez-vous (par centre) et les pré-inscriptions consommées restent mesurables.
+Décision 1 accordée le 20/10/2026 (dérogation limitée). Les rendez-vous par centre (`bi.fait_rdv_jour`) restent à faire.
 
 ### 5.2 Enrôlement (page Enrôlement)
 Indicateurs : E-INS, E-NIU, E-COURS, E-BLOQ, E-ECH, E-REJ, E-TRAIT, E-MAJ, E-PERTE, E-DELAI, synchronisés non chargés,
@@ -264,8 +270,8 @@ Indicateurs : A-REQ, A-OK, A-KO, A-TYPE, A-CAUSE, A-PART, requêtes par semaine.
 | E-BLOQ, en cours par étape | `bi.stock_enrolement_courant` / `_jour` | lot A |
 | Rejets par motif | `bi.fait_rejet_jour` | lot A, correspondance à valider |
 | Synchronisés non chargés | `bi.fait_synchronisation_jour` | lot A |
-| E-PRE, en attente, expirées | `bi.fait_preinscription_jour` | lot B, décision 1 |
-| E-PRE-RDV, honorées | `bi.fait_rdv_jour` | lot B |
+| E-PRE, en attente, expirées, honorées, dernière demande | `bi.fait_preinscription_jour`, `bi.source_fraicheur` | V4, job `streaming/preinscription` |
+| Rendez-vous par centre | `bi.fait_rdv_jour` | lot B |
 | I-DEM, I-ATT, I-REJ (national) | `bi.fait_carte_demande_jour` | lot C |
 | Demandes d'impression par centre | `bi.fait_impression_centre_jour` | lot C, à confirmer |
 | I-EXP, I-REM, I-AREM, I-DELAI, top des centres | `bi.fait_carte_jour`, `bi.stock_carte_*` | lot E, source externe (décision 4) |
@@ -274,7 +280,8 @@ Indicateurs : A-REQ, A-OK, A-KO, A-TYPE, A-CAUSE, A-PART, requêtes par semaine.
 | AB-INS, AB-DED, AB-ERR (côté MOSIP) | `bi.fait_abis_jour` (source mosip) | lot D |
 | AJ-*, AB-* (côté ABIS), SB-* | `bi.fait_abis_jour`, `bi.fait_adjudication_jour`, `bi.fait_qualite_bio_jour` | lot D, journaux (décision 6) |
 | ID-* | `bi.fait_idps_jour`, `bi.stock_idps_courant` | lot E (décision 5) |
-| Sexe, âge (pré-inscription, NIU, mises à jour) | colonnes `sexe`, `tranche_age` | indisponible en 1.1.5 (décision 11) |
+| Sexe, âge des NIU (E-NIU-PROFIL) | `bi.fait_niu_profil_jour` | V4, job `streaming/profil` (MOSIP 1.1.5.5 et plus) |
+| Sexe, âge des pré-inscriptions et des mises à jour | — | sans source (le sexe d'une pré-inscription n'est que dans `demog_detail`) |
 
 ## 8. Lots de mise en œuvre
 
@@ -284,7 +291,7 @@ intégration, bout en bout), revue (`qa-testeur`, `auditeur-donnees`, `relecteur
 | Lot | Contenu | Prérequis |
 |---|---|---|
 | A | Référentiel (`master` → `bi.zone`, `bi.centre_info`, `bi.jour`, `bi.type_demande`) ; enrôlement complet (transactions, rejets, stocks, délai, synchronisation) ; page Enrôlement hors pré-inscription | décisions 2, 3 (motifs), 8, 10 |
-| B | Pré-inscription | décision 1 |
+| B | Pré-inscription : demandes et statuts faits (V4) ; rendez-vous par centre à faire | — |
 | C | Cartes côté MOSIP, authentifications, partenaires | décisions 3 (statuts), 7 |
 | D | ABIS côté MOSIP, puis journaux IN Groupe | décision 6 |
 | E | IDPS, imprimeur, distribution | décisions 4, 5 |
@@ -292,7 +299,7 @@ intégration, bout en bout), revue (`qa-testeur`, `auditeur-donnees`, `relecteur
 
 ## 9. Décisions à prendre
 
-1. **Pré-inscription** : dérogation limitée pour capturer `applicant_demographic` et `_consumed` sur les seules
+1. **Pré-inscription** (accordée le 20/10/2026, sans `lang_code`) : dérogation limitée pour capturer `applicant_demographic` et `_consumed` sur les seules
    colonnes `prereg_id` (empreinte), `status_code`, `cr_dtimes`, `upd_dtimes`, `lang_code`. Sans elle, E-PRE et les
    statuts de pré-inscription restent indisponibles. Si oui : mettre à jour la liste des tables interdites du skill.
 2. **Référentiel** : langue de référence (`fra` ?) et correspondance des niveaux `hierarchy_level` → région,
@@ -310,4 +317,5 @@ intégration, bout en bout), revue (`qa-testeur`, `auditeur-donnees`, `relecteur
 8. **Grain machine** : ajouter la machine (chiffres 6 à 10 du RID) pour l'Exploration ?
 9. **Vue d'ensemble** : lecture « flux » (chaque étape à sa propre date) proposée ; ou « cohorte » ?
 10. **Volume de `registration_transaction`** : tout capturer, ou seulement les types de transaction utiles ?
-11. **Sexe et âge** : rappel de la décision ouverte (aucune source anonymisée en 1.1.5).
+11. **Sexe et âge** : tranché le 20/10/2026, profil anonymisé `idrepo.anonymous_profile` (MOSIP 1.1.5.5 et plus).
+    Version de l'instance à vérifier ; sinon mise à niveau ou agrégat livré par l'équipe MOSIP.
