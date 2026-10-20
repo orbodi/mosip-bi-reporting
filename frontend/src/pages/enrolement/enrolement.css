@@ -331,22 +331,6 @@
   }
 }
 
-/* Bloc « NIU générés par âge et par sexe » : non disponible */
-.non-disponible {
-  padding: var(--e-6);
-  border: 1px dashed var(--bord-champ);
-  border-radius: var(--r-m);
-  text-align: center;
-}
-.non-disponible p {
-  margin: 0;
-}
-.non-disponible .non-disponible__titre {
-  margin-bottom: var(--e-2);
-  font-size: var(--t-l);
-  font-weight: 600;
-}
-
 /* Bloc « Top des centres » : onglets React Aria */
 .onglets {
   display: inline-flex;

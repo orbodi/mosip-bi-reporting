@@ -86,3 +86,37 @@ export function semainesVides(fin: string, cles: string[]): SemaineValeurs[] {
 
 /** Valeur inconnue (API absente) : affichée « – », jamais 0. */
 export const INCONNUE = INCONNU;
+
+/** Tranches d'âge de la pyramide, de la plus âgée à la plus jeune (libellés de la maquette Enrôlement). */
+export const TRANCHES_PYRAMIDE = [
+  '60 ans et +',
+  '46 à 60',
+  '36 à 45',
+  '26 à 35',
+  '19 à 25',
+  '15 à 18',
+  '6 à 14',
+  '0 à 5',
+] as const;
+
+/** Une ligne de la pyramide des âges (composants/blocs/Pyramide). */
+export interface TrancheSexe {
+  tranche: string;
+  femmes: number;
+  hommes: number;
+}
+
+/** Les tranches de la pyramide sans leurs chiffres (sexe et âge sans source : CLAUDE.md, règle « Sexe et âge »). */
+export function pyramideInconnue(): TrancheSexe[] {
+  return TRANCHES_PYRAMIDE.map((tranche) => ({ tranche, femmes: INCONNU, hommes: INCONNU }));
+}
+
+/**
+ * Longueur d'une barre de la pyramide, en % de sa demi-largeur : la plus grande valeur des deux sexes occupe 70 %
+ * (comme la maquette), le reste laisse la place au nombre. 0 pour une valeur inconnue.
+ */
+export function largeurPyramide(valeur: number, lignes: TrancheSexe[]): number {
+  const connues = lignes.flatMap((l) => [l.femmes, l.hommes]).filter(estConnu);
+  const max = Math.max(0, ...connues);
+  return estConnu(valeur) && max > 0 ? (valeur / max) * 70 : 0;
+}

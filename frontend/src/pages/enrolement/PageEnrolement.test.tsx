@@ -31,6 +31,23 @@ describe('Page Enrôlement', () => {
     const bloc = within(await screen.findByRole('region', { name: 'NIU générés par âge et par sexe' }));
     expect(bloc.getByRole('note')).toHaveTextContent('Non disponible');
     expect(await bloc.findByText(/Région Savanes/)).toBeInTheDocument();
+    // Pyramide de la maquette : 8 tranches, femmes et hommes à « – », jamais 0.
+    const pyramide = within(
+      bloc.getByRole('table', { name: 'Répartition des NIU par tranche d’âge et par sexe' }),
+    );
+    expect(pyramide.getAllByRole('rowheader').map((t) => t.textContent)).toEqual([
+      '60 ans et +',
+      '46 à 60',
+      '36 à 45',
+      '26 à 35',
+      '19 à 25',
+      '15 à 18',
+      '6 à 14',
+      '0 à 5',
+    ]);
+    expect(pyramide.getAllByRole('cell').every((c) => c.textContent === '–')).toBe(true);
+    expect(bloc.getByText(/^Femmes :/)).toHaveTextContent('Femmes : –');
+    expect(bloc.getByText(/^Hommes :/)).toHaveTextContent('Hommes : –');
   });
 
   it('mène aux filtres détaillés de l’Exploration', async () => {
