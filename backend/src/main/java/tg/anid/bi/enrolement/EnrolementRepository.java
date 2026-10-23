@@ -93,9 +93,7 @@ public class EnrolementRepository {
                         rs.getLong("en_cours"),
                         rs.getLong("echouees"),
                         rs.getLong("rejetees"),
-                        rs.getLong("non_classees"),
-                        rs.getLong("femmes"),
-                        rs.getLong("hommes")))
+                        rs.getLong("non_classees")))
                 .single();
     }
 
