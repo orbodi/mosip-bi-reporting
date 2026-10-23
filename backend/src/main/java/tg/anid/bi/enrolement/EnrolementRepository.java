@@ -54,6 +54,10 @@ public class EnrolementRepository {
     public record CaseProfil(String sexe, String trancheAge, long niuGeneres) {
     }
 
+    /** Pré-inscriptions d'un sexe (F, H ou I), d'une tranche d'âge (ou « inconnu ») et d'une nationalité. */
+    public record CasePreinscription(String sexe, String trancheAge, String nationalite, long demandes) {
+    }
+
     /** Nom de la zone (région, préfecture… centre) qui porte ce code. */
     public Optional<String> nomZone(String code) {
         return jdbc.sql("select nom from bi.zone where code = :code")
@@ -175,6 +179,13 @@ public class EnrolementRepository {
                             union all
                             select d.enfant_id, z.id from bi.zone z join descendance d on z.parent_id = d.zone_id
                         ),
+                        prefaits as (
+                            select p.zone_id, sum(p.demandes) as demandes
+                            from bi.fait_preinscription_zone_jour p
+                            where (cast(:du as date) is null or p.jour >= cast(:du as date))
+                              and (cast(:au as date) is null or p.jour <= cast(:au as date))
+                            group by p.zone_id
+                        ),
                         faits as (
                             select f.centre_id,
                                    sum(f.inscriptions) as inscriptions,
@@ -194,12 +205,16 @@ public class EnrolementRepository {
                                coalesce(sum(f.en_cours), 0)     as en_cours,
                                coalesce(sum(f.echouees), 0)     as echouees,
                                coalesce(sum(f.rejetees), 0)     as rejetees,
-                               coalesce(sum(f.non_classees), 0) as non_classees
+                               coalesce(sum(f.non_classees), 0) as non_classees,
+                               coalesce(sum(p.demandes), 0)     as preinscriptions
                         from enfants e
                         join descendance d on d.enfant_id = e.id
                         left join faits f on f.centre_id = d.zone_id
+                        left join prefaits p on p.zone_id = d.zone_id
                         group by e.code, e.nom, e.niveau, e.ordre
-                        having e.code <> cast(:horsReferentiel as text) or coalesce(sum(f.inscriptions), 0) > 0
+                        having e.code <> cast(:horsReferentiel as text)
+                            or coalesce(sum(f.inscriptions), 0) > 0
+                            or coalesce(sum(p.demandes), 0) > 0
                         order by e.ordre, e.nom
                         """)
                 .param("du", du)
@@ -216,7 +231,53 @@ public class EnrolementRepository {
                         rs.getLong("en_cours"),
                         rs.getLong("echouees"),
                         rs.getLong("rejetees"),
-                        rs.getLong("non_classees")))
+                        rs.getLong("non_classees"),
+                        rs.getLong("preinscriptions")))
+                .list();
+    }
+
+    /**
+     * Pré-inscriptions de la zone et de toute sa descendance (tout le Togo si {@code zone} est null) sur la période,
+     * selon la préfecture de résidence déclarée.
+     */
+    public long preinscriptionsZone(LocalDate du, LocalDate au, String zone) {
+        return jdbc.sql(AVEC_PERIMETRE + """
+                        select coalesce(sum(p.demandes), 0)
+                        from bi.fait_preinscription_zone_jour p
+                        where (cast(:zone as text) is null or p.zone_id in (select id from perimetre))
+                          and (cast(:du as date) is null or p.jour >= cast(:du as date))
+                          and (cast(:au as date) is null or p.jour <= cast(:au as date))
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .param("zone", zone)
+                .query(Long.class)
+                .single();
+    }
+
+    /** Vrai dès que bi.fait_preinscription_profil_jour contient au moins une ligne (source alimentée). */
+    public boolean profilPreinscriptionsDisponible() {
+        return jdbc.sql("select exists (select 1 from bi.fait_preinscription_profil_jour)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    /** Pré-inscriptions créées sur la période (bornes incluses, null = non bornée), par sexe, âge et nationalité. */
+    public List<CasePreinscription> preinscriptionsParProfil(LocalDate du, LocalDate au) {
+        return jdbc.sql("""
+                        select f.sexe, f.tranche_age, f.nationalite, sum(f.demandes) as demandes
+                        from bi.fait_preinscription_profil_jour f
+                        where (cast(:du as date) is null or f.jour >= cast(:du as date))
+                          and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                        group by f.sexe, f.tranche_age, f.nationalite
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .query((rs, ligne) -> new CasePreinscription(
+                        rs.getString("sexe"),
+                        rs.getString("tranche_age"),
+                        rs.getString("nationalite"),
+                        rs.getLong("demandes")))
                 .list();
     }
 

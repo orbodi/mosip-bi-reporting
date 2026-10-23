@@ -8,13 +8,14 @@ const texte = (t: string) => t.replace(/\s+/g, ' ');
 describe('Page Enrôlement', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('présente les six blocs dans l’ordre de la maquette', async () => {
+  it('présente les sept blocs dans l’ordre de la maquette', async () => {
     simulerApi();
     afficher('/enrolement');
 
     await screen.findByRole('heading', { name: 'Territoire : vue nationale' });
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
       'Pré-inscription',
+      'Profil des pré-inscrits',
       'Devenir des inscriptions',
       'Inscriptions et NIU par semaine',
       'Territoire : vue nationale',
@@ -38,6 +39,28 @@ describe('Page Enrôlement', () => {
     expect(pre.queryByText(/Honorées/)).not.toBeInTheDocument();
     expect(pre.queryByRole('note')).not.toBeInTheDocument();
     expect(screen.queryByText(/pas encore raccordée|non disponible|non mesuré/i)).not.toBeInTheDocument();
+  });
+
+  it('profil des pré-inscrits : nationalités et pyramide de l’API', async () => {
+    simulerApi();
+    afficher('/enrolement');
+
+    const profil = within(await screen.findByRole('region', { name: 'Profil des pré-inscrits' }));
+    const liste = within(profil.getByRole('list', { name: 'Pré-inscriptions par nationalité' }));
+    expect(await liste.findByText('TOGO')).toBeInTheDocument();
+    expect(liste.getByText(texte('603 120'))).toBeInTheDocument();
+    expect(liste.getAllByRole('listitem').map((l) => l.firstChild?.textContent)).toEqual([
+      'TOGO',
+      'BENIN',
+      'GHANA',
+      'NIGERIA',
+      'BURKINA FASO',
+      'Autres',
+    ]);
+    const pyramide = within(
+      profil.getByRole('table', { name: 'Répartition des pré-inscriptions par tranche d’âge et par sexe' }),
+    );
+    expect(pyramide.getByText(texte('79 000'))).toBeInTheDocument();
   });
 
   it('pré-inscription : femmes et hommes, sans pourcentage ni note', async () => {

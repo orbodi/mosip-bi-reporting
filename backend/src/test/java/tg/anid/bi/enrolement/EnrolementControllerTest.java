@@ -89,9 +89,10 @@ class EnrolementControllerTest {
     @Test
     void renvoieLeTerritoireAvecUneLigneParSousZone() throws Exception {
         when(service.territoire(isNull(), isNull(), eq("SAV"))).thenReturn(new Territoire(
-                "Savanes", "SAV", null, null, 150, 130, 9, 1, 10, 0,
-                List.of(new Territoire.LigneZone("SAV-02", "Tône", "prefecture", false, 100, 90, 4, 1, 5, 0),
-                        new Territoire.LigneZone("SAV-01", "Cinkassé", "prefecture", false, 50, 40, 5, 0, 5, 0))));
+                "Savanes", "SAV", null, null, 150, 130, 9, 1, 10, 0, 300,
+                List.of(new Territoire.LigneZone("SAV-02", "Tône", "prefecture", false, 100, 90, 4, 1, 5, 0, 180),
+                        new Territoire.LigneZone("SAV-01", "Cinkassé", "prefecture", false, 50, 40, 5, 0, 5, 0,
+                                120))));
 
         mvc.perform(get("/api/v1/enrolement/territoire").param("zone", "SAV"))
                 .andExpect(status().isOk())
@@ -133,6 +134,23 @@ class EnrolementControllerTest {
             mvc.perform(get("/api/v1/enrolement/" + bloc).param("zone", "SAV"))
                     .andExpect(status().isForbidden());
         }
+    }
+
+    @Test
+    void renvoieLeProfilDesPreinscrits() throws Exception {
+        when(service.profilPreinscriptions(isNull(), isNull())).thenReturn(new ProfilPreinscriptions(
+                "Ensemble du Togo", null, null, true,
+                List.of(new AgeSexe.Tranche("26-35", 300L, 250L)), 40L,
+                List.of(new ProfilPreinscriptions.Nationalite("TOGO", 580),
+                        new ProfilPreinscriptions.Nationalite("Non renseignée", 10))));
+
+        mvc.perform(get("/api/v1/enrolement/preinscriptions/profil"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponible").value(true))
+                .andExpect(jsonPath("$.tranches[0].femmes").value(300))
+                .andExpect(jsonPath("$.nonRenseignes").value(40))
+                .andExpect(jsonPath("$.nationalites[0].nom").value("TOGO"))
+                .andExpect(jsonPath("$.nationalites[1].demandes").value(10));
     }
 
     @Test

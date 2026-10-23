@@ -5,6 +5,7 @@ import type { DefinitionPage } from '../pages';
 import { BlocAgeSexe } from './BlocAgeSexe';
 import { BlocDevenir } from './BlocDevenir';
 import { BlocPreinscription } from './BlocPreinscription';
+import { BlocProfilPreinscription } from './BlocProfilPreinscription';
 import { BlocSemaines } from './BlocSemaines';
 import { BlocTerritoire } from './BlocTerritoire';
 import { BlocTopCentres } from './BlocTopCentres';
@@ -27,6 +28,7 @@ export function PageEnrolement({ page }: { page: DefinitionPage }) {
       />
       <div className="contenu grille-page">
         <BlocPreinscription />
+        <BlocProfilPreinscription />
         <BlocDevenir />
         <BlocSemaines />
         <BlocTerritoire />

@@ -2,10 +2,14 @@ package tg.anid.bi.enrolement;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.springframework.stereotype.Service;
@@ -20,6 +24,9 @@ public class EnrolementService {
     static final String ENSEMBLE_DU_TOGO = "Ensemble du Togo";
     static final int NOMBRE_SEMAINES = 12;
     static final int TAILLE_TOP = 5;
+    /** Nationalité des demandes non enrichies ou sans nationalité (valeur de bi.fait_preinscription_profil_jour). */
+    static final String NATIONALITE_NON_RENSEIGNEE = "Non renseignée";
+    static final String NATIONALITE_AUTRES = "Autres";
     static final Set<String> CLASSEMENTS = Set.of("inscriptions", "echecs", "rejets");
     /** Tranches d'âge de la pyramide (maquette Enrôlement), de la plus jeune à la plus âgée. */
     static final List<String> TRANCHES_AGE = List.of("0-5", "6-14", "15-18", "19-25", "26-35", "36-45", "46-60",
@@ -77,7 +84,7 @@ public class EnrolementService {
         EnrolementRepository.Totaux t = repository.devenir(du, au, zone);
         List<Territoire.LigneZone> lignes = repository.sousZones(du, au, zone);
         return new Territoire(perimetre, zone, du, au, t.inscriptions(), t.niuGeneres(), t.enCours(),
-                t.echouees(), t.rejetees(), t.nonClassees(), lignes);
+                t.echouees(), t.rejetees(), t.nonClassees(), repository.preinscriptionsZone(du, au, zone), lignes);
     }
 
     /** Les cinq premiers centres de la portée selon le classement : inscriptions, echecs ou rejets. */
@@ -148,6 +155,62 @@ public class EnrolementService {
                 .mapToLong(EnrolementRepository.CaseProfil::niuGeneres)
                 .sum();
         return new AgeSexe(perimetre, du, au, true, tranches, nonRenseignes);
+    }
+
+    /**
+     * Pré-inscriptions par tranche d'âge et sexe, et par nationalité (les {@value #TAILLE_TOP} premières, puis
+     * « Autres » et « Non renseignée »). Nationales, comme le bloc « Pré-inscription ».
+     */
+    public ProfilPreinscriptions profilPreinscriptions(LocalDate du, LocalDate au) {
+        verifierOrdre(du, au);
+        String zone = portee.zoneEffective(null);
+        if (zone != null) {
+            return ProfilPreinscriptions.nonDisponible(nomPerimetre(zone), du, au, TRANCHES_AGE);
+        }
+        if (!repository.profilPreinscriptionsDisponible()) {
+            return ProfilPreinscriptions.nonDisponible(ENSEMBLE_DU_TOGO, du, au, TRANCHES_AGE);
+        }
+        List<EnrolementRepository.CasePreinscription> cases = repository.preinscriptionsParProfil(du, au);
+        List<AgeSexe.Tranche> tranches = TRANCHES_AGE.stream()
+                .map(t -> new AgeSexe.Tranche(t, sommeDemandes(cases, "F", t), sommeDemandes(cases, "H", t)))
+                .toList();
+        long nonRenseignes = cases.stream()
+                .filter(c -> (!"F".equals(c.sexe()) && !"H".equals(c.sexe())) || !TRANCHES_AGE.contains(c.trancheAge()))
+                .mapToLong(EnrolementRepository.CasePreinscription::demandes)
+                .sum();
+        return new ProfilPreinscriptions(ENSEMBLE_DU_TOGO, du, au, true, tranches, nonRenseignes,
+                nationalites(cases));
+    }
+
+    /** Les {@value #TAILLE_TOP} nationalités les plus nombreuses, puis « Autres » et « Non renseignée » si non nulles. */
+    static List<ProfilPreinscriptions.Nationalite> nationalites(List<EnrolementRepository.CasePreinscription> cases) {
+        Map<String, Long> parNationalite = cases.stream().collect(Collectors.groupingBy(
+                EnrolementRepository.CasePreinscription::nationalite, TreeMap::new,
+                Collectors.summingLong(EnrolementRepository.CasePreinscription::demandes)));
+        long nonRenseignee = parNationalite.getOrDefault(NATIONALITE_NON_RENSEIGNEE, 0L);
+        List<ProfilPreinscriptions.Nationalite> connues = parNationalite.entrySet().stream()
+                .filter(e -> !NATIONALITE_NON_RENSEIGNEE.equals(e.getKey()) && e.getValue() > 0)
+                .map(e -> new ProfilPreinscriptions.Nationalite(e.getKey(), e.getValue()))
+                .sorted(Comparator.comparingLong(ProfilPreinscriptions.Nationalite::demandes).reversed()
+                        .thenComparing(ProfilPreinscriptions.Nationalite::nom))
+                .toList();
+        List<ProfilPreinscriptions.Nationalite> resultat = new ArrayList<>(connues.stream().limit(TAILLE_TOP).toList());
+        long autres = connues.stream().skip(TAILLE_TOP).mapToLong(ProfilPreinscriptions.Nationalite::demandes).sum();
+        if (autres > 0) {
+            resultat.add(new ProfilPreinscriptions.Nationalite(NATIONALITE_AUTRES, autres));
+        }
+        if (nonRenseignee > 0) {
+            resultat.add(new ProfilPreinscriptions.Nationalite(NATIONALITE_NON_RENSEIGNEE, nonRenseignee));
+        }
+        return List.copyOf(resultat);
+    }
+
+    private static long sommeDemandes(List<EnrolementRepository.CasePreinscription> cases, String sexe,
+                                      String tranche) {
+        return cases.stream()
+                .filter(c -> sexe.equals(c.sexe()) && tranche.equals(c.trancheAge()))
+                .mapToLong(EnrolementRepository.CasePreinscription::demandes)
+                .sum();
     }
 
     private static long somme(List<EnrolementRepository.CaseProfil> cases, String sexe, String tranche) {

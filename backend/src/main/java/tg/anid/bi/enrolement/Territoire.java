@@ -18,11 +18,12 @@ import java.util.List;
  * @param echouees     inscriptions en échec technique
  * @param rejetees     inscriptions rejetées
  * @param nonClassees  statut MOSIP sans correspondance validée
+ * @param preinscriptions pré-inscriptions dont la préfecture de résidence déclarée est dans la zone (jour de création)
  * @param lignes       sous-zones dans l'ordre du référentiel (du nord au sud)
  */
 public record Territoire(String perimetre, String zone, LocalDate du, LocalDate au, long inscriptions,
                          long niuGeneres, long enCours, long echouees, long rejetees, long nonClassees,
-                         List<LigneZone> lignes) {
+                         long preinscriptions, List<LigneZone> lignes) {
 
     /**
      * Une sous-zone et ses chiffres sur la période.
@@ -31,9 +32,11 @@ public record Territoire(String perimetre, String zone, LocalDate du, LocalDate 
      * @param nom             nom affiché
      * @param niveau          region, prefecture, commune, canton, localite ou centre
      * @param horsReferentiel vrai pour la zone qui regroupe les centres absents du référentiel (affichée seulement si
-     *                        elle a des inscriptions)
+     *                        elle a des inscriptions ou des pré-inscriptions)
+     * @param preinscriptions pré-inscriptions dont la préfecture de résidence déclarée est dans la sous-zone
      */
     public record LigneZone(String code, String nom, String niveau, boolean horsReferentiel, long inscriptions,
-                            long niuGeneres, long enCours, long echouees, long rejetees, long nonClassees) {
+                            long niuGeneres, long enCours, long echouees, long rejetees, long nonClassees,
+                            long preinscriptions) {
     }
 }

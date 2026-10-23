@@ -26,6 +26,9 @@ describe('Territoire', () => {
       'Maritime',
       'Grand Lomé',
     ]);
+    // Pré-inscriptions, première colonne de chiffres (Savanes : 180 096 dans la simulation).
+    expect(tableau.getByRole('columnheader', { name: 'Pré-inscriptions' })).toBeInTheDocument();
+    expect(within(lignes[0]).getAllByRole('cell')[0].textContent?.replace(/\s/g, ' ')).toBe('180 096');
     // Savanes : 16 072 rejets sur 450 239 inscriptions = 3,6 % → ▲ (seuil 3,5 %).
     expect(within(lignes[0]).getByLabelText('Taux de rejet élevé')).toBeInTheDocument();
     expect(within(lignes[1]).queryByLabelText('Taux de rejet élevé')).not.toBeInTheDocument();

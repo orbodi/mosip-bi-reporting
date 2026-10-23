@@ -13,6 +13,8 @@ export type CentreClasse = components['schemas']['CentreClasse'];
 export type Preinscriptions = components['schemas']['Preinscriptions'];
 export type AgeSexe = components['schemas']['AgeSexe'];
 export type TrancheAgeSexe = components['schemas']['Tranche'];
+export type ProfilPreinscriptions = components['schemas']['ProfilPreinscriptions'];
+export type NationalitePreinscription = components['schemas']['Nationalite'];
 
 /**
  * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la

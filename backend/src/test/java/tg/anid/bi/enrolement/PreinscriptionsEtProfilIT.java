@@ -44,7 +44,10 @@ class PreinscriptionsEtProfilIT {
 
     @BeforeEach
     void preparer() {
-        jdbc.sql("truncate bi.fait_preinscription_jour, bi.fait_niu_profil_jour").update();
+        jdbc.sql("""
+                truncate bi.fait_preinscription_jour, bi.fait_niu_profil_jour, bi.fait_preinscription_profil_jour,
+                         bi.fait_preinscription_zone_jour
+                """).update();
         jdbc.sql("""
                 insert into bi.fait_preinscription_jour (jour, statut, demandes, consommees)
                 values (date '2026-01-05', 'reservee', 90, 70),
@@ -104,6 +107,55 @@ class PreinscriptionsEtProfilIT {
         assertThat(p.hommes()).isEqualTo(9);
         assertThat(p.rendezVousReserves() + p.enAttenteRendezVous() + p.expirees() + p.annulees()
                 + p.nonClassees()).isEqualTo(p.demandes());
+    }
+
+    @Test
+    void profilDesPreinscritsParTrancheSexeEtNationalite() {
+        jdbc.sql("""
+                insert into bi.fait_preinscription_profil_jour (jour, sexe, tranche_age, nationalite, demandes)
+                values (date '2026-01-05', 'F', '26-35', 'TOGO', 60),
+                       (date '2026-01-05', 'H', '26-35', 'TOGO', 30),
+                       (date '2026-01-06', 'H', '19-25', 'BENIN', 5),
+                       (date '2026-01-06', 'I', 'inconnu', 'Non renseignée', 7)
+                """).update();
+
+        ProfilPreinscriptions p = service.profilPreinscriptions(null, null);
+
+        assertThat(p.disponible()).isTrue();
+        assertThat(p.nonRenseignes()).isEqualTo(7);
+        assertThat(p.nationalites()).extracting(ProfilPreinscriptions.Nationalite::nom)
+                .containsExactly("TOGO", "BENIN", "Non renseignée");
+        long total = p.tranches().stream().mapToLong(t -> t.femmes() + t.hommes()).sum() + p.nonRenseignes();
+        assertThat(total).isEqualTo(102);
+
+        LocalDate jour = LocalDate.parse("2026-01-05");
+        assertThat(service.profilPreinscriptions(jour, jour).nationalites()).singleElement()
+                .satisfies(n -> assertThat(n.demandes()).isEqualTo(90));
+    }
+
+    @Test
+    void preinscriptionsDuTerritoireSelonLaPrefectureDeResidence() {
+        jdbc.sql("""
+                insert into bi.fait_preinscription_zone_jour (jour, zone_id, demandes)
+                select v.jour, z.id, v.demandes
+                from (values (date '2026-01-05', 'SAV-01', 12),
+                             (date '2026-01-06', 'SAV-02', 8),
+                             (date '2026-01-06', 'KAR-05', 5))
+                     as v (jour, code, demandes)
+                join bi.zone z on z.code = v.code
+                """).update();
+
+        Territoire togo = service.territoire(null, null, null);
+        assertThat(togo.preinscriptions()).isEqualTo(25);
+        assertThat(togo.lignes()).filteredOn(l -> l.code().equals("SAV")).singleElement()
+                .satisfies(l -> assertThat(l.preinscriptions()).isEqualTo(20));
+        assertThat(togo.lignes().stream().mapToLong(Territoire.LigneZone::preinscriptions).sum())
+                .isEqualTo(togo.preinscriptions());
+
+        Territoire savanes = service.territoire(null, null, "SAV");
+        assertThat(savanes.preinscriptions()).isEqualTo(20);
+        assertThat(savanes.lignes()).filteredOn(l -> l.code().equals("SAV-01")).singleElement()
+                .satisfies(l -> assertThat(l.preinscriptions()).isEqualTo(12));
     }
 
     @Test

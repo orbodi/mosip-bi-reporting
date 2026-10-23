@@ -398,3 +398,10 @@
   margin: 0 0 var(--e-2);
   font-size: var(--t-xs);
 }
+
+/* Bloc « Profil des pré-inscrits » : titre et pyramide empilés, comme la colonne des nationalités. */
+.profil-preinscrits__pyramide {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

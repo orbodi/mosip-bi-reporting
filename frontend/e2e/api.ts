@@ -26,6 +26,7 @@ const zone = (code: string, nom: string, niveau: string, ins: number, niu: numbe
     echouees,
     enCours: ins - niu - rej - echouees,
     nonClassees: 0,
+    preinscriptions: Math.round(ins * 0.4),
   };
 };
 
@@ -40,6 +41,7 @@ const territoire = (perimetre: string, code: string | null, lignes: Ligne[]) => 
   echouees: lignes.reduce((s, l) => s + l.echouees, 0),
   rejetees: lignes.reduce((s, l) => s + l.rejetees, 0),
   nonClassees: 0,
+  preinscriptions: lignes.reduce((s, l) => s + l.preinscriptions, 0),
   lignes,
 });
 
@@ -121,6 +123,28 @@ const PYRAMIDE: [string, number, number][] = [
 ];
 
 export async function simulerEnrolement(page: Page) {
+  await page.route('**/api/v1/enrolement/preinscriptions/profil*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        du: null,
+        au: null,
+        disponible: true,
+        tranches: PYRAMIDE.map(([tranche, femmes, hommes]) => ({
+          tranche,
+          femmes: Math.round(femmes * 0.2),
+          hommes: Math.round(hommes * 0.2),
+        })),
+        nonRenseignes: 0,
+        nationalites: [
+          { nom: 'TOGO', demandes: 603120 },
+          { nom: 'BENIN', demandes: 2100 },
+          { nom: 'GHANA', demandes: 900 },
+          { nom: 'Autres', demandes: 730 },
+        ],
+      },
+    }),
+  );
   await page.route('**/api/v1/enrolement/preinscriptions*', (route) =>
     route.fulfill({
       json: {

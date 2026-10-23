@@ -66,8 +66,9 @@ export function territoireInconnu(
     niveau,
     horsReferentiel: false,
     ...chiffresInconnus,
+    preinscriptions: INCONNU,
   }));
-  return { perimetre, ...chiffresInconnus, lignes };
+  return { perimetre, ...chiffresInconnus, preinscriptions: INCONNU, lignes };
 }
 
 /** Semaine d'un graphique hebdomadaire générique (composants/blocs/GraphiqueHebdo). */

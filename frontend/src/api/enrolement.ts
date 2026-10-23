@@ -6,6 +6,7 @@ import {
   type AgeSexe,
   type DevenirInscriptions,
   type Preinscriptions,
+  type ProfilPreinscriptions,
   type InscriptionsParSemaine,
   type Territoire,
   type TopCentres,
@@ -69,6 +70,11 @@ export function useTopCentres(
 /** Pré-inscriptions, nationales (GET /api/v1/enrolement/preinscriptions). */
 export function usePreinscriptions(plage: Plage | undefined, active = true) {
   return useBlocEnrolement<Preinscriptions>('preinscriptions', plage, active);
+}
+
+/** Profil des pré-inscrits : âge et sexe, nationalité ; national (GET /api/v1/enrolement/preinscriptions/profil). */
+export function useProfilPreinscriptions(plage: Plage | undefined, active = true) {
+  return useBlocEnrolement<ProfilPreinscriptions>('preinscriptions/profil', plage, active);
 }
 
 /** NIU générés par sexe et tranche d'âge, Togo ou une région (GET /api/v1/enrolement/age-sexe). */

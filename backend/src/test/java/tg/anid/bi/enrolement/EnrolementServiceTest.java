@@ -180,6 +180,60 @@ class EnrolementServiceTest {
     }
 
     @Test
+    void leProfilDesPreinscritsAHuitTranchesEtLesCinqPremieresNationalites() {
+        when(repository.profilPreinscriptionsDisponible()).thenReturn(true);
+        when(repository.preinscriptionsParProfil(null, null)).thenReturn(List.of(
+                new EnrolementRepository.CasePreinscription("F", "26-35", "TOGO", 500),
+                new EnrolementRepository.CasePreinscription("H", "26-35", "TOGO", 400),
+                new EnrolementRepository.CasePreinscription("H", "19-25", "BENIN", 30),
+                new EnrolementRepository.CasePreinscription("F", "6-14", "GHANA", 20),
+                new EnrolementRepository.CasePreinscription("H", "36-45", "NIGERIA", 9),
+                new EnrolementRepository.CasePreinscription("F", "46-60", "BURKINA FASO", 8),
+                new EnrolementRepository.CasePreinscription("H", "60+", "MALI", 3),
+                new EnrolementRepository.CasePreinscription("F", "15-18", "NIGER", 2),
+                new EnrolementRepository.CasePreinscription("I", "inconnu", "Non renseignée", 70)));
+
+        ProfilPreinscriptions p = service.profilPreinscriptions(null, null);
+
+        assertThat(p.disponible()).isTrue();
+        assertThat(p.tranches()).hasSize(8);
+        assertThat(p.tranches()).filteredOn(t -> t.tranche().equals("26-35")).singleElement()
+                .satisfies(t -> {
+                    assertThat(t.femmes()).isEqualTo(500);
+                    assertThat(t.hommes()).isEqualTo(400);
+                });
+        assertThat(p.nonRenseignes()).isEqualTo(70);
+        assertThat(p.nationalites()).extracting(ProfilPreinscriptions.Nationalite::nom)
+                .containsExactly("TOGO", "BENIN", "GHANA", "NIGERIA", "BURKINA FASO", "Autres", "Non renseignée");
+        assertThat(p.nationalites().get(5).demandes()).isEqualTo(5);
+        long totalTranches = p.tranches().stream().mapToLong(t -> t.femmes() + t.hommes()).sum();
+        long totalNationalites = p.nationalites().stream().mapToLong(ProfilPreinscriptions.Nationalite::demandes).sum();
+        assertThat(totalTranches + p.nonRenseignes()).isEqualTo(totalNationalites).isEqualTo(1042);
+    }
+
+    @Test
+    void sansProfilAlimenteLeProfilDesPreinscritsEstNonDisponible() {
+        when(repository.profilPreinscriptionsDisponible()).thenReturn(false);
+
+        ProfilPreinscriptions p = service.profilPreinscriptions(null, null);
+
+        assertThat(p.disponible()).isFalse();
+        assertThat(p.tranches()).hasSize(8).allSatisfy(t -> assertThat(t.femmes()).isNull());
+        assertThat(p.nationalites()).isEmpty();
+    }
+
+    @Test
+    void unUtilisateurRegionalNeRecoitPasLeProfilNational() {
+        connecterRegional("KAR");
+        when(repository.nomZone("KAR")).thenReturn(Optional.of("Kara"));
+
+        ProfilPreinscriptions p = service.profilPreinscriptions(null, null);
+
+        assertThat(p.perimetre()).isEqualTo("Kara");
+        assertThat(p.disponible()).isFalse();
+    }
+
+    @Test
     void sansDonneesDuPipelineLesPreinscriptionsSontNonDisponibles() {
         when(repository.preinscriptionsDisponibles()).thenReturn(false);
 

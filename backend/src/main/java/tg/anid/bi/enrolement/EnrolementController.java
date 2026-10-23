@@ -64,6 +64,14 @@ public class EnrolementController {
         return service.preinscriptions(du, au);
     }
 
+    /** Profil des pré-inscrits : tranche d'âge et sexe, nationalité (national). */
+    @GetMapping("/preinscriptions/profil")
+    public ProfilPreinscriptions profilPreinscriptions(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au) {
+        return service.profilPreinscriptions(du, au);
+    }
+
     /** NIU générés par sexe et par tranche d'âge (pyramide), pour le Togo ou une région. */
     @GetMapping("/age-sexe")
     public AgeSexe ageSexe(

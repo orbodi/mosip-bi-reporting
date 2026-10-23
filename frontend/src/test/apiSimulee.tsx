@@ -7,6 +7,7 @@ import type {
   InscriptionsParSemaine,
   LigneZone,
   Preinscriptions,
+  ProfilPreinscriptions,
   Region,
   Territoire,
   TopCentres,
@@ -53,6 +54,7 @@ const zone = (
   echouees: Math.round(ins * 0.003),
   enCours: ins - niu - rej - Math.round(ins * 0.003),
   nonClassees: 0,
+  preinscriptions: Math.round(ins * 0.4),
 });
 
 const totaux = (lignes: LigneZone[]) => ({
@@ -62,6 +64,7 @@ const totaux = (lignes: LigneZone[]) => ({
   echouees: lignes.reduce((s, l) => s + l.echouees, 0),
   rejetees: lignes.reduce((s, l) => s + l.rejetees, 0),
   nonClassees: 0,
+  preinscriptions: lignes.reduce((s, l) => s + l.preinscriptions, 0),
 });
 
 const LIGNES_REGIONS = [
@@ -180,6 +183,32 @@ export const PREINSCRIPTIONS: Preinscriptions = {
 };
 
 /** Pyramide de la maquette (en NIU), de la plus jeune à la plus âgée, comme l'API. */
+export const PROFIL_PREINSCRIPTIONS: ProfilPreinscriptions = {
+  perimetre: 'Ensemble du Togo',
+  du: null,
+  au: null,
+  disponible: true,
+  tranches: [
+    { tranche: '0-5', femmes: 19000, hommes: 20000 },
+    { tranche: '6-14', femmes: 43000, hommes: 45000 },
+    { tranche: '15-18', femmes: 27000, hommes: 26000 },
+    { tranche: '19-25', femmes: 62000, hommes: 57000 },
+    { tranche: '26-35', femmes: 79000, hommes: 70000 },
+    { tranche: '36-45', femmes: 46000, hommes: 42000 },
+    { tranche: '46-60', femmes: 27000, hommes: 23000 },
+    { tranche: '60+', femmes: 11000, hommes: 9850 },
+  ],
+  nonRenseignes: 0,
+  nationalites: [
+    { nom: 'TOGO', demandes: 603120 },
+    { nom: 'BENIN', demandes: 2100 },
+    { nom: 'GHANA', demandes: 900 },
+    { nom: 'NIGERIA', demandes: 420 },
+    { nom: 'BURKINA FASO', demandes: 210 },
+    { nom: 'Autres', demandes: 100 },
+  ],
+};
+
 export const AGE_SEXE: AgeSexe = {
   perimetre: 'Ensemble du Togo',
   disponible: true,
@@ -215,6 +244,7 @@ const PAR_DEFAUT: Record<string, Reponse> = {
     url.searchParams.get('zone') === 'SAV' ? TERRITOIRE_SAVANES : TERRITOIRE_NATIONAL,
   '/enrolement/centres': (url: URL) => CENTRES[url.searchParams.get('classement') ?? 'inscriptions'],
   '/enrolement/preinscriptions': PREINSCRIPTIONS,
+  '/enrolement/preinscriptions/profil': PROFIL_PREINSCRIPTIONS,
   '/enrolement/age-sexe': (url: URL) =>
     url.searchParams.get('zone') === 'SAV'
       ? {

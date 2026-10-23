@@ -81,6 +81,23 @@ export interface paths {
       };
     };
   };
+  '/api/v1/enrolement/preinscriptions/profil': {
+    get: {
+      parameters: {
+        query?: {
+          du?: string;
+          au?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['ProfilPreinscriptions'];
+          };
+        };
+      };
+    };
+  };
   '/api/v1/enrolement/preinscriptions': {
     get: {
       parameters: {
@@ -213,6 +230,8 @@ export interface components {
       rejetees: number;
       /** Format: int64 */
       nonClassees: number;
+      /** Format: int64 */
+      preinscriptions: number;
       lignes: components['schemas']['LigneZone'][];
     };
     LigneZone: {
@@ -232,6 +251,8 @@ export interface components {
       rejetees: number;
       /** Format: int64 */
       nonClassees: number;
+      /** Format: int64 */
+      preinscriptions: number;
     };
     TopCentres: {
       perimetre: string;
@@ -276,6 +297,23 @@ export interface components {
       tranches: components['schemas']['Tranche'][];
       /** Format: int64 */
       nonRenseignes?: number | null;
+    };
+    ProfilPreinscriptions: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      disponible: boolean;
+      tranches: components['schemas']['Tranche'][];
+      /** Format: int64 */
+      nonRenseignes?: number | null;
+      nationalites: components['schemas']['Nationalite'][];
+    };
+    Nationalite: {
+      nom: string;
+      /** Format: int64 */
+      demandes: number;
     };
     Tranche: {
       tranche: string;

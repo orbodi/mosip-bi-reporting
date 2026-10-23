@@ -124,6 +124,9 @@ export function BlocTerritoire() {
                 <tr>
                   <th scope="col">Zone</th>
                   <th scope="col" className="tableau__nombre col-secondaire">
+                    Pré-inscriptions
+                  </th>
+                  <th scope="col" className="tableau__nombre col-secondaire">
                     Inscriptions
                   </th>
                   <th scope="col" className="tableau__nombre">
@@ -158,6 +161,7 @@ export function BlocTerritoire() {
                           <span className="tableau-zones__nom">{l.nom}</span>
                         )}
                       </th>
+                      <td className="chiffre tableau__nombre col-secondaire">{nf(l.preinscriptions)}</td>
                       <td className="chiffre tableau__nombre col-secondaire">{nf(l.inscriptions)}</td>
                       <td className="chiffre tableau__nombre">{nf(l.niuGeneres)}</td>
                       <td
@@ -186,6 +190,9 @@ export function BlocTerritoire() {
               </span>{' '}
               Taux de rejet de {pct(SEUIL_ALERTE_REJET / 100)} ou plus (rejets rapportés aux inscriptions de
               la zone).
+            </p>
+            <p className="texte-2 tableau-zones__note">
+              Pré-inscriptions selon la préfecture de résidence déclarée ; inscriptions selon le centre d’enrôlement.
             </p>
             {data.nonClassees > 0 && (
               <p className="alerte-donnees" role="note">

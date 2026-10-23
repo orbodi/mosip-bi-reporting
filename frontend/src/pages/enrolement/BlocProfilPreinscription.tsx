@@ -1,0 +1,50 @@
+import { useProfilPreinscriptions } from '../../api/enrolement';
+import { BarresHorizontales } from '../../composants/blocs/BarresHorizontales';
+import { Panneau } from '../../composants/blocs/Panneau';
+import { Pyramide } from '../../composants/blocs/Pyramide';
+import { lignesPyramide } from '../../lib/blocsVides';
+import { useFiltreRegion } from '../../lib/useFiltreRegion';
+import { usePlageApi } from '../../lib/usePlagePeriode';
+import { PastillePortee } from './PastillePortee';
+
+/**
+ * Bloc « Profil des pré-inscrits » : demandes de pré-enrôlement par tranche d'âge et sexe (pyramide) et par
+ * nationalité (GET /api/v1/enrolement/preinscriptions/profil). Source : champs extraits de l'API de pré-inscription
+ * MOSIP. National, comme le bloc « Pré-inscription » : la pastille le signale quand le filtre Région est actif.
+ * Sans données, les huit tranches restent à 0 et la liste des nationalités est vide : rien n'est estimé.
+ */
+export function BlocProfilPreinscription() {
+  const { actif } = useFiltreRegion();
+  const { plage, prete } = usePlageApi('enrolement');
+  const { data } = useProfilPreinscriptions(plage, prete);
+  const nationalites = (data?.nationalites ?? []).map((n) => ({
+    libelle: n.nom,
+    valeur: n.demandes,
+    couleur: 'bleu' as const,
+  }));
+
+  return (
+    <Panneau
+      id="titre-profil-preinscription"
+      titre="Profil des pré-inscrits"
+      sousTitre="Ensemble du Togo, demandes de pré-enrôlement par tranche d’âge, sexe et nationalité"
+      pastille={actif ? <PastillePortee /> : undefined}
+      className="bloc-pleine-largeur"
+      sansMarge
+    >
+      <div className="duo">
+        <div className="duo__principal">
+          <h3 className="h3-m">Nationalités</h3>
+          <BarresHorizontales elements={nationalites} libelle="Pré-inscriptions par nationalité" />
+        </div>
+        <div className="duo__cartes profil-preinscrits__pyramide">
+          <h3 className="h3-m">Âge et sexe</h3>
+          <Pyramide
+            lignes={lignesPyramide(data)}
+            libelle="Répartition des pré-inscriptions par tranche d’âge et par sexe"
+          />
+        </div>
+      </div>
+    </Panneau>
+  );
+}
