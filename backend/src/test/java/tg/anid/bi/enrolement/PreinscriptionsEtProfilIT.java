@@ -116,6 +116,7 @@ class PreinscriptionsEtProfilIT {
                 values (date '2026-01-05', 'F', '26-35', 'TOGO', 60),
                        (date '2026-01-05', 'H', '26-35', 'TOGO', 30),
                        (date '2026-01-06', 'H', '19-25', 'BENIN', 5),
+                       (date '2026-01-06', 'F', 'inconnu', 'TOGO', 3),
                        (date '2026-01-06', 'I', 'inconnu', 'Non renseignée', 7)
                 """).update();
 
@@ -125,8 +126,9 @@ class PreinscriptionsEtProfilIT {
         assertThat(p.nonRenseignes()).isEqualTo(7);
         assertThat(p.nationalites()).extracting(ProfilPreinscriptions.Nationalite::nom)
                 .containsExactly("TOGO", "BENIN", "Non renseignée");
+        assertThat(p.tranches().getLast().femmes()).isEqualTo(3);
         long total = p.tranches().stream().mapToLong(t -> t.femmes() + t.hommes()).sum() + p.nonRenseignes();
-        assertThat(total).isEqualTo(102);
+        assertThat(total).isEqualTo(105);
 
         LocalDate jour = LocalDate.parse("2026-01-05");
         assertThat(service.profilPreinscriptions(jour, jour).nationalites()).singleElement()

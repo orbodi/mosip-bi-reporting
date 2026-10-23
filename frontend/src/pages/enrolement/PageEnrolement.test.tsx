@@ -61,6 +61,10 @@ describe('Page Enrôlement', () => {
       profil.getByRole('table', { name: 'Répartition des pré-inscriptions par tranche d’âge et par sexe' }),
     );
     expect(pyramide.getByText(texte('79 000'))).toBeInTheDocument();
+    const derniere = pyramide.getAllByRole('row').at(-1)!;
+    expect(within(derniere).getByRole('rowheader').textContent).toBe('Âge inconnu');
+    expect(within(derniere).getByText(texte('1 837'))).toBeInTheDocument();
+    expect(within(derniere).getByText(texte('2 583'))).toBeInTheDocument();
   });
 
   it('pré-inscription : femmes et hommes, sans pourcentage ni note', async () => {

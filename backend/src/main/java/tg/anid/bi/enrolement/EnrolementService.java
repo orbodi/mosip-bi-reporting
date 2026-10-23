@@ -27,6 +27,8 @@ public class EnrolementService {
     /** Nationalité des demandes non enrichies ou sans nationalité (valeur de bi.fait_preinscription_profil_jour). */
     static final String NATIONALITE_NON_RENSEIGNEE = "Non renseignée";
     static final String NATIONALITE_AUTRES = "Autres";
+    /** Tranche des pré-inscrits dont le sexe est connu mais pas l'âge (dernière ligne de la pyramide). */
+    static final String TRANCHE_AGE_INCONNU = "inconnu";
     static final Set<String> CLASSEMENTS = Set.of("inscriptions", "echecs", "rejets");
     /** Tranches d'âge de la pyramide (maquette Enrôlement), de la plus jeune à la plus âgée. */
     static final List<String> TRANCHES_AGE = List.of("0-5", "6-14", "15-18", "19-25", "26-35", "36-45", "46-60",
@@ -164,18 +166,21 @@ public class EnrolementService {
     public ProfilPreinscriptions profilPreinscriptions(LocalDate du, LocalDate au) {
         verifierOrdre(du, au);
         String zone = portee.zoneEffective(null);
+        List<String> tranchesProfil = new ArrayList<>(TRANCHES_AGE);
+        tranchesProfil.add(TRANCHE_AGE_INCONNU);
         if (zone != null) {
-            return ProfilPreinscriptions.nonDisponible(nomPerimetre(zone), du, au, TRANCHES_AGE);
+            return ProfilPreinscriptions.nonDisponible(nomPerimetre(zone), du, au, tranchesProfil);
         }
         if (!repository.profilPreinscriptionsDisponible()) {
-            return ProfilPreinscriptions.nonDisponible(ENSEMBLE_DU_TOGO, du, au, TRANCHES_AGE);
+            return ProfilPreinscriptions.nonDisponible(ENSEMBLE_DU_TOGO, du, au, tranchesProfil);
         }
         List<EnrolementRepository.CasePreinscription> cases = repository.preinscriptionsParProfil(du, au);
-        List<AgeSexe.Tranche> tranches = TRANCHES_AGE.stream()
+        // Toute tranche hors des huit (âge absent ou invalide) compte dans « inconnu ».
+        List<AgeSexe.Tranche> tranches = tranchesProfil.stream()
                 .map(t -> new AgeSexe.Tranche(t, sommeDemandes(cases, "F", t), sommeDemandes(cases, "H", t)))
                 .toList();
         long nonRenseignes = cases.stream()
-                .filter(c -> (!"F".equals(c.sexe()) && !"H".equals(c.sexe())) || !TRANCHES_AGE.contains(c.trancheAge()))
+                .filter(c -> !"F".equals(c.sexe()) && !"H".equals(c.sexe()))
                 .mapToLong(EnrolementRepository.CasePreinscription::demandes)
                 .sum();
         return new ProfilPreinscriptions(ENSEMBLE_DU_TOGO, du, au, true, tranches, nonRenseignes,
@@ -208,7 +213,10 @@ public class EnrolementService {
     private static long sommeDemandes(List<EnrolementRepository.CasePreinscription> cases, String sexe,
                                       String tranche) {
         return cases.stream()
-                .filter(c -> sexe.equals(c.sexe()) && tranche.equals(c.trancheAge()))
+                .filter(c -> sexe.equals(c.sexe()))
+                .filter(c -> TRANCHE_AGE_INCONNU.equals(tranche)
+                        ? !TRANCHES_AGE.contains(c.trancheAge())
+                        : tranche.equals(c.trancheAge()))
                 .mapToLong(EnrolementRepository.CasePreinscription::demandes)
                 .sum();
     }

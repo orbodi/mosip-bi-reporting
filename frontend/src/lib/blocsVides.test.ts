@@ -5,6 +5,7 @@ import {
   devenirInconnu,
   largeurPyramide,
   lignesPyramide,
+  lignesPyramideAvecAgeInconnu,
   lundisDesSemainesCompletes,
   pyramideInconnue,
   semainesInconnues,
@@ -68,6 +69,16 @@ describe('données de remplacement', () => {
       true,
     );
     expect(lignesPyramide(undefined)).toHaveLength(8);
+    const avecInconnu = lignesPyramideAvecAgeInconnu({
+      disponible: true,
+      tranches: [
+        { tranche: '0-5', femmes: 11, hommes: 12 },
+        { tranche: 'inconnu', femmes: 3, hommes: 4 },
+      ],
+    });
+    expect(avecInconnu).toHaveLength(9);
+    expect(avecInconnu[8]).toEqual({ tranche: 'Âge inconnu', femmes: 3, hommes: 4 });
+    expect(Number.isNaN(lignesPyramideAvecAgeInconnu(undefined)[8].femmes)).toBe(true);
     expect(depuisApi(0)).toBe(0);
     expect(Number.isNaN(depuisApi(null))).toBe(true);
   });

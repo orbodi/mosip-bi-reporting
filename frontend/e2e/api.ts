@@ -134,7 +134,7 @@ export async function simulerEnrolement(page: Page) {
           tranche,
           femmes: Math.round(femmes * 0.2),
           hommes: Math.round(hommes * 0.2),
-        })),
+        })).concat([{ tranche: 'inconnu', femmes: 1837, hommes: 2583 }]),
         nonRenseignes: 0,
         nationalites: [
           { nom: 'TOGO', demandes: 603120 },

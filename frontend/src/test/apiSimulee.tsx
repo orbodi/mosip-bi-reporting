@@ -197,6 +197,7 @@ export const PROFIL_PREINSCRIPTIONS: ProfilPreinscriptions = {
     { tranche: '36-45', femmes: 46000, hommes: 42000 },
     { tranche: '46-60', femmes: 27000, hommes: 23000 },
     { tranche: '60+', femmes: 11000, hommes: 9850 },
+    { tranche: 'inconnu', femmes: 1837, hommes: 2583 },
   ],
   nonRenseignes: 0,
   nationalites: [

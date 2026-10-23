@@ -152,3 +152,18 @@ export function lignesPyramide(api?: {
     return { tranche, femmes: depuisApi(t?.femmes), hommes: depuisApi(t?.hommes) };
   });
 }
+
+/** Dernière ligne de la pyramide des pré-inscrits : sexe connu, âge non renseigné (tranche « inconnu » de l'API). */
+export const LIGNE_AGE_INCONNU = 'Âge inconnu';
+
+/**
+ * Pyramide suivie d'une ligne « Âge inconnu » : ses totaux femmes et hommes égalent alors tous les dossiers dont
+ * le sexe est connu. Sans réponse ou source non disponible, cette ligne reste inconnue comme les autres.
+ */
+export function lignesPyramideAvecAgeInconnu(api?: Parameters<typeof lignesPyramide>[0]): TrancheSexe[] {
+  const inconnu = api?.disponible ? api.tranches.find((t) => t.tranche === 'inconnu') : undefined;
+  return [
+    ...lignesPyramide(api),
+    { tranche: LIGNE_AGE_INCONNU, femmes: depuisApi(inconnu?.femmes), hommes: depuisApi(inconnu?.hommes) },
+  ];
+}

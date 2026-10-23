@@ -191,12 +191,19 @@ class EnrolementServiceTest {
                 new EnrolementRepository.CasePreinscription("F", "46-60", "BURKINA FASO", 8),
                 new EnrolementRepository.CasePreinscription("H", "60+", "MALI", 3),
                 new EnrolementRepository.CasePreinscription("F", "15-18", "NIGER", 2),
+                new EnrolementRepository.CasePreinscription("F", "inconnu", "TOGO", 6),
+                new EnrolementRepository.CasePreinscription("H", "inconnu", "TOGO", 4),
                 new EnrolementRepository.CasePreinscription("I", "inconnu", "Non renseignée", 70)));
 
         ProfilPreinscriptions p = service.profilPreinscriptions(null, null);
 
         assertThat(p.disponible()).isTrue();
-        assertThat(p.tranches()).hasSize(8);
+        assertThat(p.tranches()).hasSize(9);
+        assertThat(p.tranches().getLast()).satisfies(t -> {
+            assertThat(t.tranche()).isEqualTo("inconnu");
+            assertThat(t.femmes()).isEqualTo(6);
+            assertThat(t.hommes()).isEqualTo(4);
+        });
         assertThat(p.tranches()).filteredOn(t -> t.tranche().equals("26-35")).singleElement()
                 .satisfies(t -> {
                     assertThat(t.femmes()).isEqualTo(500);
@@ -208,7 +215,9 @@ class EnrolementServiceTest {
         assertThat(p.nationalites().get(5).demandes()).isEqualTo(5);
         long totalTranches = p.tranches().stream().mapToLong(t -> t.femmes() + t.hommes()).sum();
         long totalNationalites = p.nationalites().stream().mapToLong(ProfilPreinscriptions.Nationalite::demandes).sum();
-        assertThat(totalTranches + p.nonRenseignes()).isEqualTo(totalNationalites).isEqualTo(1042);
+        assertThat(totalTranches + p.nonRenseignes()).isEqualTo(totalNationalites).isEqualTo(1052);
+        long femmes = p.tranches().stream().mapToLong(AgeSexe.Tranche::femmes).sum();
+        assertThat(femmes).isEqualTo(536);
     }
 
     @Test
@@ -218,7 +227,7 @@ class EnrolementServiceTest {
         ProfilPreinscriptions p = service.profilPreinscriptions(null, null);
 
         assertThat(p.disponible()).isFalse();
-        assertThat(p.tranches()).hasSize(8).allSatisfy(t -> assertThat(t.femmes()).isNull());
+        assertThat(p.tranches()).hasSize(9).allSatisfy(t -> assertThat(t.femmes()).isNull());
         assertThat(p.nationalites()).isEmpty();
     }
 
