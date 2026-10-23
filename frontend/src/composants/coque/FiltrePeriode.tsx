@@ -15,7 +15,12 @@ export function FiltrePeriode({ source }: { source: CodeSource }) {
   const { choix, donnees, plage } = usePlagePeriode(source);
 
   const changer = (nouveaux: FiltresUrl) =>
-    naviguer({ to: '.', search: (precedent: FiltresUrl) => ({ ...precedent, ...nouveaux }), replace: true });
+    naviguer({
+      to: '.',
+      search: (precedent: FiltresUrl) => ({ ...precedent, ...nouveaux }),
+      replace: true,
+      resetScroll: false,
+    });
 
   return (
     <div className="filtre-periode">

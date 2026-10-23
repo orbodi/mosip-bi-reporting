@@ -279,10 +279,26 @@
   gap: var(--e-6) var(--e-8);
   padding-top: var(--e-5);
 }
-@media (max-width: 1100px) {
+/* Carte et tableau côte à côte seulement si le tableau des zones (huit colonnes) y tient. */
+@media (max-width: 1200px) {
   .territoire__corps {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Tableau des zones : huit colonnes, marges serrées ; défilement horizontal dans le bloc si la place manque encore. */
+.territoire__tableau {
+  min-width: 0;
+  overflow-x: auto;
+}
+.tableau.tableau-zones th,
+.tableau.tableau-zones td {
+  padding-left: var(--e-1);
+  padding-right: var(--e-1);
+}
+.tableau.tableau-zones thead th {
+  white-space: normal;
+  vertical-align: bottom;
 }
 
 .tableau-zones__titre {
@@ -309,6 +325,10 @@
 }
 .tableau-zones__nom {
   font-weight: 600;
+}
+.tableau-zones__ouvrir,
+.tableau-zones__nom {
+  white-space: nowrap;
 }
 .tableau-zones__alerte {
   font-weight: 600;

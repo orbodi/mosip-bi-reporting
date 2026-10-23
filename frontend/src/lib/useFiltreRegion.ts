@@ -34,6 +34,8 @@ export function useFiltreRegion(): {
       to: '.',
       search: (precedent: FiltresUrl) => ({ ...precedent, region: nouveau }),
       replace: !options.historique,
+      // Changer de région ne fait pas remonter la page (le clic peut venir du bloc Territoire, en bas de page).
+      resetScroll: false,
     });
 
   return { regions, region, code, actif: !regional && !!code, regional, choisir };
