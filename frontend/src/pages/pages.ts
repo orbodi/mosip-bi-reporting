@@ -13,6 +13,8 @@ export interface DefinitionPage {
   maquette: string;
   /** Blocs à construire, dans l'ordre de la maquette. */
   blocs: string[];
+  /** Sources dont la page montre les chiffres (pastille « Dernière mise à jour ») ; par défaut {@code source}. */
+  sourcesMiseAJour?: string[];
 }
 
 export const PAGES: DefinitionPage[] = [
@@ -21,6 +23,7 @@ export const PAGES: DefinitionPage[] = [
     onglet: 'Vue d’ensemble',
     titre: 'Vue d’ensemble du parcours citoyen',
     source: 'cartes',
+    sourcesMiseAJour: ['enrolement', 'preinscription', 'cartes', 'abis', 'idps', 'authentifications'],
     maquette: 'Main',
     blocs: [
       'De la pré-inscription à la carte en main (frise en 7 étapes, chiffre clé)',
@@ -33,6 +36,7 @@ export const PAGES: DefinitionPage[] = [
     onglet: 'Enrôlement',
     titre: 'Enrôlement',
     source: 'enrolement',
+    sourcesMiseAJour: ['enrolement', 'preinscription'],
     maquette: 'Enrolement',
     blocs: [
       'Pré-inscription',

@@ -16,6 +16,7 @@ const META = {
       libelle: 'Impression des cartes',
       premiereDonnee: '2024-02-01',
       derniereDonnee: '2026-01-14T11:59:00Z',
+      dernierChargement: '2026-01-14T12:05:00Z',
     },
     { source: 'abis', libelle: 'ABIS', premiereDonnee: '2024-01-01', derniereDonnee: '2026-07-13T11:59:00Z' },
     { source: 'idps', libelle: 'IDPS', premiereDonnee: '2026-07-03', derniereDonnee: '2026-07-03T17:09:00Z' },
@@ -47,7 +48,7 @@ test.beforeEach(async ({ page }) => {
 test('Vue d’ensemble : titre, date de mise à jour et accessibilité', async ({ page }, testInfo) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Vue d’ensemble du parcours citoyen');
-  await expect(page.getByText('Dernière mise à jour : 14/01/2026 à 11h59')).toBeVisible();
+  await expect(page.getByText('Dernière mise à jour : 14/01/2026 à 12h05')).toBeVisible();
 
   const audit = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

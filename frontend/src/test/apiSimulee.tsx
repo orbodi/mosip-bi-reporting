@@ -23,6 +23,14 @@ export const META = {
       libelle: 'Enrôlement',
       premiereDonnee: '2024-01-01',
       derniereDonnee: '2026-01-14T11:42:00Z',
+      dernierChargement: '2026-01-14T11:45:00Z',
+    },
+    {
+      source: 'preinscription',
+      libelle: 'Pré-inscription',
+      premiereDonnee: '2024-01-01',
+      derniereDonnee: '2026-01-14T11:28:00Z',
+      dernierChargement: '2026-01-14T11:50:00Z',
     },
   ],
 };

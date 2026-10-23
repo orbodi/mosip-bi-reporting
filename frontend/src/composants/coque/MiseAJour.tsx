@@ -1,12 +1,16 @@
-import { useFraicheur, type CodeSource } from '../../api/meta';
+import { useMeta } from '../../api/meta';
+import { dernierRafraichissement } from '../../lib/fraicheur';
 import { miseAJourFr } from '../../lib/format';
 
-/** Pastille jaune « Dernière mise à jour : 14/01/2026 à 11h59 » (heure de la dernière donnée de la source). */
-export function MiseAJour({ source }: { source: CodeSource }) {
-  const { fraicheur, isPending, isError } = useFraicheur(source);
+/**
+ * Pastille jaune « Dernière mise à jour : 23/10/2026 à 15h05 » : date et heure du dernier rafraîchissement des
+ * chiffres de la page (chargement le plus récent du pipeline parmi ses sources). Relue avec la méta toutes les 30 s.
+ */
+export function MiseAJour({ sources }: { sources: string[] }) {
+  const { data, isPending, isError } = useMeta();
+  const dernier = data ? dernierRafraichissement(data.sources, sources) : undefined;
   let texte = isError ? 'Dernière mise à jour : –' : 'Dernière mise à jour : …';
-  if (!isError && !isPending && fraicheur?.derniereDonnee)
-    texte = `Dernière mise à jour : ${miseAJourFr(fraicheur.derniereDonnee)}`;
+  if (!isError && !isPending) texte = `Dernière mise à jour : ${dernier ? miseAJourFr(dernier) : '–'}`;
 
   return (
     <p className="mise-a-jour" aria-live="polite">

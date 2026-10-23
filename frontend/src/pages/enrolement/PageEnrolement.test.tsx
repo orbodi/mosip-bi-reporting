@@ -41,6 +41,13 @@ describe('Page Enrôlement', () => {
     expect(screen.queryByText(/pas encore raccordée|non disponible|non mesuré/i)).not.toBeInTheDocument();
   });
 
+  it('dernière mise à jour : le rafraîchissement le plus récent de l’enrôlement et de la pré-inscription', async () => {
+    simulerApi();
+    afficher('/enrolement');
+
+    expect(await screen.findByText('Dernière mise à jour : 14/01/2026 à 11h50')).toBeInTheDocument();
+  });
+
   it('profil des pré-inscrits : nationalités et pyramide de l’API', async () => {
     simulerApi();
     afficher('/enrolement');

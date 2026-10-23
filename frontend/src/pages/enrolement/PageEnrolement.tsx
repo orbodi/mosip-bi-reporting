@@ -13,7 +13,12 @@ import { BlocTopCentres } from './BlocTopCentres';
 export function PageEnrolement({ page }: { page: DefinitionPage }) {
   return (
     <>
-      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
+      <Bandeau
+        titre={page.titre}
+        source={page.source}
+        sourcesMiseAJour={page.sourcesMiseAJour}
+        filtres={<FiltresPage />}
+      />
       <div className="contenu grille-page">
         <BlocPreinscription />
         <BlocProfilPreinscription />

@@ -5,6 +5,8 @@ import { MiseAJour } from './MiseAJour';
 interface Props {
   titre: string;
   source: CodeSource;
+  /** Sources montrées par la page, pour la pastille « Dernière mise à jour » ; par défaut la source de la page. */
+  sourcesMiseAJour?: string[];
   /** Contenu sous le titre : lien vers l'Exploration (pages de vue d'ensemble). */
   filtres?: ReactNode;
   /** Texte d'introduction sous le titre (page Exploration). */
@@ -16,7 +18,7 @@ interface Props {
  * d'ensemble n'ont pas de filtre Période ni Région : filtres et exploration détaillée sont dans l'Exploration.
  * Le premier panneau chevauche le bandeau.
  */
-export function Bandeau({ titre, source, filtres, chapeau }: Props) {
+export function Bandeau({ titre, source, sourcesMiseAJour, filtres, chapeau }: Props) {
   return (
     <section className="bandeau" aria-labelledby="titre-page">
       <div className="bandeau__interieur">
@@ -24,7 +26,7 @@ export function Bandeau({ titre, source, filtres, chapeau }: Props) {
           <h1 id="titre-page" className="bandeau__titre">
             {titre}
           </h1>
-          <MiseAJour source={source} />
+          <MiseAJour sources={sourcesMiseAJour ?? [source]} />
         </div>
         {chapeau && <p className="bandeau__chapeau">{chapeau}</p>}
         {filtres && <div className="bandeau__filtres">{filtres}</div>}

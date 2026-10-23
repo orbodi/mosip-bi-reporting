@@ -19,7 +19,13 @@ const META = {
       premiereDonnee: '2024-02-01',
       derniereDonnee: '2026-01-14T11:59:00Z',
     },
-    { source: 'idps', libelle: 'IDPS', premiereDonnee: '2026-07-03', derniereDonnee: '2026-07-03T17:09:00Z' },
+    {
+      source: 'idps',
+      libelle: 'IDPS',
+      premiereDonnee: '2026-07-03',
+      derniereDonnee: '2026-07-03T17:09:00Z',
+      dernierChargement: '2026-07-03T17:15:00Z',
+    },
   ],
 };
 
@@ -63,10 +69,15 @@ describe('Coque', () => {
     expect(within(nav).getByRole('link', { name: 'Enrôlement' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('affiche le titre et la date de mise à jour de la source de la page', async () => {
+  it('affiche le titre et la date et l’heure du dernier rafraîchissement de la source de la page', async () => {
     afficher('/idps');
     expect(await screen.findByRole('heading', { level: 1, name: 'IDPS' })).toBeInTheDocument();
-    expect(await screen.findByText('Dernière mise à jour : 03/07/2026 à 17h09')).toBeInTheDocument();
+    expect(await screen.findByText('Dernière mise à jour : 03/07/2026 à 17h15')).toBeInTheDocument();
+  });
+
+  it('sans chargement connu pour la source, la pastille affiche un tiret', async () => {
+    afficher('/impression-cartes');
+    expect(await screen.findByText('Dernière mise à jour : –')).toBeInTheDocument();
   });
 
   it('n’a pas de filtre Période ni Région sur une page de vue d’ensemble, seulement le lien vers l’Exploration', async () => {
