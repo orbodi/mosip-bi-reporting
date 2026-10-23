@@ -150,7 +150,7 @@ class EnrolementServiceTest {
         OffsetDateTime derniere = OffsetDateTime.parse("2026-01-14T11:28:00Z");
         when(repository.preinscriptionsDisponibles()).thenReturn(true);
         when(repository.preinscriptions(null, null)).thenReturn(
-                new EnrolementRepository.TotauxPreinscription(606850, 546964, 59886, 0, 0, 450000, 0));
+                new EnrolementRepository.TotauxPreinscription(606850, 546964, 59886, 0, 0, 450000, 0, 0, 0));
         when(repository.derniereDemande()).thenReturn(Optional.of(derniere));
 
         Preinscriptions p = service.preinscriptions(null, null);
@@ -164,6 +164,19 @@ class EnrolementServiceTest {
         assertThat(p.femmes()).isNull();
         assertThat(p.hommes()).isNull();
         assertThat(p.derniereDemande()).isEqualTo(derniere);
+    }
+
+    @Test
+    void leSexeDesPreinscriptionsEstRenduDesQuIlEstConnu() {
+        when(repository.preinscriptionsDisponibles()).thenReturn(true);
+        when(repository.preinscriptions(null, null)).thenReturn(
+                new EnrolementRepository.TotauxPreinscription(1000, 900, 100, 0, 0, 0, 0, 520, 430));
+
+        Preinscriptions p = service.preinscriptions(null, null);
+
+        assertThat(p.femmes()).isEqualTo(520);
+        assertThat(p.hommes()).isEqualTo(430);
+        assertThat(p.demandes() - p.femmes() - p.hommes()).isEqualTo(50);
     }
 
     @Test

@@ -9,10 +9,11 @@ import { usePlageApi } from '../../lib/usePlagePeriode';
 import { PastillePortee } from './PastillePortee';
 
 /**
- * Bloc « Pré-inscription » (maquette Enrôlement) : demandes de pré-enrôlement, rendez-vous, attente, expirées,
- * honorées à l'inscription et dernière demande (GET /api/v1/enrolement/preinscriptions, décision du 20/10/2026).
+ * Bloc « Pré-inscription » (maquette Enrôlement) : demandes de pré-enrôlement, rendez-vous, attente, femmes,
+ * hommes et dernière demande (GET /api/v1/enrolement/preinscriptions).
  * National : une pré-inscription n'a pas de territoire, la pastille le signale quand le filtre Région est actif.
- * Valeur indisponible (null de l'API) : 0 à l'écran ; « Femmes pré-inscrites » n'a pas de source.
+ * Valeur indisponible (null de l'API) : 0 à l'écran. Femmes et hommes : part parmi les demandes au sexe connu ; une
+ * note signale les demandes dont le sexe n'est pas encore connu (enrichissement en cours).
  */
 export function BlocPreinscription() {
   const { actif } = useFiltreRegion();
@@ -22,10 +23,9 @@ export function BlocPreinscription() {
   const demandes = depuisApi(data?.demandes);
   const reserves = depuisApi(data?.rendezVousReserves);
   const enAttente = depuisApi(data?.enAttenteRendezVous);
-  const expirees = depuisApi(data?.expirees);
-  const honorees = depuisApi(data?.honorees);
   const femmes = depuisApi(data?.femmes);
   const hommes = depuisApi(data?.hommes);
+  const sexeConnu = femmes + hommes;
   const nonClassees = data?.nonClassees ?? 0;
   const derniere = data?.derniereDemande;
 
@@ -63,6 +63,12 @@ export function BlocPreinscription() {
               dans les demandes, hors des statuts.
             </p>
           )}
+          {sexeConnu > 0 && sexeConnu < demandes && (
+            <p className="alerte-donnees" role="note">
+              Sexe connu pour {nf(sexeConnu)} demandes sur {nf(demandes)} ({pct(part(sexeConnu, demandes))}) :
+              celui des autres n’est pas encore renseigné.
+            </p>
+          )}
         </div>
         <div className="duo__cartes">
           <div className="cartes-m cartes-m--3">
@@ -78,24 +84,23 @@ export function BlocPreinscription() {
               valeur={nf(enAttente)}
               detail={`${pct(part(enAttente, demandes))} des demandes`}
             />
-            <CarteIndicateur icone="calendrierX" nom="Expirées" valeur={nf(expirees)} />
-            <CarteIndicateur
-              icone="personneOk"
-              nom="Honorées à l’inscription"
-              valeur={nf(honorees)}
-              detail={`${pct(part(honorees, demandes))} des demandes`}
-            />
-            <CarteIndicateur
-              icone="personnes"
-              nom="Femmes pré-inscrites"
-              valeur={nf(femmes)}
-              detail={`${pct(part(femmes, demandes))}, contre ${nf(hommes)} hommes`}
-            />
             <CarteIndicateur
               icone="horloge"
               nom="Dernière demande"
               valeur={derniere ? dateFr(derniere) : '–'}
               detail={derniere ? `à ${heureFr(derniere)}` : undefined}
+            />
+            <CarteIndicateur
+              icone="femme"
+              nom="Femmes pré-inscrites"
+              valeur={nf(femmes)}
+              detail={`${pct(part(femmes, sexeConnu))} des sexes connus`}
+            />
+            <CarteIndicateur
+              icone="homme"
+              nom="Hommes pré-inscrits"
+              valeur={nf(hommes)}
+              detail={`${pct(part(hommes, sexeConnu))} des sexes connus`}
             />
           </div>
         </div>

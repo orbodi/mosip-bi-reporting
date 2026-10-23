@@ -45,9 +45,9 @@ public class EnrolementRepository {
     public record Centre(String code, String nom, String prefecture, String region, long valeur, long inscriptions) {
     }
 
-    /** Pré-inscriptions par statut regroupé (pipeline.correspondance_statut_preinscription). */
+    /** Pré-inscriptions par statut regroupé, et par sexe quand il est connu (F, H ; le reste est inconnu). */
     public record TotauxPreinscription(long demandes, long reservees, long enAttente, long expirees, long annulees,
-                                       long honorees, long nonClassees) {
+                                       long honorees, long nonClassees, long femmes, long hommes) {
     }
 
     /** NIU générés d'un sexe (F, H ou I) et d'une tranche d'âge (ou « inconnu »). */
@@ -93,7 +93,9 @@ public class EnrolementRepository {
                         rs.getLong("en_cours"),
                         rs.getLong("echouees"),
                         rs.getLong("rejetees"),
-                        rs.getLong("non_classees")))
+                        rs.getLong("non_classees"),
+                        rs.getLong("femmes"),
+                        rs.getLong("hommes")))
                 .single();
     }
 
@@ -293,7 +295,9 @@ public class EnrolementRepository {
                                coalesce(sum(f.demandes) filter (where f.statut = 'expiree'), 0)    as expirees,
                                coalesce(sum(f.demandes) filter (where f.statut = 'annulee'), 0)    as annulees,
                                coalesce(sum(f.consommees), 0)                                        as honorees,
-                               coalesce(sum(f.demandes) filter (where f.statut = 'non_classe'), 0) as non_classees
+                               coalesce(sum(f.demandes) filter (where f.statut = 'non_classe'), 0) as non_classees,
+                               coalesce(sum(f.demandes) filter (where f.sexe = 'F'), 0)            as femmes,
+                               coalesce(sum(f.demandes) filter (where f.sexe = 'H'), 0)            as hommes
                         from bi.fait_preinscription_jour f
                         where (cast(:du as date) is null or f.jour >= cast(:du as date))
                           and (cast(:au as date) is null or f.jour <= cast(:au as date))
@@ -307,7 +311,9 @@ public class EnrolementRepository {
                         rs.getLong("expirees"),
                         rs.getLong("annulees"),
                         rs.getLong("honorees"),
-                        rs.getLong("non_classees")))
+                        rs.getLong("non_classees"),
+                        rs.getLong("femmes"),
+                        rs.getLong("hommes")))
                 .single();
     }
 

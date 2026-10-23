@@ -89,6 +89,24 @@ class PreinscriptionsEtProfilIT {
     }
 
     @Test
+    void sexeDesPreinscriptionsConnuOuInconnu() {
+        jdbc.sql("""
+                insert into bi.fait_preinscription_jour (jour, statut, sexe, demandes, consommees)
+                values (date '2026-01-07', 'reservee', 'F', 12, 0),
+                       (date '2026-01-07', 'reservee', 'H', 9, 0),
+                       (date '2026-01-07', 'en_attente', 'F', 3, 0)
+                """).update();
+
+        Preinscriptions p = service.preinscriptions(null, null);
+
+        assertThat(p.demandes()).isEqualTo(169);
+        assertThat(p.femmes()).isEqualTo(15);
+        assertThat(p.hommes()).isEqualTo(9);
+        assertThat(p.rendezVousReserves() + p.enAttenteRendezVous() + p.expirees() + p.annulees()
+                + p.nonClassees()).isEqualTo(p.demandes());
+    }
+
+    @Test
     void preinscriptionsSurUnePeriode() {
         LocalDate jour = LocalDate.parse("2026-01-05");
 

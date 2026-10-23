@@ -43,6 +43,18 @@ const ICONES: Record<string, ReactElement> = {
       <path d="M5 37c1-7 6-10 12-10s11 3 12 10M28 27c5 0 13 2 14 9" {...p} />
     </g>
   ),
+  femme: (
+    <g fill="none">
+      <circle cx="24" cy="12" r="6" fill={Y} fillOpacity=".5" {...p} />
+      <path d="M24 21c-5 0-8 4-9 9l-3 8h24l-3-8c-1-5-4-9-9-9zM20 38v4M28 38v4" {...p} />
+    </g>
+  ),
+  homme: (
+    <g fill="none">
+      <circle cx="24" cy="12" r="6" fill={Y} fillOpacity=".5" {...p} />
+      <path d="M14 36v-7c0-5 4-8 10-8s10 3 10 8v7M19 29v13M29 29v13" {...p} />
+    </g>
+  ),
   horloge: (
     <g fill="none">
       <circle cx="24" cy="24" r="17" fill={Y} fillOpacity=".55" {...p} />

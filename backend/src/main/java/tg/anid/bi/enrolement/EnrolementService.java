@@ -114,8 +114,11 @@ public class EnrolementService {
             return Preinscriptions.nonDisponible(ENSEMBLE_DU_TOGO, du, au);
         }
         EnrolementRepository.TotauxPreinscription t = repository.preinscriptions(du, au);
+        // Sexe : non disponible (null) tant qu'aucune demande de la période n'a de sexe connu.
+        boolean sexeConnu = t.femmes() + t.hommes() > 0;
         return new Preinscriptions(ENSEMBLE_DU_TOGO, du, au, true, t.demandes(), t.reservees(), t.enAttente(),
-                t.expirees(), t.annulees(), t.honorees(), t.nonClassees(), null, null,
+                t.expirees(), t.annulees(), t.honorees(), t.nonClassees(),
+                sexeConnu ? t.femmes() : null, sexeConnu ? t.hommes() : null,
                 repository.derniereDemande().orElse(null));
     }
 
