@@ -30,12 +30,12 @@ create table pipeline.evenement_rejete (
     requete       text        not null,
     lot_id        bigint      not null,
     topic         text        not null,
-    partition     int         not null,
+    "partition"     int         not null,
     kafka_offset  bigint      not null,
     motif         text        not null,
     empreinte     text,
     rejete_le     timestamptz not null default now(),
-    unique (topic, partition, kafka_offset)
+    unique (topic, "partition", kafka_offset)
 );
 
 create table pipeline.controle_qualite (
