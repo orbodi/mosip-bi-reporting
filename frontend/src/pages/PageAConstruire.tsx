@@ -8,7 +8,7 @@ import type { DefinitionPage } from './pages';
 export function PageAConstruire({ page }: { page: DefinitionPage }) {
   return (
     <>
-      <Bandeau titre={page.titre} source={page.source} sansPeriode={page.sansPeriode} />
+      <Bandeau titre={page.titre} source={page.source} />
       <div className="contenu">
         <section className="panneau" aria-labelledby="a-construire">
           <h2 id="a-construire" className="titre-bloc">

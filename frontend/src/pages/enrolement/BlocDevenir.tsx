@@ -2,7 +2,6 @@ import { useDevenirInscriptions } from '../../api/enrolement';
 import { Icone } from '../../composants/blocs/Icone';
 import { devenirInconnu, estConnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
-import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlagePeriode } from '../../lib/usePlagePeriode';
 import './enrolement.css';
 
@@ -29,7 +28,6 @@ interface Statut {
 export function BlocDevenir() {
   const { choix, plage } = usePlagePeriode('enrolement');
   // Ne suit pas le filtre Région (décision P3 de docs/plans/enrolement.md) : la pastille le signale.
-  const filtreRegion = useFiltreRegion();
   const depuisLeDebut = choix === 'tout';
   const { data, isPending } = useDevenirInscriptions(
     depuisLeDebut ? undefined : plage,
@@ -57,12 +55,7 @@ export function BlocDevenir() {
         <h2 id="titre-devenir" className="titre-bloc">
           Devenir des inscriptions
         </h2>
-        <span
-          className="pastille-portee"
-          title={filtreRegion.actif ? 'Ce bloc ne suit pas le filtre Région' : undefined}
-        >
-          {data?.perimetre ?? 'Ensemble du Togo'}
-        </span>
+        <span className="pastille-portee">{data?.perimetre ?? 'Ensemble du Togo'}</span>
       </div>
       <p className="texte-2 bloc-devenir__note">Actualisé automatiquement toutes les 30 secondes.</p>
 

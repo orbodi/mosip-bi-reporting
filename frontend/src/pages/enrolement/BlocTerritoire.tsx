@@ -192,7 +192,8 @@ export function BlocTerritoire() {
               la zone).
             </p>
             <p className="texte-2 tableau-zones__note">
-              Pré-inscriptions selon la préfecture de résidence déclarée ; inscriptions selon le centre d’enrôlement.
+              Pré-inscriptions selon la préfecture de résidence déclarée ; inscriptions selon le centre
+              d’enrôlement.
             </p>
             {data.nonClassees > 0 && (
               <p className="alerte-donnees" role="note">

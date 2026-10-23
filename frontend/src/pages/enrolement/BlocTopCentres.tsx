@@ -24,7 +24,8 @@ const CENTRES_INCONNUS: CentreClasse[] = [1, 2, 3, 4, 5].map((rang) => ({
 
 function Classement({ classement, colonne }: { classement: ClassementCentres; colonne: string }) {
   const { plage, prete } = usePlageApi('enrolement');
-  const { code, region } = useFiltreRegion();
+  const { portee: region } = useFiltreRegion();
+  const code = region?.code;
   const { data, isPending } = useTopCentres(plage, code, classement, prete);
 
   if (data && data.centres.length === 0) {
@@ -79,7 +80,7 @@ function Classement({ classement, colonne }: { classement: ClassementCentres; co
  * dans la région du filtre (décision P3). Onglets React Aria : flèches du clavier pour changer de classement.
  */
 export function BlocTopCentres() {
-  const { region } = useFiltreRegion();
+  const { portee: region } = useFiltreRegion();
   const [onglet, setOnglet] = useState<ClassementCentres>('inscriptions');
 
   return (

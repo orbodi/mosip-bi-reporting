@@ -7,9 +7,7 @@ import { INCONNUE, estConnu, semainesInconnues } from '../../lib/blocsVides';
 import { dateFr, jourMoisCourt, nf } from '../../lib/format';
 import { jeton } from '../../lib/jetons';
 import { lectureSemaine } from '../../lib/semaines';
-import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi, usePlagePeriode } from '../../lib/usePlagePeriode';
-import { PastillePortee } from './PastillePortee';
 
 function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOption {
   const couleurs = {
@@ -78,7 +76,6 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
 export function BlocSemaines() {
   const { plage, prete, choix } = usePlageApi('enrolement');
   const { donnees } = usePlagePeriode('enrolement');
-  const { actif } = useFiltreRegion();
   const requete = useSemaines(plage, prete);
   const { isPending } = requete;
   const [survol, setSurvol] = useState<number | null>(null);
@@ -103,7 +100,6 @@ export function BlocSemaines() {
             <h2 id="titre-semaines" className="titre-bloc">
               Inscriptions et NIU par semaine
             </h2>
-            {actif && <PastillePortee perimetre={data.perimetre} />}
           </div>
           <p className="texte-2 bloc__sous-titre">
             {choix === 'tout'

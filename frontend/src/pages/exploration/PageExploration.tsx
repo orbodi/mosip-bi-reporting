@@ -123,7 +123,6 @@ export function PageExploration({ page }: { page: DefinitionPage }) {
       <Bandeau
         titre={page.titre}
         source={page.source}
-        sansPeriode
         chapeau={`Les ${NOMBRE_INDICATEURS} indicateurs des cinq sources du BI : choisissez une source, filtrez, puis choisissez les indicateurs et ce qui s’affiche en lignes.`}
       />
       <div className="contenu page-m">

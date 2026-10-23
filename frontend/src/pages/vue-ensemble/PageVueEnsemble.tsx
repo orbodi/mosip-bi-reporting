@@ -12,7 +12,6 @@ import { INCONNUE, depuisApi, devenirInconnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi } from '../../lib/usePlagePeriode';
-import { PastillePortee } from '../enrolement/PastillePortee';
 import type { DefinitionPage } from '../pages';
 import './vue-ensemble.css';
 
@@ -34,7 +33,7 @@ const COULEURS_BANDES = ['bleu', 'bleu-vif', 'bleu', 'bleu-vif', 'bleu', 'bleu-v
  */
 export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
   const { plage, prete, choix } = usePlageApi(page.source);
-  const { code, region, actif, regional, choisir } = useFiltreRegion();
+  const { code, region, regional, choisir } = useFiltreRegion();
   const devenir = useDevenirInscriptions(plage, prete);
   const d = devenir.data ?? devenirInconnu();
   const territoire = useTerritoire(plage, undefined, prete);
@@ -84,7 +83,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
 
   return (
     <>
-      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage region />} />
+      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
       <div className="contenu page-m">
         <section className="panneau-m parcours" aria-labelledby="titre-parcours">
           <span className="coin coin--hg" aria-hidden="true" />
@@ -97,7 +96,6 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
                 <h2 id="titre-parcours" className="parcours__titre">
                   De la pré-inscription à la carte en main
                 </h2>
-                {actif && <PastillePortee />}
               </div>
               <p className="panneau-m__sous-titre">Du rendez-vous à la remise de la carte, en sept étapes.</p>
             </div>
@@ -191,12 +189,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
           )}
         </section>
 
-        <Panneau
-          id="titre-modules"
-          titre="Indicateurs clés par module"
-          pastille={actif ? <PastillePortee /> : undefined}
-          sansFilet
-        >
+        <Panneau id="titre-modules" titre="Indicateurs clés par module" sansFilet>
           <div className="cartes-m cartes-m--3">
             <CarteIndicateur
               taille="module"

@@ -3,19 +3,16 @@ import { BarresHorizontales } from '../../composants/blocs/BarresHorizontales';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Pyramide } from '../../composants/blocs/Pyramide';
 import { lignesPyramideAvecAgeInconnu } from '../../lib/blocsVides';
-import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi } from '../../lib/usePlagePeriode';
-import { PastillePortee } from './PastillePortee';
 
 /**
  * Bloc « Profil des pré-inscrits » : demandes de pré-enrôlement par tranche d'âge et sexe (pyramide) et par
  * nationalité (GET /api/v1/enrolement/preinscriptions/profil). Source : champs extraits de l'API de pré-inscription
- * MOSIP. National, comme le bloc « Pré-inscription » : la pastille le signale quand le filtre Région est actif.
+ * MOSIP. National, comme le bloc « Pré-inscription ».
  * La pyramide finit par « Âge inconnu » (sexe connu, âge absent) : ses totaux égalent les cartes Femmes et
  * Hommes du bloc « Pré-inscription ». Sans données, les lignes restent à 0 et la liste des nationalités est vide.
  */
 export function BlocProfilPreinscription() {
-  const { actif } = useFiltreRegion();
   const { plage, prete } = usePlageApi('enrolement');
   const { data } = useProfilPreinscriptions(plage, prete);
   const nationalites = (data?.nationalites ?? []).map((n) => ({
@@ -29,7 +26,6 @@ export function BlocProfilPreinscription() {
       id="titre-profil-preinscription"
       titre="Profil des pré-inscrits"
       sousTitre="Ensemble du Togo, demandes de pré-enrôlement par tranche d’âge, sexe et nationalité"
-      pastille={actif ? <PastillePortee /> : undefined}
       className="bloc-pleine-largeur"
       sansMarge
     >

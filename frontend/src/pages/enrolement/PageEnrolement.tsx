@@ -1,6 +1,5 @@
-import { Link } from '@tanstack/react-router';
 import { Bandeau } from '../../composants/coque/Bandeau';
-import { FiltreRegion } from '../../composants/coque/FiltreRegion';
+import { FiltresPage } from '../../composants/coque/FiltresPage';
 import type { DefinitionPage } from '../pages';
 import { BlocAgeSexe } from './BlocAgeSexe';
 import { BlocDevenir } from './BlocDevenir';
@@ -14,18 +13,7 @@ import { BlocTopCentres } from './BlocTopCentres';
 export function PageEnrolement({ page }: { page: DefinitionPage }) {
   return (
     <>
-      <Bandeau
-        titre={page.titre}
-        source={page.source}
-        filtres={
-          <>
-            <FiltreRegion />
-            <Link to="/exploration" search={(precedent) => precedent} className="lien-exploration">
-              Filtres détaillés dans l’Exploration <span aria-hidden="true">→</span>
-            </Link>
-          </>
-        }
-      />
+      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
       <div className="contenu grille-page">
         <BlocPreinscription />
         <BlocProfilPreinscription />

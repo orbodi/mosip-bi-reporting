@@ -78,9 +78,9 @@ describe('Page Enrôlement', () => {
     expect(pre.queryByRole('note')).not.toBeInTheDocument();
   });
 
-  it('âge et sexe : pyramide de l’API pour la région choisie', async () => {
-    const appels = simulerApi();
-    afficher('/enrolement?region=SAV');
+  it('âge et sexe : pyramide de l’API pour la région d’un utilisateur régional', async () => {
+    const appels = simulerApi({ '/meta/regions': [{ code: 'SAV', nom: 'Savanes' }] });
+    afficher('/enrolement');
 
     const bloc = within(await screen.findByRole('region', { name: 'NIU générés par âge et par sexe' }));
     expect(await bloc.findByText(/Région Savanes/)).toBeInTheDocument();

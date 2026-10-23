@@ -13,8 +13,6 @@ export interface DefinitionPage {
   maquette: string;
   /** Blocs à construire, dans l'ordre de la maquette. */
   blocs: string[];
-  /** L'Exploration a ses propres filtres : pas de filtre Période dans le bandeau. */
-  sansPeriode?: boolean;
 }
 
 export const PAGES: DefinitionPage[] = [
@@ -107,7 +105,6 @@ export const PAGES: DefinitionPage[] = [
     titre: 'Exploration des données',
     source: 'enrolement',
     maquette: 'Technique',
-    sansPeriode: true,
     blocs: [
       'Onglets par source',
       'Filtres de la source (période, profil, territoire en cascade)',

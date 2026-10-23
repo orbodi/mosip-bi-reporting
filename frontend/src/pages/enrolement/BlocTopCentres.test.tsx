@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { afficher, simulerApi } from '../../test/apiSimulee';
@@ -36,14 +36,28 @@ describe('Top des centres', () => {
     ).toBeInTheDocument();
   });
 
-  it('suit le filtre Région', async () => {
+  it('reste national quand une région est ouverte dans le bloc Territoire', async () => {
     const appels = simulerApi();
     afficher('/enrolement?region=GLO');
 
-    expect(await (await blocAffiche()).findByText('Région Grand Lomé')).toBeInTheDocument();
     await (await blocAffiche()).findByText('EPP Doumassesse I G/B');
+    expect(bloc().queryByText('Région Grand Lomé')).not.toBeInTheDocument();
     const centres = appels.filter((u) => u.pathname.endsWith('/enrolement/centres'));
-    expect(centres.at(-1)?.searchParams.get('zone')).toBe('GLO');
+    expect(centres.every((u) => !u.searchParams.has('zone'))).toBe(true);
+  });
+
+  it('un utilisateur régional voit les centres de sa région', async () => {
+    const appels = simulerApi({ '/meta/regions': [{ code: 'GLO', nom: 'Grand Lomé' }] });
+    afficher('/enrolement');
+
+    expect(await (await blocAffiche()).findByText('Région Grand Lomé')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        appels.some(
+          (u) => u.pathname.endsWith('/enrolement/centres') && u.searchParams.get('zone') === 'GLO',
+        ),
+      ).toBe(true),
+    );
   });
 
   it('sans réponse de l’API, garde les cinq rangs du classement', async () => {

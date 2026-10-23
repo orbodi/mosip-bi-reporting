@@ -4,18 +4,15 @@ import { Panneau } from '../../composants/blocs/Panneau';
 import { Legende, Repartition } from '../../composants/blocs/Repartition';
 import { depuisApi } from '../../lib/blocsVides';
 import { dateFr, heureFr, nf, part, pct } from '../../lib/format';
-import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi } from '../../lib/usePlagePeriode';
-import { PastillePortee } from './PastillePortee';
 
 /**
  * Bloc « Pré-inscription » (maquette Enrôlement) : demandes de pré-enrôlement, rendez-vous, attente, femmes,
  * hommes et dernière demande (GET /api/v1/enrolement/preinscriptions).
- * National : une pré-inscription n'a pas de territoire, la pastille le signale quand le filtre Région est actif.
+ * National : une pré-inscription n'a pas de territoire.
  * Valeur indisponible (null de l'API) : 0 à l'écran.
  */
 export function BlocPreinscription() {
-  const { actif } = useFiltreRegion();
   const { plage, prete } = usePlageApi('enrolement');
   const { data } = usePreinscriptions(plage, prete);
 
@@ -28,13 +25,7 @@ export function BlocPreinscription() {
   const derniere = data?.derniereDemande;
 
   return (
-    <Panneau
-      id="titre-preinscription"
-      titre="Pré-inscription"
-      pastille={actif ? <PastillePortee /> : undefined}
-      className="bloc-pleine-largeur"
-      sansMarge
-    >
+    <Panneau id="titre-preinscription" titre="Pré-inscription" className="bloc-pleine-largeur" sansMarge>
       <div className="duo">
         <div className="duo__principal">
           <GrandChiffre valeur={nf(demandes)} unite="demandes de pré-enrôlement" />
@@ -82,16 +73,8 @@ export function BlocPreinscription() {
               valeur={derniere ? dateFr(derniere) : '–'}
               detail={derniere ? `à ${heureFr(derniere)}` : undefined}
             />
-            <CarteIndicateur
-              icone="femme"
-              nom="Femmes pré-inscrites"
-              valeur={nf(femmes)}
-            />
-            <CarteIndicateur
-              icone="homme"
-              nom="Hommes pré-inscrits"
-              valeur={nf(hommes)}
-            />
+            <CarteIndicateur icone="femme" nom="Femmes pré-inscrites" valeur={nf(femmes)} />
+            <CarteIndicateur icone="homme" nom="Hommes pré-inscrits" valeur={nf(hommes)} />
           </div>
         </div>
       </div>

@@ -1,20 +1,22 @@
 import type { ReactNode } from 'react';
 import type { CodeSource } from '../../api/meta';
-import { FiltrePeriode } from './FiltrePeriode';
 import { MiseAJour } from './MiseAJour';
 
 interface Props {
   titre: string;
   source: CodeSource;
-  sansPeriode?: boolean;
-  /** Filtres propres à la page, après le filtre Période. */
+  /** Contenu sous le titre : lien vers l'Exploration (pages de vue d'ensemble). */
   filtres?: ReactNode;
   /** Texte d'introduction sous le titre (page Exploration). */
   chapeau?: ReactNode;
 }
 
-/** Bandeau bleu en haut de chaque page : titre, date de mise à jour, filtres. Le premier panneau le chevauche. */
-export function Bandeau({ titre, source, sansPeriode, filtres, chapeau }: Props) {
+/**
+ * Bandeau bleu en haut de chaque page : titre, date de mise à jour et lien vers l'Exploration. Les pages de vue
+ * d'ensemble n'ont pas de filtre Période ni Région : filtres et exploration détaillée sont dans l'Exploration.
+ * Le premier panneau chevauche le bandeau.
+ */
+export function Bandeau({ titre, source, filtres, chapeau }: Props) {
   return (
     <section className="bandeau" aria-labelledby="titre-page">
       <div className="bandeau__interieur">
@@ -25,12 +27,7 @@ export function Bandeau({ titre, source, sansPeriode, filtres, chapeau }: Props)
           <MiseAJour source={source} />
         </div>
         {chapeau && <p className="bandeau__chapeau">{chapeau}</p>}
-        {(!sansPeriode || filtres) && (
-          <div className="bandeau__filtres">
-            {!sansPeriode && <FiltrePeriode source={source} />}
-            {filtres}
-          </div>
-        )}
+        {filtres && <div className="bandeau__filtres">{filtres}</div>}
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SEMAINES, afficher, simulerApi } from '../../test/apiSimulee';
 
@@ -29,15 +29,18 @@ describe('Inscriptions et NIU par semaine', () => {
     expect(bloc().queryByText('Ensemble du Togo')).not.toBeInTheDocument();
   });
 
-  it('suit la période mais pas le filtre Région, et le signale', async () => {
+  it('suit la période de l’adresse, mais pas la région ouverte dans le bloc Territoire', async () => {
     const appels = simulerApi();
     afficher('/enrolement?periode=30j&region=KAR');
 
-    expect(await (await blocAffiche()).findByText('Ensemble du Togo')).toHaveAttribute(
-      'title',
-      'Ce bloc ne suit pas le filtre Région',
+    await blocAffiche();
+    await waitFor(() =>
+      expect(
+        appels.some((u) => u.pathname.endsWith('/enrolement/semaines') && u.search.startsWith('?du=')),
+      ).toBe(true),
     );
     const semaines = appels.filter((u) => u.pathname.endsWith('/enrolement/semaines'));
+    expect(semaines.every((u) => !u.searchParams.has('zone'))).toBe(true);
     expect(semaines.at(-1)?.search).toBe('?du=2025-12-16&au=2026-01-14');
     expect(bloc().getByText(/12 semaines complètes jusqu’à la fin de la période/)).toBeInTheDocument();
   });

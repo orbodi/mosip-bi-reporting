@@ -69,8 +69,12 @@ describe('Coque', () => {
     expect(await screen.findByText('Dernière mise à jour : 03/07/2026 à 17h09')).toBeInTheDocument();
   });
 
-  it('calcule la plage d’une période relative depuis l’adresse', async () => {
-    afficher('/enrolement?periode=7j');
-    expect(await screen.findByText('Du 08/01/2026 au 14/01/2026')).toBeInTheDocument();
+  it('n’a pas de filtre Période ni Région sur une page de vue d’ensemble, seulement le lien vers l’Exploration', async () => {
+    afficher('/enrolement');
+    expect(
+      await screen.findByRole('link', { name: /Filtres détaillés dans l’Exploration/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Période/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Région/ })).not.toBeInTheDocument();
   });
 });
