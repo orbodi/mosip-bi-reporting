@@ -12,8 +12,7 @@ import { PastillePortee } from './PastillePortee';
  * Bloc « Pré-inscription » (maquette Enrôlement) : demandes de pré-enrôlement, rendez-vous, attente, femmes,
  * hommes et dernière demande (GET /api/v1/enrolement/preinscriptions).
  * National : une pré-inscription n'a pas de territoire, la pastille le signale quand le filtre Région est actif.
- * Valeur indisponible (null de l'API) : 0 à l'écran. Femmes et hommes : part parmi les demandes au sexe connu ; une
- * note signale les demandes dont le sexe n'est pas encore connu (enrichissement en cours).
+ * Valeur indisponible (null de l'API) : 0 à l'écran.
  */
 export function BlocPreinscription() {
   const { actif } = useFiltreRegion();
@@ -25,7 +24,6 @@ export function BlocPreinscription() {
   const enAttente = depuisApi(data?.enAttenteRendezVous);
   const femmes = depuisApi(data?.femmes);
   const hommes = depuisApi(data?.hommes);
-  const sexeConnu = femmes + hommes;
   const nonClassees = data?.nonClassees ?? 0;
   const derniere = data?.derniereDemande;
 
@@ -63,12 +61,6 @@ export function BlocPreinscription() {
               dans les demandes, hors des statuts.
             </p>
           )}
-          {sexeConnu > 0 && sexeConnu < demandes && (
-            <p className="alerte-donnees" role="note">
-              Sexe connu pour {nf(sexeConnu)} demandes sur {nf(demandes)} ({pct(part(sexeConnu, demandes))}) :
-              celui des autres n’est pas encore renseigné.
-            </p>
-          )}
         </div>
         <div className="duo__cartes">
           <div className="cartes-m cartes-m--3">
@@ -94,13 +86,11 @@ export function BlocPreinscription() {
               icone="femme"
               nom="Femmes pré-inscrites"
               valeur={nf(femmes)}
-              detail={`${pct(part(femmes, sexeConnu))} des sexes connus`}
             />
             <CarteIndicateur
               icone="homme"
               nom="Hommes pré-inscrits"
               valeur={nf(hommes)}
-              detail={`${pct(part(hommes, sexeConnu))} des sexes connus`}
             />
           </div>
         </div>

@@ -40,16 +40,15 @@ describe('Page Enrôlement', () => {
     expect(screen.queryByText(/pas encore raccordée|non disponible|non mesuré/i)).not.toBeInTheDocument();
   });
 
-  it('pré-inscription : femmes et hommes parmi les sexes connus, note pour les autres', async () => {
+  it('pré-inscription : femmes et hommes, sans pourcentage ni note', async () => {
     simulerApi({ '/enrolement/preinscriptions': { ...PREINSCRIPTIONS, femmes: 300000, hommes: 200000 } });
     afficher('/enrolement');
 
     const pre = within(await screen.findByRole('region', { name: 'Pré-inscription' }));
     expect(await pre.findByText(texte('300 000'))).toBeInTheDocument();
     expect(pre.getByText(texte('200 000'))).toBeInTheDocument();
-    expect(pre.getByText(texte('60,0 % des sexes connus'))).toBeInTheDocument();
-    expect(pre.getByText(texte('40,0 % des sexes connus'))).toBeInTheDocument();
-    expect(pre.getByRole('note').textContent).toMatch(/^Sexe connu pour 500\s000 demandes sur 606\s850/);
+    expect(pre.queryByText(/sexes connus/)).not.toBeInTheDocument();
+    expect(pre.queryByRole('note')).not.toBeInTheDocument();
   });
 
   it('âge et sexe : pyramide de l’API pour la région choisie', async () => {
