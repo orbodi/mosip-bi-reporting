@@ -304,7 +304,7 @@ export function BlocTerritoire() {
                     <td className="chiffre tableau__nombre col-secondaire">{nf(l.echouees)}</td>
                     <td className="chiffre tableau__nombre col-secondaire">{nf(l.enCours)}</td>
                     <td className="chiffre tableau__nombre col-secondaire">
-                      {`${nf(l.delaiMedianH ?? INCONNUE)} h`}
+                      {`${nf(l.delaiMedianH ?? INCONNUE)}\u00a0h`}
                     </td>
                   </tr>
                 );
