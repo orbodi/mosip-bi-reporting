@@ -45,7 +45,10 @@ describe('Page Enrôlement', () => {
     simulerApi();
     afficher('/enrolement');
 
-    expect(await screen.findByText('Dernière mise à jour : 14/01/2026 à 11h50')).toBeInTheDocument();
+    // Délai allongé : la pastille attend deux sources ; 1 s ne suffit pas quand toute la suite tourne (25/10/2026).
+    expect(
+      await screen.findByText('Dernière mise à jour : 14/01/2026 à 11h50', {}, { timeout: 4000 }),
+    ).toBeInTheDocument();
   });
 
   it('profil des pré-inscrits : nationalités et pyramide de l’API', async () => {

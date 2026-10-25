@@ -33,6 +33,8 @@ export const SOURCES: SourceExploration[] = [
       { cle: 'enc', libelle: 'Inscriptions en cours', dimensions: PROFIL, territoire: true },
       { cle: 'ech', libelle: 'Inscriptions échouées', dimensions: PROFIL, territoire: true },
       { cle: 'rej', libelle: 'Inscriptions rejetées', dimensions: PROFIL, territoire: true },
+      // Selon la préfecture de résidence déclarée : pas de détail plus fin que la préfecture, ni de profil ici.
+      { cle: 'pre', libelle: 'Pré-inscriptions', dimensions: [], territoire: true },
     ],
   },
   {
@@ -131,14 +133,15 @@ export const DIMENSIONS: Record<CleDimension, { libelle: string; tous: string; v
   },
 };
 
+/** Niveaux du territoire, de la région au centre ; cle = niveau de bi.zone (champ niveau de l'API). */
 export const NIVEAUX_TERRITOIRE = [
   { cle: 'region', libelle: 'Région' },
-  { cle: 'pref', libelle: 'Préfecture' },
+  { cle: 'prefecture', libelle: 'Préfecture' },
   { cle: 'commune', libelle: 'Commune' },
   { cle: 'canton', libelle: 'Canton' },
   { cle: 'localite', libelle: 'Localité' },
   { cle: 'centre', libelle: 'Centre' },
 ] as const;
 
-/** Nombre total d'indicateurs (24) affiché dans l'introduction. */
+/** Nombre total d'indicateurs (25) affiché dans l'introduction. */
 export const NOMBRE_INDICATEURS = SOURCES.reduce((t, s) => t + s.indicateurs.length, 0);

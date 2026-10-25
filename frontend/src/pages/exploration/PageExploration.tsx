@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
-import type { LigneZone } from '../../api/client';
+import type { LigneZone, Territoire } from '../../api/client';
 import { useTerritoire } from '../../api/enrolement';
 import { useMeta } from '../../api/meta';
 import { ChampChoix, type OptionChoix } from '../../composants/blocs/ChampChoix';
 import { Chevron } from '../../composants/blocs/Icone';
 import { GrandChiffre } from '../../composants/blocs/Indicateur';
 import { Panneau } from '../../composants/blocs/Panneau';
-import { CONTOURS_PREFECTURES } from '../../composants/carte/contoursTogo';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { nf, part, pct } from '../../lib/format';
-import { cleNom } from '../../lib/territoire';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import type { DefinitionPage } from '../pages';
 import {
@@ -34,6 +32,8 @@ const VIDE_TERRITOIRE = [
   'Choisir le canton',
   'Choisir la localité',
 ];
+/** Libellé « toutes les zones » de chaque niveau (région, préfecture, commune : Toutes ; canton, centre : Tous). */
+const TOUTES_ZONES = ['Toutes', 'Toutes', 'Toutes', 'Tous', 'Toutes', 'Tous'];
 const MOIS_COURT = [
   'janv.',
   'févr.',
@@ -66,17 +66,43 @@ const MOIS = [
 ];
 const libelleMois = (m: string) => `${MOIS[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
 
+type ChampsEnrolement =
+  | 'inscriptions'
+  | 'niuGeneres'
+  | 'enCours'
+  | 'echouees'
+  | 'rejetees'
+  | 'preinscriptions';
+
 /** Colonnes de l'API Territoire correspondant aux indicateurs d'enrôlement. */
-const CHAMP_ENROLEMENT: Record<
-  string,
-  keyof Pick<LigneZone, 'inscriptions' | 'niuGeneres' | 'enCours' | 'echouees' | 'rejetees'>
-> = {
+const CHAMP_ENROLEMENT: Record<string, ChampsEnrolement> = {
   ins: 'inscriptions',
   niu: 'niuGeneres',
   enc: 'enCours',
   ech: 'echouees',
   rej: 'rejetees',
+  pre: 'preinscriptions',
 };
+
+/** Ordre alphabétique français des listes de zones (« Éthiopie » après « Dapaong », pas à la fin). */
+const ordreFr = new Intl.Collator('fr', { sensitivity: 'base' });
+
+/**
+ * Listes en cascade du territoire : pour chaque niveau sous la région, les sous-zones de la zone choisie au niveau
+ * au-dessus (API Territoire, sans période : la liste ne dépend pas des chiffres). Six appels au plus, toujours dans
+ * le même ordre (règle des hooks) ; un niveau dont le parent n'est pas choisi ne fait pas d'appel.
+ */
+function useListesTerritoire(chemin: string[]): (Territoire | undefined)[] {
+  const listes = [
+    useTerritoire(undefined, chemin[0], !!chemin[0]).data,
+    useTerritoire(undefined, chemin[1], !!chemin[1]).data,
+    useTerritoire(undefined, chemin[2], !!chemin[2]).data,
+    useTerritoire(undefined, chemin[3], !!chemin[3]).data,
+    useTerritoire(undefined, chemin[4], !!chemin[4]).data,
+  ];
+  // listes[k] : sous-zones de chemin[k], options du niveau k + 1 ; jamais celles d'une zone qui n'est plus choisie.
+  return listes.map((t, k) => (t && chemin[k] && t.zone === chemin[k] ? t : undefined));
+}
 
 function moisEntre(debut: string, fin: string): string[] {
   const out: string[] = [];
@@ -113,9 +139,9 @@ function telechargerCsv(nom: string, lignes: string[][]) {
 }
 
 /**
- * Exploration des données (maquette/pages/Technique.dc.html) : 24 indicateurs de 5 sources, filtres, ventilation et
- * export CSV. Seule la source Enrôlement a une API (par région ou par préfecture, sans filtre de profil) ; ailleurs
- * le tableau garde sa forme, indicateurs à 0 (décision du 20/10/2026).
+ * Exploration des données (maquette/pages/Technique.dc.html) : 25 indicateurs de 5 sources, filtres, ventilation et
+ * export CSV. Seule la source Enrôlement a une API : par sous-zone de la zone choisie, de la région au centre, sans
+ * filtre de profil ; ailleurs le tableau garde sa forme, indicateurs à 0 (décision du 20/10/2026).
  */
 export function PageExploration({ page }: { page: DefinitionPage }) {
   return (
@@ -138,8 +164,9 @@ function Explorateur() {
   const [indicateurs, setIndicateurs] = useState<string[]>([source.indicateurs[0].cle]);
   const [periode, setPeriode] = useState('tout');
   const [filtres, setFiltres] = useState<Partial<Record<CleDimension, string>>>({});
-  const [regionChoisie, setRegionChoisie] = useState<string>('');
-  const [par, setPar] = useState<string>('region');
+  // Zones choisies, de la région vers le centre : chemin[k] est le code choisi au niveau NIVEAUX_TERRITOIRE[k].
+  const [chemin, setChemin] = useState<string[]>([]);
+  const [par, setPar] = useState<string>('sous');
   const [mode, setMode] = useState<Mode>('n');
 
   const { regions } = useFiltreRegion();
@@ -159,9 +186,23 @@ function Explorateur() {
       : [];
   const annees = [...new Set(mois.map((m) => m.slice(0, 4)))];
 
+  const listes = useListesTerritoire(chemin);
+  // Options du niveau k : régions, puis sous-zones de ce niveau dans la zone choisie au-dessus (ordre alphabétique).
+  const optionsNiveau = (k: number): OptionChoix[] =>
+    k === 0
+      ? regions.map((r) => ({ id: r.code, libelle: r.nom }))
+      : (listes[k - 1]?.lignes ?? [])
+          .filter((l) => l.niveau === NIVEAUX_TERRITOIRE[k].cle && !l.horsReferentiel)
+          .map((l) => ({ id: l.code, libelle: l.nom }))
+          .sort((a, b) => ordreFr.compare(a.libelle, b.libelle));
+  const nomDe = (k: number) => optionsNiveau(k).find((o) => o.id === chemin[k])?.libelle ?? chemin[k];
+  const zoneChoisie = chemin.at(-1);
+  const niveauSuivant = NIVEAUX_TERRITOIRE[chemin.length];
+  const choisirNiveau = (k: number, code: string) =>
+    setChemin(code ? [...chemin.slice(0, k), code] : chemin.slice(0, k));
+
   const optionsPar: OptionChoix[] = [
-    ...(territoireOk && !regionChoisie ? [{ id: 'region', libelle: 'Région' }] : []),
-    ...(territoireOk ? [{ id: 'pref', libelle: 'Préfecture' }] : []),
+    ...(territoireOk && niveauSuivant ? [{ id: 'sous', libelle: niveauSuivant.libelle }] : []),
     ...(!periode.startsWith('A:') && !periode.startsWith('M:') ? [{ id: 'annee', libelle: 'Année' }] : []),
     ...(!periode.startsWith('M:') ? [{ id: 'mois', libelle: 'Mois' }] : []),
     ...dimensionsCommunes
@@ -172,41 +213,42 @@ function Explorateur() {
   const parEffectif = optionsPar.some((o) => o.id === par) ? par : optionsPar[0].id;
   const modeEffectif: Mode = mode === 'pf' && choisis.length < 2 ? 'n' : mode;
 
-  const nomRegion = regions.find((r) => r.code === regionChoisie)?.nom;
+  const nomsChemin = chemin.map((_, k) => nomDe(k));
   const plage = plageDe(periode);
-  // Données réelles : Enrôlement, sans filtre de profil ni de type, par région, par préfecture d'une région, ou total.
+  // Données réelles : Enrôlement, sans filtre de profil ni de type, par sous-zone de la zone choisie, ou total.
   const reel =
     cleSource === 'enrol' &&
     Object.values(filtres).every((v) => !v) &&
-    (parEffectif === 'region' || parEffectif === 'total' || (parEffectif === 'pref' && !!regionChoisie));
-  const territoire = useTerritoire(plage, regionChoisie || undefined, reel);
+    (parEffectif === 'sous' || parEffectif === 'total');
+  const territoire = useTerritoire(plage, zoneChoisie, reel);
   const lignesApi = reel ? territoire.data?.lignes.filter((l) => !l.horsReferentiel) : undefined;
 
-  const valeursDe = (
-    l?: Pick<LigneZone, 'inscriptions' | 'niuGeneres' | 'enCours' | 'echouees' | 'rejetees'>,
-  ) => choisis.map((i) => (l && CHAMP_ENROLEMENT[i.cle] ? l[CHAMP_ENROLEMENT[i.cle]] : Number.NaN));
+  const valeursDe = (l?: Pick<LigneZone, ChampsEnrolement>) =>
+    choisis.map((i) => (l && CHAMP_ENROLEMENT[i.cle] ? l[CHAMP_ENROLEMENT[i.cle]] : Number.NaN));
+  // On ouvre une sous-zone du niveau attendu qui a elle-même des sous-zones (pas un centre rattaché plus haut).
+  const ouvrable = (l: LigneZone) =>
+    !!niveauSuivant &&
+    l.niveau === niveauSuivant.cle &&
+    !!NIVEAUX_TERRITOIRE[chemin.length + 1] &&
+    (l.ouvrable ?? l.niveau !== 'centre');
 
   const lignes = ((): { id: string; libelle: string; valeurs: number[]; ouvrable?: boolean }[] => {
     if (parEffectif === 'total') return [];
-    if (lignesApi && (parEffectif === 'region' || parEffectif === 'pref')) {
+    if (lignesApi && parEffectif === 'sous') {
       return lignesApi.map((l) => ({
         id: l.code,
         libelle: l.nom,
         valeurs: valeursDe(l),
-        ouvrable: parEffectif === 'region',
+        ouvrable: ouvrable(l),
       }));
     }
     const inconnues = () => choisis.map(() => Number.NaN);
-    if (parEffectif === 'region') {
-      return regions.map((r) => ({ id: r.code, libelle: r.nom, valeurs: inconnues(), ouvrable: true }));
-    }
-    if (parEffectif === 'pref') {
-      return CONTOURS_PREFECTURES.filter(
-        (p) => !nomRegion || cleNom(p.region ?? '') === cleNom(nomRegion),
-      ).map((p) => ({
-        id: p.nom,
-        libelle: p.nom,
+    if (parEffectif === 'sous') {
+      return optionsNiveau(chemin.length).map((o) => ({
+        id: o.id,
+        libelle: o.libelle,
         valeurs: inconnues(),
+        ouvrable: !!NIVEAUX_TERRITOIRE[chemin.length + 1],
       }));
     }
     if (parEffectif === 'annee') return annees.map((a) => ({ id: a, libelle: a, valeurs: inconnues() }));
@@ -228,7 +270,7 @@ function Explorateur() {
 
   const libellePar = optionsPar.find((o) => o.id === parEffectif)?.libelle ?? '';
   const titreResultat = `${choisis.map((i) => i.libelle).join(', ')}${parEffectif !== 'total' ? ` par ${libellePar.toLowerCase()}` : ''}`;
-  const filtresDecrits = [...Object.values(filtres).filter(Boolean), ...(nomRegion ? [nomRegion] : [])];
+  const filtresDecrits = [...Object.values(filtres).filter(Boolean), ...nomsChemin];
   const libellePeriode =
     periode === 'tout'
       ? mois.length
@@ -243,8 +285,8 @@ function Explorateur() {
     setCleSource(s.cle);
     setIndicateurs([s.indicateurs[0].cle]);
     setFiltres({});
-    setRegionChoisie('');
-    setPar(s.indicateurs[0].territoire ? 'region' : 'mois');
+    setChemin([]);
+    setPar(s.indicateurs[0].territoire ? 'sous' : 'mois');
     setMode('n');
   };
 
@@ -324,35 +366,31 @@ function Explorateur() {
               </div>
               {s.indicateurs.some((i) => i.territoire) && (
                 <div className="xp-grille xp-grille--territoire">
-                  {NIVEAUX_TERRITOIRE.map((n, i) =>
-                    i === 0 ? (
+                  {NIVEAUX_TERRITOIRE.map((n, k) => {
+                    // Un niveau s'ouvre dès que le niveau au-dessus est choisi (la région : toujours).
+                    const ouvert = k === 0 || !!chemin[k - 1];
+                    const options = optionsNiveau(k);
+                    return (
                       <ChampChoix
                         key={n.cle}
                         libelle={n.libelle}
-                        valeur={regionChoisie}
+                        valeur={chemin[k] ?? ''}
                         options={[
-                          { id: '', libelle: 'Toutes' },
-                          ...regions.map((r) => ({ id: r.code, libelle: r.nom })),
+                          { id: '', libelle: ouvert ? TOUTES_ZONES[k] : VIDE_TERRITOIRE[k] },
+                          ...(ouvert ? options : []),
                         ]}
-                        desactive={!territoireOk}
-                        raison="Un des indicateurs choisis ne se ventile pas par territoire"
-                        onChange={(v) => {
-                          setRegionChoisie(v);
-                          if (v && parEffectif === 'region') setPar('pref');
-                        }}
+                        desactive={!territoireOk || !ouvert || (k > 0 && options.length === 0)}
+                        raison={
+                          !territoireOk
+                            ? 'Un des indicateurs choisis ne se ventile pas par territoire'
+                            : !ouvert
+                              ? `${VIDE_TERRITOIRE[k]} d’abord`
+                              : 'Aucune zone de ce niveau dans la zone choisie'
+                        }
+                        onChange={(v) => choisirNiveau(k, v)}
                       />
-                    ) : (
-                      <ChampChoix
-                        key={n.cle}
-                        libelle={n.libelle}
-                        valeur=""
-                        options={[{ id: '', libelle: VIDE_TERRITOIRE[i] }]}
-                        desactive
-                        raison="Référentiel des communes, cantons, localités et centres pas encore chargé"
-                        onChange={() => {}}
-                      />
-                    ),
-                  )}
+                    );
+                  })}
                 </div>
               )}
               <div className="xp-filet" />
@@ -409,6 +447,12 @@ function Explorateur() {
                 </button>
               </div>
               {s.note && <p className="xp-note">{s.note}</p>}
+              {choisis.some((i) => i.cle === 'pre') && chemin.length >= 2 && (
+                <p className="xp-note">
+                  Les pré-inscriptions ne sont situées qu’à la préfecture de résidence déclarée : le total de
+                  la zone est exact, le détail plus fin est à 0.
+                </p>
+              )}
               {!territoireOk && s.indicateurs.some((i) => i.territoire) && (
                 <p className="xp-note">
                   Un des indicateurs choisis ne se ventile pas par territoire : les filtres géographiques sont
@@ -425,20 +469,27 @@ function Explorateur() {
         titre={titreResultat}
         sousTitre={`${source.libelle} · ${libellePeriode} · ${filtresDecrits.length ? filtresDecrits.join(' · ') : 'sans filtre'}.`}
         surTitre={
-          nomRegion ? (
+          chemin.length ? (
             <span className="fil-ariane">
-              <button
-                type="button"
-                className="fil-ariane__lien"
-                onClick={() => {
-                  setRegionChoisie('');
-                  setPar('region');
-                }}
-              >
+              <button type="button" className="fil-ariane__lien" onClick={() => setChemin([])}>
                 Togo
               </button>
-              <Chevron taille={11} />
-              <span aria-current="location">{nomRegion}</span>
+              {nomsChemin.map((nom, k) => (
+                <span key={chemin[k]} className="fil-ariane__etape">
+                  <Chevron taille={11} />
+                  {k < chemin.length - 1 ? (
+                    <button
+                      type="button"
+                      className="fil-ariane__lien"
+                      onClick={() => setChemin(chemin.slice(0, k + 1))}
+                    >
+                      {nom}
+                    </button>
+                  ) : (
+                    <span aria-current="location">{nom}</span>
+                  )}
+                </span>
+              ))}
             </span>
           ) : undefined
         }
@@ -472,8 +523,8 @@ function Explorateur() {
                           type="button"
                           className="bouton-zone"
                           onClick={() => {
-                            setRegionChoisie(l.id);
-                            setPar('pref');
+                            setChemin([...chemin, l.id]);
+                            setPar('sous');
                           }}
                         >
                           {l.libelle}
