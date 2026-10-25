@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -66,13 +65,6 @@ class EnrolementControllerTest {
     }
 
     @Test
-    void uneZoneHorsPorteeEstRefusee() throws Exception {
-        when(service.devenir(any(), any(), eq("SAV"))).thenThrow(new AccessDeniedException("hors portée"));
-        mvc.perform(get("/api/v1/enrolement/devenir").param("zone", "SAV"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     void renvoieLesSemainesAvecLaDisponibiliteDesNiu() throws Exception {
         when(service.semaines(isNull(), isNull(), isNull())).thenReturn(new InscriptionsParSemaine(
                 "Ensemble du Togo", null, null, false,
@@ -89,11 +81,11 @@ class EnrolementControllerTest {
     @Test
     void renvoieLeTerritoireAvecUneLigneParSousZone() throws Exception {
         when(service.territoire(isNull(), isNull(), eq("SAV"))).thenReturn(new Territoire(
-                "Savanes", "SAV", null, null, 150, 130, 9, 1, 10, 0, 300, 7,
+                "Savanes", "SAV", "region", List.of(), null, null, 150, 130, 9, 1, 10, 0, 300, 7,
                 List.of(new Territoire.LigneZone("SAV-02", "Tône", "prefecture", false, 100, 90, 4, 1, 5, 0, 180,
-                                6),
+                                6, true),
                         new Territoire.LigneZone("SAV-01", "Cinkassé", "prefecture", false, 50, 40, 5, 0, 5, 0,
-                                120, null))));
+                                120, null, false))));
 
         mvc.perform(get("/api/v1/enrolement/territoire").param("zone", "SAV"))
                 .andExpect(status().isOk())
@@ -103,7 +95,10 @@ class EnrolementControllerTest {
                 .andExpect(jsonPath("$.lignes[1].rejetees").value(5))
                 .andExpect(jsonPath("$.lignes[1].horsReferentiel").value(false))
                 .andExpect(jsonPath("$.delaiMedianH").value(7))
-                .andExpect(jsonPath("$.lignes[0].delaiMedianH").value(6));
+                .andExpect(jsonPath("$.lignes[0].delaiMedianH").value(6))
+                .andExpect(jsonPath("$.niveau").value("region"))
+                .andExpect(jsonPath("$.ascendants.length()").value(0))
+                .andExpect(jsonPath("$.lignes[0].ouvrable").value(true));
     }
 
     @Test
@@ -125,18 +120,6 @@ class EnrolementControllerTest {
         when(service.centres(any(), any(), any(), eq("pire"))).thenThrow(new RequeteInvalide("classement"));
         mvc.perform(get("/api/v1/enrolement/centres").param("classement", "pire"))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void lesNouveauxBlocsRefusentUneZoneHorsPortee() throws Exception {
-        when(service.semaines(any(), any(), eq("SAV"))).thenThrow(new AccessDeniedException("hors portée"));
-        when(service.territoire(any(), any(), eq("SAV"))).thenThrow(new AccessDeniedException("hors portée"));
-        when(service.centres(any(), any(), eq("SAV"), any())).thenThrow(new AccessDeniedException("hors portée"));
-        when(service.ageSexe(any(), any(), eq("SAV"))).thenThrow(new AccessDeniedException("hors portée"));
-        for (String bloc : List.of("semaines", "territoire", "centres", "age-sexe")) {
-            mvc.perform(get("/api/v1/enrolement/" + bloc).param("zone", "SAV"))
-                    .andExpect(status().isForbidden());
-        }
     }
 
     @Test

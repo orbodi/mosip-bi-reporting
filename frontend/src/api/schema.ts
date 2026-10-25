@@ -214,6 +214,8 @@ export interface components {
     Territoire: {
       perimetre: string;
       zone?: string | null;
+      niveau?: string | null;
+      ascendants: components['schemas']['ZoneParente'][];
       /** Format: date */
       du?: string | null;
       /** Format: date */
@@ -263,6 +265,12 @@ export interface components {
        * @description Délai médian de la réception au NIU (heures, premières inscriptions), null sans NIU
        */
       delaiMedianH?: number | null;
+      ouvrable: boolean;
+    };
+    ZoneParente: {
+      code: string;
+      nom: string;
+      niveau: string;
     };
     TopCentres: {
       perimetre: string;

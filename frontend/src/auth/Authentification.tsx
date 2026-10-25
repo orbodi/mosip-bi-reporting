@@ -53,11 +53,11 @@ function ExigerConnexion({ children }: { children: ReactNode }) {
     const profil = auth.user?.profile;
     const nom = profil?.name ?? profil?.preferred_username ?? 'Utilisateur';
     const roles = rolesDuJeton(jeton);
-    const zone = typeof profil?.zone === 'string' ? profil.zone : undefined;
+    // Chaque utilisateur a accès à tout le Togo (décision du 25/10/2026).
     return {
       nom,
       initiales: initiales(nom),
-      portee: roles.includes('bi-national') ? 'Niveau national' : (zone ?? 'Portée non définie'),
+      portee: 'Niveau national',
       roles,
     };
   }, [auth.user, jeton]);

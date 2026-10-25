@@ -58,3 +58,76 @@ export function lectureZone(nom: string, z: ChiffresZone): string {
   if (z.inscriptions === 0) return `${nom} : aucune inscription sur la période`;
   return `${nom} : ${pct(tauxNiu(z))} de NIU générés, ${nf(z.inscriptions)} inscriptions`;
 }
+
+/** Niveaux de l'arborescence bi.zone, de la région au centre d'enrôlement. */
+const NIVEAUX: Record<string, { nom: string; pluriel: string; de: string }> = {
+  region: { nom: 'région', pluriel: 'régions', de: 'de la région' },
+  prefecture: { nom: 'préfecture', pluriel: 'préfectures', de: 'de la préfecture' },
+  commune: { nom: 'commune', pluriel: 'communes', de: 'de la commune' },
+  canton: { nom: 'canton', pluriel: 'cantons', de: 'du canton' },
+  localite: { nom: 'localité', pluriel: 'localités', de: 'de la localité' },
+  centre: { nom: 'centre', pluriel: 'centres', de: 'du centre' },
+};
+const AUTRE = { nom: 'zone', pluriel: 'sous-zones', de: 'de la zone' };
+const niveau = (code?: string | null) => (code && NIVEAUX[code]) || AUTRE;
+const majuscule = (texte: string) => texte.charAt(0).toUpperCase() + texte.slice(1);
+
+/** « région », « préfecture »… (« zone » pour un niveau inconnu). */
+export function nomNiveau(code?: string | null): string {
+  return niveau(code).nom;
+}
+
+/** Titre du bloc : « Territoire : vue nationale », « Territoire : région Savanes », « Territoire : canton Nano ». */
+export function titreTerritoire(niveauZone: string | null | undefined, nom: string | undefined): string {
+  return nom ? `Territoire : ${nomNiveau(niveauZone)} ${nom}` : 'Territoire : vue nationale';
+}
+
+/**
+ * Légende du tableau des sous-zones : « Régions », « Préfectures de la région Savanes », « Localités du canton
+ * Nano » ; « Sous-zones du canton Nano » quand les lignes mêlent deux niveaux (un centre rattaché au canton).
+ */
+export function legendeSousZones(
+  niveauZone: string | null | undefined,
+  nom: string | undefined,
+  niveauxLignes: string[],
+): string {
+  const distincts = [...new Set(niveauxLignes)];
+  const lignes = distincts.length === 1 ? niveau(distincts[0]) : AUTRE;
+  if (!nom) return majuscule(lignes.pluriel);
+  return `${majuscule(lignes.pluriel)} ${niveau(niveauZone).de} ${nom}`;
+}
+
+/** « 1 localité » ou « 12 localités » (« sous-zones » quand les niveaux sont mêlés). */
+export function compteZones(nombre: number, niveauxLignes: string[]): string {
+  const distincts = [...new Set(niveauxLignes)];
+  const n = distincts.length === 1 ? niveau(distincts[0]) : AUTRE;
+  return `${nombre} ${nombre > 1 ? n.pluriel : n === AUTRE ? 'sous-zone' : n.nom}`;
+}
+
+export interface LigneTerritoire extends ChiffresZone {
+  inscriptions: number;
+  preinscriptions: number;
+}
+
+/**
+ * Lignes du tableau Territoire. Les régions et les préfectures gardent l'ordre du référentiel (du nord au sud) ; plus
+ * bas, les sous-zones sont triées par inscriptions (beaucoup de localités, sans ordre géographique). Une sous-zone
+ * sans inscription ni pré-inscription sur la période est masquée et seulement comptée (le référentiel MOSIP garde
+ * des lieux inactifs). Sans réponse de l'API, toutes les zones attendues restent, chiffres à 0.
+ */
+export function lignesDuTableau<T extends LigneTerritoire>(
+  lignes: T[],
+  niveauZone: string | null | undefined,
+  { masquerVides }: { masquerVides: boolean },
+): { visibles: T[]; vides: T[] } {
+  const vide = (l: T) => !(l.inscriptions > 0) && !(l.preinscriptions > 0);
+  const visibles = masquerVides ? lignes.filter((l) => !vide(l)) : [...lignes];
+  const vides = masquerVides ? lignes.filter(vide) : [];
+  if (niveauZone && niveauZone !== 'region') visibles.sort((a, b) => b.inscriptions - a.inscriptions);
+  return { visibles, vides };
+}
+
+/** Vrai si les pré-inscriptions ont un sens pour ces lignes : elles sont situées à la préfecture de résidence. */
+export function avecPreinscriptions(niveauZone: string | null | undefined): boolean {
+  return !niveauZone || niveauZone === 'region';
+}

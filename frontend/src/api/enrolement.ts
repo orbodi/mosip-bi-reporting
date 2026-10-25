@@ -17,7 +17,7 @@ export type ClassementCentres = 'inscriptions' | 'echecs' | 'rejets';
 
 /**
  * Lecture d'un bloc de la page Enrôlement, relue toutes les 30 s comme le pipeline temps réel. Sans plage, l'API
- * prend toutes les données disponibles ; sans zone, tout le Togo (ou la région imposée à un utilisateur régional).
+ * prend toutes les données disponibles ; sans zone, tout le Togo.
  */
 function useBlocEnrolement<T>(
   ressource: string,

@@ -102,7 +102,7 @@ test('Enrôlement : sans filtres ; une région ouverte dans le Territoire, le re
   await expect(territoire.getByText('▲', { exact: false }).first()).toBeVisible();
 
   await territoire.getByRole('table', { name: 'Régions' }).getByRole('button', { name: /Kara/ }).click();
-  await expect(page).toHaveURL(/region=KAR/);
+  await expect(page).toHaveURL(/zone=KAR/);
   await expect(page.getByRole('heading', { name: 'Territoire : région Kara' })).toBeVisible();
   await expect(territoire.getByRole('table', { name: 'Préfectures de la région Kara' })).toBeVisible();
   // Seul le bloc Territoire suit la région : le top des centres reste national.

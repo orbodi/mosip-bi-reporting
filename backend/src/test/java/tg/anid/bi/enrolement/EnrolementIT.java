@@ -1,22 +1,14 @@
 package tg.anid.bi.enrolement;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
-import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
  * Chaîne Data Mart → API sur un PostgreSQL jetable (Testcontainers) : migrations V1 et V2, données de démonstration,
@@ -54,10 +46,6 @@ class EnrolementIT {
                 .single();
     }
 
-    @AfterEach
-    void nettoyer() {
-        SecurityContextHolder.clearContext();
-    }
 
     @Test
     void ensembleDuTogoSurToutesLesDates() {
@@ -85,17 +73,5 @@ class EnrolementIT {
 
         // Le centre absent du référentiel reste visible, jamais perdu.
         assertThat(service.devenir(null, null, "HORS_REFERENTIEL").echouees()).isEqualTo(1);
-    }
-
-    @Test
-    void unUtilisateurRegionalNeVoitQueSaRegion() {
-        Jwt jeton = Jwt.withTokenValue("jeton").header("alg", "none").claim("zone", "KAR").build();
-        SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(jeton, List.of(new SimpleGrantedAuthority("ROLE_BI_REGIONAL"))));
-
-        DevenirInscriptions kara = service.devenir(null, null, null);
-        assertThat(kara.perimetre()).isEqualTo("Kara");
-        assertThat(kara.inscriptions()).isEqualTo(1);
-        assertThatThrownBy(() -> service.devenir(null, null, "SAV")).isInstanceOf(AccessDeniedException.class);
     }
 }

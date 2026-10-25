@@ -12,7 +12,8 @@ Java 21, Spring Boot 4.1, Maven. Package racine `tg.anid.bi`, découpé par doma
 - Paramètres communs : `du` et `au` (`LocalDate`, bornés aux données disponibles), `zone` (code). Valider avec Bean Validation.
 - Réponses : nombres bruts, jamais de texte formaté ni de pourcentage arrondi pour l'affichage.
 - Erreurs : `ProblemDetail` (voir `commun/GestionErreurs`).
-- Sécurité : un utilisateur `bi-regional` ne lit que sa zone. Chaque endpoint qui accepte `zone` a un test qui le vérifie.
+- Accès : chaque utilisateur lit tout le Togo, sans restriction de zone (décision du 25/10/2026). Le paramètre `zone`
+  accepte un code de tout niveau (région à centre).
 - Migrations Flyway dans `src/main/resources/db/migration`, en ajout seulement (`V2__...`, `V3__...`).
   Données de démonstration dans `db/dev` (profil dev).
 

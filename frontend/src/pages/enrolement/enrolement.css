@@ -225,6 +225,7 @@
 }
 .fil-ariane {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--e-1);
   margin-bottom: var(--e-1);
@@ -238,6 +239,12 @@
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+/* Une étape du fil d'Ariane (chevron puis lien) : elle passe à la ligne d'un bloc sur mobile. */
+.fil-ariane__etape {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
 }
 .fil-ariane__lien {
   min-height: 32px;
@@ -329,6 +336,9 @@
 .tableau-zones__ouvrir,
 .tableau-zones__nom {
   white-space: nowrap;
+}
+.tableau-zones__niveau {
+  font-weight: 400;
 }
 .tableau-zones__alerte {
   font-weight: 600;

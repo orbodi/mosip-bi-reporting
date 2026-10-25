@@ -20,8 +20,7 @@ export function useFraicheur(source: CodeSource) {
 }
 
 /**
- * Choix du filtre Région (GET /api/v1/meta/regions), du nord au sud. L'API ne renvoie que sa région à un
- * utilisateur régional : le filtre n'offre alors que celle-ci.
+ * Les régions (GET /api/v1/meta/regions), du nord au sud.
  */
 export function useRegions() {
   return useQuery({

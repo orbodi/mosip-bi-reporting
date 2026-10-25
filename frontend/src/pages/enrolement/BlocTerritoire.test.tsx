@@ -45,7 +45,7 @@ describe('Territoire', () => {
     await utilisateur.click(tableau.getByRole('button', { name: /Savanes/ }));
 
     expect(await screen.findByRole('heading', { name: 'Territoire : région Savanes' })).toBeInTheDocument();
-    expect(routeur.state.location.search).toMatchObject({ region: 'SAV' });
+    expect(routeur.state.location.search).toMatchObject({ zone: 'SAV' });
     expect(
       appels.some((u) => u.pathname.endsWith('/territoire') && u.searchParams.get('zone') === 'SAV'),
     ).toBe(true);
@@ -62,7 +62,73 @@ describe('Territoire', () => {
 
     await utilisateur.click(bloc().getByRole('button', { name: 'Togo' }));
     expect(await screen.findByRole('heading', { name: 'Territoire : vue nationale' })).toBeInTheDocument();
-    await waitFor(() => expect(routeur.state.location.search).not.toHaveProperty('region'));
+    await waitFor(() => expect(routeur.state.location.search).not.toHaveProperty('zone'));
+  });
+
+  it('descend jusqu’aux communes : fil d’Ariane, tri par inscriptions, zones vides omises, carte de la région', async () => {
+    const appels = simulerApi();
+    const routeur = afficher('/enrolement?zone=SAV');
+    const utilisateur = userEvent.setup();
+
+    const prefectures = within(
+      await (await blocAffiche()).findByRole('table', { name: 'Préfectures de la région Savanes' }),
+    );
+    await utilisateur.click(prefectures.getByRole('button', { name: /Tône/ }));
+
+    expect(await screen.findByRole('heading', { name: 'Territoire : préfecture Tône' })).toBeInTheDocument();
+    expect(routeur.state.location.search).toMatchObject({ zone: 'SAV-02' });
+    const fil = within(bloc().getByRole('navigation', { name: 'Fil d’Ariane du territoire' }));
+    expect(fil.getByRole('button', { name: 'Togo' })).toBeInTheDocument();
+    expect(fil.getByRole('button', { name: 'Savanes' })).toBeInTheDocument();
+    expect(fil.getByText('Tône')).toHaveAttribute('aria-current', 'location');
+
+    const communes = within(bloc().getByRole('table', { name: 'Communes de la préfecture Tône' }));
+    // Triées par inscriptions ; « Tône 3 », sans inscription, n'est pas affichée mais comptée.
+    expect(communes.getAllByRole('rowheader').map((c) => c.textContent)).toEqual(['Tône 2', 'Tône 1']);
+    expect(bloc().getByText(/Le tableau omet 1 commune sans inscription sur la période/)).toBeInTheDocument();
+    // Pas de colonne Pré-inscriptions sous la préfecture : elles ne sont situées qu'à la préfecture.
+    expect(communes.queryByRole('columnheader', { name: 'Pré-inscriptions' })).not.toBeInTheDocument();
+    // Carte de contexte : la région Savanes, préfecture Tône mise en évidence.
+    expect(
+      await (
+        await blocAffiche()
+      ).findByRole('img', { name: /Carte de la région Savanes : préfecture Tône mise en évidence/ }),
+    ).toBeInTheDocument();
+    expect(
+      appels.some((u) => u.pathname.endsWith('/territoire') && u.searchParams.get('zone') === 'SAV-02'),
+    ).toBe(true);
+
+    await utilisateur.click(fil.getByRole('button', { name: 'Savanes' }));
+    expect(await screen.findByRole('heading', { name: 'Territoire : région Savanes' })).toBeInTheDocument();
+    expect(routeur.state.location.search).toMatchObject({ zone: 'SAV' });
+  });
+
+  it('un canton mêle une localité et un centre rattaché directement : le centre ne s’ouvre pas', async () => {
+    simulerApi();
+    afficher('/enrolement?zone=SAV-02-K1');
+
+    const tableau = within(
+      await (await blocAffiche()).findByRole('table', { name: 'Sous-zones du canton Canton de Nano' }),
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Territoire : canton Canton de Nano' }),
+    ).toBeInTheDocument();
+    expect(tableau.getByRole('button', { name: /Nano/ })).toBeInTheDocument();
+    expect(tableau.queryByRole('button', { name: /EPP Nano/ })).not.toBeInTheDocument();
+    expect(tableau.getByText('(centre)')).toBeInTheDocument();
+    const fil = within(bloc().getByRole('navigation', { name: 'Fil d’Ariane du territoire' }));
+    expect(fil.getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Togo',
+      'Savanes',
+      'Tône',
+      'Tône 2',
+    ]);
+  });
+
+  it('un ancien lien ?region= ouvre toujours la région', async () => {
+    simulerApi();
+    afficher('/enrolement?region=SAV');
+    expect(await screen.findByRole('heading', { name: 'Territoire : région Savanes' })).toBeInTheDocument();
   });
 
   it('sans réponse de l’API, garde la carte et le tableau des régions, chiffres à 0', async () => {

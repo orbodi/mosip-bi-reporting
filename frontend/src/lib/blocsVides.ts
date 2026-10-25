@@ -67,8 +67,9 @@ export function territoireInconnu(
     horsReferentiel: false,
     ...chiffresInconnus,
     preinscriptions: INCONNU,
+    ouvrable: niveau !== 'centre',
   }));
-  return { perimetre, ...chiffresInconnus, preinscriptions: INCONNU, lignes };
+  return { perimetre, ascendants: [], ...chiffresInconnus, preinscriptions: INCONNU, lignes };
 }
 
 /** Semaine d'un graphique hebdomadaire générique (composants/blocs/GraphiqueHebdo). */

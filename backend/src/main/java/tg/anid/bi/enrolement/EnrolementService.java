@@ -14,7 +14,6 @@ import java.util.stream.IntStream;
 
 import org.springframework.stereotype.Service;
 
-import tg.anid.bi.commun.PorteeUtilisateur;
 import tg.anid.bi.commun.RequeteInvalide;
 import tg.anid.bi.commun.RessourceIntrouvable;
 
@@ -35,17 +34,23 @@ public class EnrolementService {
             "60+");
 
     private final EnrolementRepository repository;
-    private final PorteeUtilisateur portee;
 
-    public EnrolementService(EnrolementRepository repository, PorteeUtilisateur portee) {
+    public EnrolementService(EnrolementRepository repository) {
         this.repository = repository;
-        this.portee = portee;
     }
 
-    /** Devenir des inscriptions sur la période, dans la portée de l'utilisateur. */
+    /**
+     * Zone demandée (code bi.zone, à tout niveau), null pour l'ensemble du Togo. Chaque utilisateur a accès à tout le
+     * Togo (décision du 25/10/2026) : aucune restriction de zone.
+     */
+    private static String zone(String zoneDemandee) {
+        return zoneDemandee == null || zoneDemandee.isBlank() ? null : zoneDemandee;
+    }
+
+    /** Devenir des inscriptions sur la période, dans la zone demandée (tout le Togo par défaut). */
     public DevenirInscriptions devenir(LocalDate du, LocalDate au, String zoneDemandee) {
         verifierOrdre(du, au);
-        String zone = portee.zoneEffective(zoneDemandee);
+        String zone = zone(zoneDemandee);
         String perimetre = nomPerimetre(zone);
         EnrolementRepository.Totaux t = repository.devenir(du, au, zone);
         return new DevenirInscriptions(perimetre, du, au, t.inscriptions(), t.niuGeneres(), t.enCours(),
@@ -54,11 +59,11 @@ public class EnrolementService {
 
     /**
      * Inscriptions et NIU des 12 semaines complètes qui finissent au plus tard à la fin de la période (ou à la
-     * dernière donnée), dans la portée de l'utilisateur.
+     * dernière donnée), dans la zone demandée.
      */
     public InscriptionsParSemaine semaines(LocalDate du, LocalDate au, String zoneDemandee) {
         verifierOrdre(du, au);
-        String zone = portee.zoneEffective(zoneDemandee);
+        String zone = zone(zoneDemandee);
         String perimetre = nomPerimetre(zone);
         boolean niuDisponibles = repository.niuDisponibles();
         Optional<LocalDate> derniere = repository.derniereDonnee();
@@ -78,28 +83,37 @@ public class EnrolementService {
         return new InscriptionsParSemaine(perimetre, du, au, niuDisponibles, semaines);
     }
 
-    /** Totaux de la zone et chiffres de chacune de ses sous-zones directes, dans la portée de l'utilisateur. */
+    /** Totaux de la zone et chiffres de chacune de ses sous-zones directes. */
     public Territoire territoire(LocalDate du, LocalDate au, String zoneDemandee) {
         verifierOrdre(du, au);
-        String zone = portee.zoneEffective(zoneDemandee);
-        String perimetre = nomPerimetre(zone);
+        String zone = zone(zoneDemandee);
+        String perimetre = ENSEMBLE_DU_TOGO;
+        String niveau = null;
+        List<Territoire.ZoneParente> ascendants = List.of();
+        if (zone != null) {
+            EnrolementRepository.ZoneConnue connue = repository.zone(zone)
+                    .orElseThrow(() -> new RessourceIntrouvable("Zone inconnue : " + zone));
+            perimetre = connue.nom();
+            niveau = connue.niveau();
+            ascendants = repository.ascendants(zone);
+        }
         EnrolementRepository.Totaux t = repository.devenir(du, au, zone);
         Map<String, Integer> delais = repository.delaisMedians(du, au, zone);
         List<Territoire.LigneZone> lignes = repository.sousZones(du, au, zone).stream()
                 .map(l -> l.avecDelai(delais.get(l.code())))
                 .toList();
-        return new Territoire(perimetre, zone, du, au, t.inscriptions(), t.niuGeneres(), t.enCours(),
+        return new Territoire(perimetre, zone, niveau, ascendants, du, au, t.inscriptions(), t.niuGeneres(), t.enCours(),
                 t.echouees(), t.rejetees(), t.nonClassees(), repository.preinscriptionsZone(du, au, zone),
                 delais.get(EnrolementRepository.ZONE_ENTIERE), lignes);
     }
 
-    /** Les cinq premiers centres de la portée selon le classement : inscriptions, echecs ou rejets. */
+    /** Les cinq premiers centres de la zone selon le classement : inscriptions, echecs ou rejets. */
     public TopCentres centres(LocalDate du, LocalDate au, String zoneDemandee, String classement) {
         verifierOrdre(du, au);
         if (!CLASSEMENTS.contains(classement)) {
             throw new RequeteInvalide("Classement inconnu : choisir inscriptions, echecs ou rejets.");
         }
-        String zone = portee.zoneEffective(zoneDemandee);
+        String zone = zone(zoneDemandee);
         String perimetre = nomPerimetre(zone);
         List<EnrolementRepository.Centre> lignes = repository.topCentres(du, au, zone, classement, TAILLE_TOP);
         List<TopCentres.CentreClasse> centres = IntStream.range(0, lignes.size())
@@ -113,16 +127,11 @@ public class EnrolementService {
     }
 
     /**
-     * Pré-inscriptions créées sur la période. Nationales : une demande n'a pas de territoire, donc un utilisateur
-     * régional reçoit le bloc sans chiffres (jamais les chiffres nationaux). Sans données du pipeline, le bloc est
-     * signalé non disponible.
+     * Pré-inscriptions créées sur la période, nationales. Sans données du pipeline, le bloc est signalé non
+     * disponible.
      */
     public Preinscriptions preinscriptions(LocalDate du, LocalDate au) {
         verifierOrdre(du, au);
-        String zone = portee.zoneEffective(null);
-        if (zone != null) {
-            return Preinscriptions.nonDisponible(nomPerimetre(zone), du, au);
-        }
         if (!repository.preinscriptionsDisponibles()) {
             return Preinscriptions.nonDisponible(ENSEMBLE_DU_TOGO, du, au);
         }
@@ -136,12 +145,12 @@ public class EnrolementService {
     }
 
     /**
-     * NIU générés par sexe et tranche d'âge sur la période, dans la région demandée (ou celle de l'utilisateur). Le
+     * NIU générés par sexe et tranche d'âge sur la période, dans la région demandée (tout le Togo par défaut). Le
      * profil anonymisé ne situe un NIU qu'à la région : une préfecture ou un centre est refusé.
      */
     public AgeSexe ageSexe(LocalDate du, LocalDate au, String zoneDemandee) {
         verifierOrdre(du, au);
-        String zone = portee.zoneEffective(zoneDemandee);
+        String zone = zone(zoneDemandee);
         String perimetre = nomPerimetre(zone);
         if (zone != null && !repository.estRegion(zone)) {
             throw new RequeteInvalide("La répartition par âge et par sexe n'existe que par région.");
@@ -169,12 +178,8 @@ public class EnrolementService {
      */
     public ProfilPreinscriptions profilPreinscriptions(LocalDate du, LocalDate au) {
         verifierOrdre(du, au);
-        String zone = portee.zoneEffective(null);
         List<String> tranchesProfil = new ArrayList<>(TRANCHES_AGE);
         tranchesProfil.add(TRANCHE_AGE_INCONNU);
-        if (zone != null) {
-            return ProfilPreinscriptions.nonDisponible(nomPerimetre(zone), du, au, tranchesProfil);
-        }
         if (!repository.profilPreinscriptionsDisponible()) {
             return ProfilPreinscriptions.nonDisponible(ENSEMBLE_DU_TOGO, du, au, tranchesProfil);
         }

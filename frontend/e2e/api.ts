@@ -27,6 +27,7 @@ const zone = (code: string, nom: string, niveau: string, ins: number, niu: numbe
     enCours: ins - niu - rej - echouees,
     nonClassees: 0,
     preinscriptions: Math.round(ins * 0.4),
+    ouvrable: niveau !== 'centre',
   };
 };
 
@@ -35,6 +36,8 @@ type Ligne = ReturnType<typeof zone>;
 const territoire = (perimetre: string, code: string | null, lignes: Ligne[]) => ({
   perimetre,
   zone: code,
+  niveau: code ? 'region' : null,
+  ascendants: [],
   inscriptions: lignes.reduce((s, l) => s + l.inscriptions, 0),
   niuGeneres: lignes.reduce((s, l) => s + l.niuGeneres, 0),
   enCours: lignes.reduce((s, l) => s + l.enCours, 0),

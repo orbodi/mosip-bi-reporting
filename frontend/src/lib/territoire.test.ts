@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { CLASSES_TAUX_NIU, alerteRejet, classeTauxNiu, cleNom, lectureZone, tauxNiu } from './territoire';
+import {
+  CLASSES_TAUX_NIU,
+  alerteRejet,
+  avecPreinscriptions,
+  classeTauxNiu,
+  cleNom,
+  compteZones,
+  lectureZone,
+  legendeSousZones,
+  lignesDuTableau,
+  tauxNiu,
+  titreTerritoire,
+} from './territoire';
 
 describe('classes de la carte', () => {
   it('range les taux de NIU dans les quatre classes de la maquette', () => {
@@ -41,5 +53,44 @@ describe('lectureZone', () => {
     expect(lectureZone('Oti', { inscriptions: 0, niuGeneres: 0, rejetees: 0 })).toBe(
       'Oti : aucune inscription sur la période',
     );
+  });
+});
+
+describe('niveaux du territoire', () => {
+  it('nomme la zone et ses sous-zones à chaque niveau', () => {
+    expect(titreTerritoire(undefined, undefined)).toBe('Territoire : vue nationale');
+    expect(titreTerritoire('region', 'Savanes')).toBe('Territoire : région Savanes');
+    expect(titreTerritoire('canton', 'Nano')).toBe('Territoire : canton Nano');
+    expect(legendeSousZones(undefined, undefined, ['region'])).toBe('Régions');
+    expect(legendeSousZones('region', 'Savanes', ['prefecture'])).toBe('Préfectures de la région Savanes');
+    expect(legendeSousZones('canton', 'Nano', ['localite', 'localite'])).toBe('Localités du canton Nano');
+    expect(legendeSousZones('canton', 'Nano', ['localite', 'centre'])).toBe('Sous-zones du canton Nano');
+    expect(compteZones(1, ['localite'])).toBe('1 localité');
+    expect(compteZones(3, ['localite'])).toBe('3 localités');
+    expect(compteZones(1, ['localite', 'centre'])).toBe('1 sous-zone');
+  });
+
+  it('garde l’ordre nord-sud des régions et préfectures, trie par inscriptions plus bas, masque les vides', () => {
+    const l = (code: string, inscriptions: number, preinscriptions = 0) => ({
+      code,
+      inscriptions,
+      niuGeneres: 0,
+      rejetees: 0,
+      preinscriptions,
+    });
+    const lignes = [l('A', 5), l('B', 0), l('C', 9), l('D', 0, 4)];
+    const region = lignesDuTableau(lignes, 'region', { masquerVides: true });
+    expect(region.visibles.map((x) => x.code)).toEqual(['A', 'C', 'D']);
+    expect(region.vides.map((x) => x.code)).toEqual(['B']);
+    expect(lignesDuTableau(lignes, 'canton', { masquerVides: true }).visibles.map((x) => x.code)).toEqual([
+      'C',
+      'A',
+      'D',
+    ]);
+    // Sans réponse de l'API : toutes les zones attendues, dans l'ordre reçu.
+    expect(lignesDuTableau(lignes, undefined, { masquerVides: false }).visibles).toHaveLength(4);
+    expect(avecPreinscriptions(undefined)).toBe(true);
+    expect(avecPreinscriptions('region')).toBe(true);
+    expect(avecPreinscriptions('prefecture')).toBe(false);
   });
 });

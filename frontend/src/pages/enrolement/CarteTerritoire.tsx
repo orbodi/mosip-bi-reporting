@@ -21,10 +21,23 @@ interface Props {
   libelleCarte: string;
   /** Ouvre une sous-zone (une région depuis la vue nationale) ; absent quand on ne peut pas descendre. */
   onOuvrir?: (ligne: LigneZone) => void;
+  /** Libellé lu par les lecteurs d'écran sur une zone ouvrable (« Voir ses préfectures »). */
+  libelleOuvrir?: string;
+  /** Nom de la zone mise en évidence (préfecture ouverte, ou qui contient la zone ouverte). */
+  selection?: string;
 }
 
 /** Carte du bloc Territoire : zones colorées selon le taux de NIU générés (classes de la maquette). */
-export function CarteTerritoire({ fond, zone, lignes, titreListe, libelleCarte, onOuvrir }: Props) {
+export function CarteTerritoire({
+  fond,
+  zone,
+  lignes,
+  titreListe,
+  libelleCarte,
+  onOuvrir,
+  libelleOuvrir,
+  selection,
+}: Props) {
   return (
     <CarteZones
       fond={fond}
@@ -45,6 +58,8 @@ export function CarteTerritoire({ fond, zone, lignes, titreListe, libelleCarte, 
         }))}
       titreListe={titreListe}
       libelleCarte={libelleCarte}
+      libelleOuvrir={libelleOuvrir}
+      selection={selection}
       legende={{ titre: 'Taux de NIU générés', libelles: CLASSES_TAUX_NIU.map((c) => c.libelle) }}
       onOuvrir={
         onOuvrir

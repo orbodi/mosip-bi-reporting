@@ -8,6 +8,7 @@ export type InscriptionsParSemaine = components['schemas']['InscriptionsParSemai
 export type Semaine = components['schemas']['Semaine'];
 export type Territoire = components['schemas']['Territoire'];
 export type LigneZone = components['schemas']['LigneZone'];
+export type ZoneParente = components['schemas']['ZoneParente'];
 export type TopCentres = components['schemas']['TopCentres'];
 export type CentreClasse = components['schemas']['CentreClasse'];
 export type Preinscriptions = components['schemas']['Preinscriptions'];

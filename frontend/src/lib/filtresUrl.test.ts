@@ -11,4 +11,9 @@ describe('filtres de l’adresse', () => {
   it('écarte un code de région mal formé', () => {
     expect(validerFiltres({ region: 'KAR;drop' })).toEqual({ region: undefined });
   });
+
+  it('garde la zone ouverte dans le bloc Territoire, à tout niveau', () => {
+    expect(validerFiltres({ zone: '10011' })).toEqual({ zone: '10011' });
+    expect(validerFiltres({ zone: 'T-CAN 1' })).toEqual({});
+  });
 });

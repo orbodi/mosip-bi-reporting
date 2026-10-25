@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 export interface Utilisateur {
   nom: string;
   initiales: string;
-  /** « Niveau national » ou le nom de la zone d'un utilisateur régional. */
+  /** « Niveau national » : chaque utilisateur a accès à tout le Togo (décision du 25/10/2026). */
   portee: string;
   roles: string[];
 }

@@ -5,19 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import tg.anid.bi.commun.RequeteInvalide;
 
@@ -69,10 +62,6 @@ class PreinscriptionsEtProfilIT {
                 """).update();
     }
 
-    @AfterEach
-    void nettoyer() {
-        SecurityContextHolder.clearContext();
-    }
 
     @Test
     void preinscriptionsParStatutEtControleDeLaSomme() {
@@ -186,22 +175,5 @@ class PreinscriptionsEtProfilIT {
         assertThat(savanes.tranches().getFirst().femmes()).isZero();
 
         assertThatThrownBy(() -> service.ageSexe(null, null, "SAV-02")).isInstanceOf(RequeteInvalide.class);
-    }
-
-    @Test
-    void unUtilisateurRegionalNeVoitQueSaRegion() {
-        Jwt jeton = Jwt.withTokenValue("jeton").header("alg", "none").claim("zone", "KAR").build();
-        SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(jeton, List.of(new SimpleGrantedAuthority("ROLE_BI_REGIONAL"))));
-
-        AgeSexe kara = service.ageSexe(null, null, null);
-        assertThat(kara.perimetre()).isEqualTo("Kara");
-        assertThat(kara.tranches().getFirst().femmes()).isEqualTo(4);
-        assertThat(kara.nonRenseignes()).isEqualTo(2);
-        assertThatThrownBy(() -> service.ageSexe(null, null, "SAV")).isInstanceOf(AccessDeniedException.class);
-
-        Preinscriptions p = service.preinscriptions(null, null);
-        assertThat(p.perimetre()).isEqualTo("Kara");
-        assertThat(p.demandes()).isNull();
     }
 }

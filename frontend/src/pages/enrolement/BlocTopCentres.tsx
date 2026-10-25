@@ -3,7 +3,6 @@ import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import type { CentreClasse } from '../../api/client';
 import { useTopCentres, type ClassementCentres } from '../../api/enrolement';
 import { nf } from '../../lib/format';
-import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi } from '../../lib/usePlagePeriode';
 
 const ONGLETS: { id: ClassementCentres; libelle: string; colonne: string }[] = [
@@ -24,18 +23,11 @@ const CENTRES_INCONNUS: CentreClasse[] = [1, 2, 3, 4, 5].map((rang) => ({
 
 function Classement({ classement, colonne }: { classement: ClassementCentres; colonne: string }) {
   const { plage, prete } = usePlageApi('enrolement');
-  const { portee: region } = useFiltreRegion();
-  const code = region?.code;
-  const { data, isPending } = useTopCentres(plage, code, classement, prete);
+  // National : le bloc ne suit pas la zone ouverte dans le bloc Territoire.
+  const { data, isPending } = useTopCentres(plage, undefined, classement, prete);
 
   if (data && data.centres.length === 0) {
-    return (
-      <p className="texte-2">
-        {region
-          ? 'Aucun centre de ce classement ne se trouve dans cette région.'
-          : 'Aucun centre de ce classement sur la période.'}
-      </p>
-    );
+    return <p className="texte-2">Aucun centre de ce classement sur la période.</p>;
   }
   // Sans réponse de l'API, le tableau garde ses cinq rangs, chiffres à 0.
   const centres = data?.centres ?? CENTRES_INCONNUS;
@@ -44,8 +36,7 @@ function Classement({ classement, colonne }: { classement: ClassementCentres; co
       {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
       <table className="tableau tableau-centres">
         <caption className="visuellement-cache">
-          {ONGLETS.find((o) => o.id === classement)?.libelle} :{' '}
-          {data?.perimetre ?? region?.nom ?? 'Ensemble du Togo'}
+          {ONGLETS.find((o) => o.id === classement)?.libelle} : {data?.perimetre ?? 'Ensemble du Togo'}
         </caption>
         <thead>
           <tr>
@@ -77,10 +68,9 @@ function Classement({ classement, colonne }: { classement: ClassementCentres; co
 
 /**
  * Bloc « Top des centres » : les cinq centres qui ont le plus d'inscriptions, d'échecs ou de rejets sur la période,
- * dans la région du filtre (décision P3). Onglets React Aria : flèches du clavier pour changer de classement.
+ * sur tout le Togo. Onglets React Aria : flèches du clavier pour changer de classement.
  */
 export function BlocTopCentres() {
-  const { portee: region } = useFiltreRegion();
   const [onglet, setOnglet] = useState<ClassementCentres>('inscriptions');
 
   return (
@@ -88,7 +78,7 @@ export function BlocTopCentres() {
       <h2 id="titre-top-centres" className="titre-bloc">
         Top des centres
       </h2>
-      <p className="texte-2 bloc__sous-titre">{region ? `Région ${region.nom}` : 'Ensemble du Togo'}</p>
+      <p className="texte-2 bloc__sous-titre">Ensemble du Togo</p>
       <Tabs selectedKey={onglet} onSelectionChange={(cle) => setOnglet(cle as ClassementCentres)}>
         <TabList aria-label="Classement affiché" className="onglets">
           {ONGLETS.map((o) => (

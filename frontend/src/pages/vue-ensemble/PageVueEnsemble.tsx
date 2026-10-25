@@ -33,7 +33,7 @@ const COULEURS_BANDES = ['bleu', 'bleu-vif', 'bleu', 'bleu-vif', 'bleu', 'bleu-v
  */
 export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
   const { plage, prete, choix } = usePlageApi(page.source);
-  const { code, region, regional, choisir } = useFiltreRegion();
+  const { code, region, choisir } = useFiltreRegion();
   const devenir = useDevenirInscriptions(plage, prete);
   const d = devenir.data ?? devenirInconnu();
   const territoire = useTerritoire(plage, undefined, prete);
@@ -301,7 +301,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
                 valeur: pct(INCONNUE),
                 classe: -1,
                 lecture: lectureRegion(r.nom),
-                ouvrable: !regional && regions.length > 0,
+                ouvrable: regions.length > 0,
               }))}
               titreListe="Régions, du nord au sud"
               libelleCarte="Carte des régions du Togo, colorée selon la part des inscrits ayant reçu leur carte"

@@ -85,26 +85,6 @@ describe('Page Enrôlement', () => {
     expect(pre.queryByRole('note')).not.toBeInTheDocument();
   });
 
-  it('âge et sexe : pyramide de l’API pour la région d’un utilisateur régional', async () => {
-    const appels = simulerApi({ '/meta/regions': [{ code: 'SAV', nom: 'Savanes' }] });
-    afficher('/enrolement');
-
-    const bloc = within(await screen.findByRole('region', { name: 'NIU générés par âge et par sexe' }));
-    expect(await bloc.findByText(/Région Savanes/)).toBeInTheDocument();
-    const pyramide = within(
-      bloc.getByRole('table', { name: 'Répartition des NIU par tranche d’âge et par sexe' }),
-    );
-    expect(pyramide.getAllByRole('rowheader').map((t) => t.textContent)).toEqual(TRANCHES);
-    // 26 à 35 ans en Savanes (14 % des chiffres nationaux de la simulation) : 53 959 femmes, 47 535 hommes.
-    expect(await pyramide.findByText(texte('53 959'))).toBeInTheDocument();
-    expect(pyramide.getByText(texte('47 535'))).toBeInTheDocument();
-    expect(
-      appels.some((u) => u.pathname.endsWith('/enrolement/age-sexe') && u.searchParams.get('zone') === 'SAV'),
-    ).toBe(true);
-    const section = screen.getByRole('region', { name: 'NIU générés par âge et par sexe' });
-    expect(section.querySelectorAll('.pyramide__barre--femmes, .pyramide__barre--hommes')).toHaveLength(18);
-  });
-
   it('âge et sexe sans données : huit tranches à 0, barres vides, sans note', async () => {
     simulerApi({
       '/enrolement/age-sexe': {

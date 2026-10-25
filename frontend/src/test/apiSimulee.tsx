@@ -63,6 +63,7 @@ const zone = (
   enCours: ins - niu - rej - Math.round(ins * 0.003),
   nonClassees: 0,
   preinscriptions: Math.round(ins * 0.4),
+  ouvrable: niveau !== 'centre',
 });
 
 const totaux = (lignes: LigneZone[]) => ({
@@ -87,6 +88,8 @@ const LIGNES_REGIONS = [
 export const TERRITOIRE_NATIONAL: Territoire = {
   perimetre: 'Ensemble du Togo',
   zone: null,
+  niveau: null,
+  ascendants: [],
   ...totaux(LIGNES_REGIONS),
   lignes: LIGNES_REGIONS,
 };
@@ -102,8 +105,51 @@ const LIGNES_SAVANES = [
 export const TERRITOIRE_SAVANES: Territoire = {
   perimetre: 'Savanes',
   zone: 'SAV',
+  niveau: 'region',
+  ascendants: [],
   ...totaux(LIGNES_SAVANES),
   lignes: LIGNES_SAVANES,
+};
+
+// Tône : communes, dont une sans inscription (masquée) ; pré-inscriptions nulles sous la préfecture.
+const LIGNES_TONE = [
+  { ...zone('SAV-02-C1', 'Tône 1', 'commune', 66239, 61000, 2300), preinscriptions: 0 },
+  { ...zone('SAV-02-C2', 'Tône 2', 'commune', 120000, 110000, 4032), preinscriptions: 0 },
+  { ...zone('SAV-02-C3', 'Tône 3', 'commune', 0, 0, 0), preinscriptions: 0 },
+];
+
+export const TERRITOIRE_TONE: Territoire = {
+  perimetre: 'Tône',
+  zone: 'SAV-02',
+  niveau: 'prefecture',
+  ascendants: [{ code: 'SAV', nom: 'Savanes', niveau: 'region' }],
+  ...totaux(LIGNES_TONE),
+  lignes: LIGNES_TONE,
+};
+
+// Un canton dont un centre est rattaché directement (cas réel), à côté d'une localité.
+const LIGNES_CANTON = [
+  { ...zone('SAV-02-L1', 'Nano', 'localite', 1200, 1100, 30), preinscriptions: 0 },
+  { ...zone('10092', 'EPP Nano', 'centre', 300, 280, 5), preinscriptions: 0 },
+];
+
+export const TERRITOIRE_CANTON: Territoire = {
+  perimetre: 'Canton de Nano',
+  zone: 'SAV-02-K1',
+  niveau: 'canton',
+  ascendants: [
+    { code: 'SAV', nom: 'Savanes', niveau: 'region' },
+    { code: 'SAV-02', nom: 'Tône', niveau: 'prefecture' },
+    { code: 'SAV-02-C2', nom: 'Tône 2', niveau: 'commune' },
+  ],
+  ...totaux(LIGNES_CANTON),
+  lignes: LIGNES_CANTON,
+};
+
+const TERRITOIRES: Record<string, Territoire> = {
+  SAV: TERRITOIRE_SAVANES,
+  'SAV-02': TERRITOIRE_TONE,
+  'SAV-02-K1': TERRITOIRE_CANTON,
 };
 
 const LUNDIS = [
@@ -250,7 +296,7 @@ const PAR_DEFAUT: Record<string, Reponse> = {
   },
   '/enrolement/semaines': SEMAINES,
   '/enrolement/territoire': (url: URL) =>
-    url.searchParams.get('zone') === 'SAV' ? TERRITOIRE_SAVANES : TERRITOIRE_NATIONAL,
+    TERRITOIRES[url.searchParams.get('zone') ?? ''] ?? TERRITOIRE_NATIONAL,
   '/enrolement/centres': (url: URL) => CENTRES[url.searchParams.get('classement') ?? 'inscriptions'],
   '/enrolement/preinscriptions': PREINSCRIPTIONS,
   '/enrolement/preinscriptions/profil': PROFIL_PREINSCRIPTIONS,

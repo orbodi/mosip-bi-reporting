@@ -4,19 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
-import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import tg.anid.bi.meta.Region;
 import tg.anid.bi.meta.RegionsController;
@@ -73,10 +66,6 @@ class PageEnrolementIT {
                 """).update();
     }
 
-    @AfterEach
-    void nettoyer() {
-        SecurityContextHolder.clearContext();
-    }
 
     @Test
     void territoireNationalUneLigneParRegionEtLeHorsReferentielQuandIlADesInscriptions() {
@@ -108,6 +97,81 @@ class PageEnrolementIT {
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("Cinkassé", 50L),
                         org.assertj.core.groups.Tuple.tuple("Tône", 100L));
         assertThat(t.lignes().stream().mapToLong(Territoire.LigneZone::inscriptions).sum()).isEqualTo(150);
+    }
+
+    @Test
+    void territoireATousLesNiveauxJusquAuxCentres() {
+        // Sous Tône (SAV-02) : commune → canton → localité → centre 10091, et un centre 10092 rattaché directement au
+        // canton (cas réel : 1 centre sur 8 841 le 25/10/2026). Zones ajoutées au référentiel de dev, une fois.
+        // Une instruction par zone : le parent doit exister avant l'enfant.
+        for (String[] z : new String[][] {
+                {"commune", "T-COM", "Commune de test", "SAV-02"},
+                {"canton", "T-CAN", "Canton de test", "T-COM"},
+                {"localite", "T-LOC", "Localité de test", "T-CAN"},
+                {"centre", "10091", "Centre de localité", "T-LOC"},
+                {"centre", "10092", "Centre de canton", "T-CAN"}}) {
+            jdbc.sql("""
+                    insert into bi.zone (niveau, code, nom, parent_id)
+                    select :niveau, :code, :nom, p.id from bi.zone p where p.code = :parent
+                    on conflict (code) do nothing
+                    """)
+                    .param("niveau", z[0]).param("code", z[1]).param("nom", z[2]).param("parent", z[3])
+                    .update();
+        }
+        jdbc.sql("""
+                insert into bi.fait_enrolement_jour (jour, centre_id, sexe, tranche_age, type_demande, inscriptions,
+                                                     niu_generes, en_cours, echouees, rejetees, non_classees)
+                select date '2026-01-05', z.id, 'I', 'inconnu', 'NEW', v.ins, v.niu, v.ins - v.niu, 0, 0, 0
+                from (values ('10091', 30, 25), ('10092', 12, 10)) as v (code, ins, niu)
+                join bi.zone z on z.code = v.code
+                """).update();
+
+        Territoire prefecture = service.territoire(null, null, "SAV-02");
+        assertThat(prefecture.niveau()).isEqualTo("prefecture");
+        assertThat(prefecture.ascendants()).extracting(Territoire.ZoneParente::code).containsExactly("SAV");
+        // Tône : 100 (centre 10011, rattaché directement à la préfecture) + 42 sous la commune.
+        assertThat(prefecture.inscriptions()).isEqualTo(142);
+        assertThat(prefecture.lignes()).filteredOn(l -> l.code().equals("T-COM")).singleElement()
+                .satisfies(l -> {
+                    assertThat(l.inscriptions()).isEqualTo(42);
+                    assertThat(l.ouvrable()).isTrue();
+                });
+
+        Territoire canton = service.territoire(null, null, "T-CAN");
+        assertThat(canton.niveau()).isEqualTo("canton");
+        assertThat(canton.ascendants()).extracting(Territoire.ZoneParente::code)
+                .containsExactly("SAV", "SAV-02", "T-COM");
+        assertThat(canton.lignes()).extracting(Territoire.LigneZone::code, Territoire.LigneZone::niveau,
+                        Territoire.LigneZone::inscriptions, Territoire.LigneZone::ouvrable)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("T-LOC", "localite", 30L, true),
+                        org.assertj.core.groups.Tuple.tuple("10092", "centre", 12L, false));
+        // Contrôles : somme des sous-zones = totaux de la zone = bloc « Devenir » sur la même zone.
+        assertThat(canton.lignes().stream().mapToLong(Territoire.LigneZone::inscriptions).sum())
+                .isEqualTo(canton.inscriptions()).isEqualTo(42);
+        assertThat(canton.inscriptions()).isEqualTo(service.devenir(null, null, "T-CAN").inscriptions());
+        assertThat(canton.niuGeneres() + canton.enCours() + canton.echouees() + canton.rejetees()
+                + canton.nonClassees()).isEqualTo(canton.inscriptions());
+
+        Territoire localite = service.territoire(null, null, "T-LOC");
+        assertThat(localite.ascendants()).extracting(Territoire.ZoneParente::niveau)
+                .containsExactly("region", "prefecture", "commune", "canton");
+        assertThat(localite.lignes()).singleElement().satisfies(l -> {
+            assertThat(l.code()).isEqualTo("10091");
+            assertThat(l.niuGeneres()).isEqualTo(25);
+            assertThat(l.ouvrable()).isFalse();
+        });
+
+        Territoire centre = service.territoire(null, null, "10091");
+        assertThat(centre.niveau()).isEqualTo("centre");
+        assertThat(centre.inscriptions()).isEqualTo(30);
+        assertThat(centre.lignes()).isEmpty();
+
+        Territoire national = service.territoire(null, null, null);
+        assertThat(national.niveau()).isNull();
+        assertThat(national.ascendants()).isEmpty();
+        assertThatThrownBy(() -> service.territoire(null, null, "INCONNUE"))
+                .isInstanceOf(tg.anid.bi.commun.RessourceIntrouvable.class);
     }
 
     @Test
@@ -190,32 +254,5 @@ class PageEnrolementIT {
     void filtreRegionLesSixRegionsDuNordAuSud() {
         assertThat(regions.regions()).extracting(Region::code)
                 .containsExactly("SAV", "KAR", "CEN", "PLA", "MAR", "GLO");
-    }
-
-    @Test
-    void unUtilisateurRegionalNeVoitQueSaRegionDansChaqueBloc() {
-        Jwt jeton = Jwt.withTokenValue("jeton").header("alg", "none").claim("zone", "KAR").build();
-        SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(jeton, List.of(new SimpleGrantedAuthority("ROLE_BI_REGIONAL"))));
-
-        assertThat(regions.regions()).extracting(Region::code).containsExactly("KAR");
-
-        Territoire t = service.territoire(null, null, null);
-        assertThat(t.perimetre()).isEqualTo("Kara");
-        assertThat(t.inscriptions()).isEqualTo(80);
-        assertThat(t.lignes()).allSatisfy(l -> assertThat(l.niveau()).isEqualTo("prefecture"));
-
-        assertThat(service.centres(null, null, null, "inscriptions").centres())
-                .extracting(TopCentres.CentreClasse::code).containsExactly("10021");
-        InscriptionsParSemaine s = service.semaines(null, null, null);
-        assertThat(s.perimetre()).isEqualTo("Kara");
-        assertThat(s.semaines().getLast().inscriptions()).isEqualTo(80);
-        assertThat(s.semaines().getLast().niuGeneres()).isEqualTo(50);
-
-        LocalDate jour = LocalDate.parse("2026-01-05");
-        assertThatThrownBy(() -> service.territoire(jour, jour, "SAV")).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> service.semaines(null, null, "SAV")).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> service.centres(null, null, "SAV", "rejets"))
-                .isInstanceOf(AccessDeniedException.class);
     }
 }

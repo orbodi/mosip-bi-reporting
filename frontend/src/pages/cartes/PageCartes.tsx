@@ -22,7 +22,7 @@ import type { DefinitionPage } from '../pages';
 export function PageCartes({ page }: { page: DefinitionPage }) {
   const fin = useFinPeriode(page.source);
   const { choix } = usePlagePeriode(page.source);
-  const { region, regions, regional, choisir } = useFiltreRegion();
+  const { region, regions, choisir } = useFiltreRegion();
   const semaines = semainesVides(fin, ['imprimees', 'demandes', 'rejetees']);
   const sousTitreSemaines =
     choix === 'tout'
@@ -152,7 +152,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
           id="titre-a-remettre"
           titre={region ? `Cartes à remettre : ${region.nom}` : 'Cartes à remettre par région'}
           surTitre={
-            region && !regional ? (
+            region ? (
               <span className="fil-ariane">
                 <button
                   type="button"
@@ -203,7 +203,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                 valeur: pct(INCONNUE),
                 classe: -1,
                 lecture: `${z.nom} : ${pct(INCONNUE)} des cartes expédiées à remettre`,
-                ouvrable: !region && !regional && regions.length > 1,
+                ouvrable: !region && regions.length > 1,
               }))}
               titreListe={region ? 'Préfectures, du nord au sud' : 'Régions, du nord au sud'}
               libelleCarte={
@@ -238,7 +238,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                   {zones.map((z) => (
                     <tr key={z.code}>
                       <th scope="row">
-                        {!region && !regional && regions.length > 1 ? (
+                        {!region && regions.length > 1 ? (
                           <button
                             type="button"
                             className="bouton-zone"

@@ -59,6 +59,41 @@ public class EnrolementRepository {
     }
 
     /** Nom de la zone (région, préfecture… centre) qui porte ce code. */
+    /** Une zone du référentiel : nom et niveau. */
+    public record ZoneConnue(String nom, String niveau) {
+    }
+
+    /** Nom et niveau d'une zone, par son code. */
+    public Optional<ZoneConnue> zone(String code) {
+        return jdbc.sql("select nom, niveau from bi.zone where code = :code")
+                .param("code", code)
+                .query((rs, ligne) -> new ZoneConnue(rs.getString("nom"), rs.getString("niveau")))
+                .optional();
+    }
+
+    /** Zones au-dessus de {@code code}, de la région à son parent direct (vide pour une région). */
+    public List<Territoire.ZoneParente> ascendants(String code) {
+        return jdbc.sql("""
+                        with recursive montee as (
+                            select z.parent_id, 0 as hauteur
+                            from bi.zone z
+                            where z.code = :code
+                            union all
+                            select p.parent_id, m.hauteur + 1
+                            from montee m
+                            join bi.zone p on p.id = m.parent_id
+                        )
+                        select p.code, p.nom, p.niveau
+                        from montee m
+                        join bi.zone p on p.id = m.parent_id
+                        order by m.hauteur desc
+                        """)
+                .param("code", code)
+                .query((rs, ligne) -> new Territoire.ZoneParente(rs.getString("code"), rs.getString("nom"),
+                        rs.getString("niveau")))
+                .list();
+    }
+
     public Optional<String> nomZone(String code) {
         return jdbc.sql("select nom from bi.zone where code = :code")
                 .param("code", code)
@@ -169,7 +204,8 @@ public class EnrolementRepository {
         return jdbc.sql("""
                         with recursive
                         enfants as (
-                            select z.id, z.code, z.nom, z.niveau, z.ordre
+                            select z.id, z.code, z.nom, z.niveau, z.ordre,
+                                   exists (select 1 from bi.zone c where c.parent_id = z.id) as ouvrable
                             from bi.zone z
                             where (cast(:zone as text) is null and z.parent_id is null)
                                or z.parent_id = (select r.id from bi.zone r where r.code = cast(:zone as text))
@@ -199,7 +235,7 @@ public class EnrolementRepository {
                               and (cast(:au as date) is null or f.jour <= cast(:au as date))
                             group by f.centre_id
                         )
-                        select e.code, e.nom, e.niveau,
+                        select e.code, e.nom, e.niveau, e.ouvrable,
                                coalesce(sum(f.inscriptions), 0) as inscriptions,
                                coalesce(sum(f.niu_generes), 0)  as niu_generes,
                                coalesce(sum(f.en_cours), 0)     as en_cours,
@@ -211,7 +247,7 @@ public class EnrolementRepository {
                         join descendance d on d.enfant_id = e.id
                         left join faits f on f.centre_id = d.zone_id
                         left join prefaits p on p.zone_id = d.zone_id
-                        group by e.code, e.nom, e.niveau, e.ordre
+                        group by e.code, e.nom, e.niveau, e.ordre, e.ouvrable
                         having e.code <> cast(:horsReferentiel as text)
                             or coalesce(sum(f.inscriptions), 0) > 0
                             or coalesce(sum(p.demandes), 0) > 0
@@ -233,7 +269,8 @@ public class EnrolementRepository {
                         rs.getLong("rejetees"),
                         rs.getLong("non_classees"),
                         rs.getLong("preinscriptions"),
-                        null))
+                        null,
+                        rs.getBoolean("ouvrable") && !ZONE_HORS_REFERENTIEL.equals(rs.getString("code"))))
                 .list();
     }
 

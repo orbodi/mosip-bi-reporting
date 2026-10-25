@@ -15,14 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
-import tg.anid.bi.commun.PorteeUtilisateur;
 import tg.anid.bi.commun.RequeteInvalide;
 
 class EnrolementServiceTest {
@@ -30,18 +24,7 @@ class EnrolementServiceTest {
     private static final LocalDate MERCREDI_14_JANVIER = LocalDate.parse("2026-01-14");
 
     private final EnrolementRepository repository = mock(EnrolementRepository.class);
-    private final EnrolementService service = new EnrolementService(repository, new PorteeUtilisateur());
-
-    @AfterEach
-    void nettoyer() {
-        SecurityContextHolder.clearContext();
-    }
-
-    private static void connecterRegional(String zone) {
-        Jwt jeton = Jwt.withTokenValue("jeton").header("alg", "none").claim("zone", zone).build();
-        SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(jeton, List.of(new SimpleGrantedAuthority("ROLE_BI_REGIONAL"))));
-    }
+    private final EnrolementService service = new EnrolementService(repository);
 
     @Test
     void douzeSemainesCompletesJusquAuDernierDimanche() {
@@ -232,17 +215,6 @@ class EnrolementServiceTest {
     }
 
     @Test
-    void unUtilisateurRegionalNeRecoitPasLeProfilNational() {
-        connecterRegional("KAR");
-        when(repository.nomZone("KAR")).thenReturn(Optional.of("Kara"));
-
-        ProfilPreinscriptions p = service.profilPreinscriptions(null, null);
-
-        assertThat(p.perimetre()).isEqualTo("Kara");
-        assertThat(p.disponible()).isFalse();
-    }
-
-    @Test
     void sansDonneesDuPipelineLesPreinscriptionsSontNonDisponibles() {
         when(repository.preinscriptionsDisponibles()).thenReturn(false);
 
@@ -251,19 +223,6 @@ class EnrolementServiceTest {
         assertThat(p.disponible()).isFalse();
         assertThat(p.demandes()).isNull();
         assertThat(p.derniereDemande()).isNull();
-    }
-
-    @Test
-    void unUtilisateurRegionalNeRecoitPasLesPreinscriptionsNationales() {
-        connecterRegional("KAR");
-        when(repository.nomZone("KAR")).thenReturn(Optional.of("Kara"));
-        when(repository.preinscriptionsDisponibles()).thenReturn(true);
-
-        Preinscriptions p = service.preinscriptions(null, null);
-
-        assertThat(p.perimetre()).isEqualTo("Kara");
-        assertThat(p.disponible()).isFalse();
-        assertThat(p.demandes()).isNull();
     }
 
     @Test

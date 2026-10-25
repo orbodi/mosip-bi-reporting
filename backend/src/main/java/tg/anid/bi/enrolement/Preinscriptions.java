@@ -7,10 +7,10 @@ import java.time.OffsetDateTime;
  * Bloc « Pré-inscription » de la page Enrôlement (docs/indicateurs.md : E-PRE, E-PRE-RDV, E-PRE-ATT, E-PRE-EXP,
  * E-PRE-HON). Source : prereg.applicant_demographic (pipeline mosip-cdc), sexe par l'API de pré-inscription MOSIP.
  * Contrôle : rendezVousReserves + enAttenteRendezVous + expirees + annulees + nonClassees = demandes.
- * Une valeur nulle veut dire « non disponible », jamais zéro : source pas encore alimentée, utilisateur régional (une
- * pré-inscription n'a pas de territoire), ou aucun sexe encore connu sur la période.
+ * Une valeur nulle veut dire « non disponible », jamais zéro : source pas encore alimentée, ou aucun sexe encore connu
+ * sur la période.
  *
- * @param perimetre           « Ensemble du Togo », ou la zone d'un utilisateur régional
+ * @param perimetre           « Ensemble du Togo »
  * @param du                  première date incluse (jour de création de la demande), ou null depuis le début
  * @param au                  dernière date incluse, ou null jusqu'à la dernière donnée
  * @param disponible          vrai dès que le pipeline a alimenté la source
@@ -30,7 +30,7 @@ public record Preinscriptions(String perimetre, LocalDate du, LocalDate au, bool
                               Long honorees, Long nonClassees, Long femmes, Long hommes,
                               OffsetDateTime derniereDemande) {
 
-    /** Bloc sans chiffres : source pas encore alimentée, ou hors de la portée de l'utilisateur. */
+    /** Bloc sans chiffres : source pas encore alimentée. */
     static Preinscriptions nonDisponible(String perimetre, LocalDate du, LocalDate au) {
         return new Preinscriptions(perimetre, du, au, false, null, null, null, null, null, null, null, null, null,
                 null);

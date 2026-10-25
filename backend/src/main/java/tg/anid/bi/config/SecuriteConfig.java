@@ -14,8 +14,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * API sans état protégée par les jetons Keycloak (resource server OAuth2).
- * Rôles attendus : {@code bi-national} ou {@code bi-regional}. La portée géographique d'un utilisateur régional
- * est contrôlée dans chaque service, pas ici.
+ * Rôles attendus : {@code bi-national} ou {@code bi-regional}. Les deux donnent accès à tout le Togo : aucune
+ * restriction par zone (décision du 25/10/2026, docs/decisions.md).
  */
 @Configuration
 public class SecuriteConfig {
