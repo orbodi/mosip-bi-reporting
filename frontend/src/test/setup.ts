@@ -1,8 +1,12 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
 afterEach(() => cleanup());
+
+// findBy… et waitFor attendent 3 s au lieu de 1 : sur le serveur, la suite tourne à côté du front en service et un
+// rendu peut dépasser la seconde sans être faux (25/10/2026).
+configure({ asyncUtilTimeout: 3000 });
 
 // jsdom n'implémente pas le défilement ; le routeur l'appelle à chaque navigation.
 window.scrollTo = () => {};

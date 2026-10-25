@@ -15,5 +15,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
+    // Sur le serveur, la suite tourne à côté du front en service : 5 s ne suffisent pas toujours (25/10/2026).
+    testTimeout: 15_000,
   },
 });

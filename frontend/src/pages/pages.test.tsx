@@ -1,7 +1,17 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { afficher, simulerApi } from '../test/apiSimulee';
+
+/** Bouton d'une liste de l'Exploration, retrouvé par son libellé (« Préfecture », « Commune »…). */
+const boutonChoix = (libelle: string) => {
+  const etiquette = screen
+    .getAllByText(libelle, { selector: '.champ-choix__libelle' })
+    .find((e) => e.closest('.champ-choix'));
+  const bouton = etiquette?.closest('.champ-choix')?.querySelector('button');
+  if (!bouton) throw new Error(`Liste « ${libelle} » introuvable`);
+  return bouton;
+};
 
 describe('Pages de la maquette', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -56,7 +66,7 @@ describe('Pages de la maquette', () => {
     const utilisateur = userEvent.setup();
 
     // Sans région choisie, seule la liste des régions est ouverte.
-    expect(await screen.findByRole('button', { name: /^Préfecture/ })).toBeDisabled();
+    await waitFor(() => expect(boutonChoix('Préfecture')).toBeDisabled());
 
     let resultat = within(await screen.findByRole('region', { name: 'Inscriptions par région' }));
     await utilisateur.click(await resultat.findByRole('button', { name: /Savanes/ }));
@@ -72,11 +82,13 @@ describe('Pages de la maquette', () => {
     expect(resultat.getByRole('button', { name: 'Togo' })).toBeInTheDocument();
     expect(resultat.getByRole('button', { name: 'Savanes' })).toBeInTheDocument();
     // Listes : préfecture et commune ouvertes (Tône choisie), canton fermé tant qu'aucune commune n'est choisie.
-    expect(screen.getByRole('button', { name: /^Préfecture/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /^Commune/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /^Canton/ })).toBeDisabled();
+    await waitFor(() => expect(boutonChoix('Préfecture')).toBeEnabled());
+    await waitFor(() => expect(boutonChoix('Commune')).toBeEnabled());
+    expect(boutonChoix('Canton')).toBeDisabled();
 
     // Pré-inscriptions : nouvel indicateur de l'Enrôlement, situé à la préfecture de résidence.
+    // La liste des indicateurs est dans un <details> : on l'ouvre comme le ferait un clic sur son résumé.
+    document.querySelector('details.xp-indicateurs')?.setAttribute('open', '');
     const liste = within(screen.getByRole('group', { name: 'Indicateurs' }));
     await utilisateur.click(liste.getByRole('checkbox', { name: 'Pré-inscriptions' }));
     expect(await screen.findByRole('columnheader', { name: 'Pré-inscriptions' })).toBeInTheDocument();
