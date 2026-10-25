@@ -68,12 +68,50 @@ export function miseAJourFr(valeur: string | Date): string {
 /** Date seule « aaaa-mm-jj » de l'API, lue comme un jour du Togo (UTC+0). */
 const jour = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
-/** « 2026-01-05 » → « 5 janvier » (lecture d'une semaine : « Semaine du 5 janvier »). */
+/** « 2026-01-05 » → « 5 janvier ». */
 export function jourMoisFr(iso: string): string {
   return formatJourMois.format(jour(iso));
 }
 
-/** « 2026-01-05 » → « 05/01 » (axe des semaines). */
+/** « 2026-01-05 » → « 05/01 ». */
 export function jourMoisCourt(iso: string): string {
   return formatJourMoisCourt.format(jour(iso));
+}
+
+/** Dimanche de la semaine qui commence le lundi {@code lundi} (« aaaa-mm-jj »). */
+export function dimanche(lundi: string): string {
+  const d = jour(lundi);
+  d.setUTCDate(d.getUTCDate() + 6);
+  return d.toISOString().slice(0, 10);
+}
+
+const memeMois = (a: string, b: string) => a.slice(0, 7) === b.slice(0, 7);
+
+/**
+ * Semaine du lundi au dimanche, pour l'axe des graphiques : « 19–25/10 », ou « 28/09–04/10 » à cheval sur deux mois.
+ */
+export function semaineCourte(lundi: string): string {
+  const fin = dimanche(lundi);
+  const debut = memeMois(lundi, fin) ? lundi.slice(8, 10) : jourMoisCourt(lundi);
+  return `${debut}\u2013${jourMoisCourt(fin)}`;
+}
+
+/** Semaine en toutes lettres : « du 19 au 25 octobre », ou « du 28 septembre au 4 octobre ». */
+export function semaineFr(lundi: string): string {
+  const fin = dimanche(lundi);
+  const debut = memeMois(lundi, fin) ? String(Number(lundi.slice(8, 10))) : jourMoisFr(lundi);
+  return `du ${debut} au ${jourMoisFr(fin)}`;
+}
+
+/** Semaine en dates complètes, pour les tableaux : « 19/10/2026 au 25/10/2026 ». */
+export function semaineDates(lundi: string): string {
+  return `${dateFr(lundi)} au ${dateFr(dimanche(lundi))}`;
+}
+
+/**
+ * Étiquettes de l'axe des semaines : une sur {@code pas}, comptée depuis la dernière semaine, qui reste donc toujours
+ * affichée (avec un masquage automatique des chevauchements, la plus récente pouvait disparaître).
+ */
+export function etiquetteVisible(nombre: number, pas: number): (indice: number) => boolean {
+  return (indice) => (nombre - 1 - indice) % pas === 0;
 }

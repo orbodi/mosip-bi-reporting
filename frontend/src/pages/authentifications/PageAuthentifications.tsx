@@ -6,7 +6,7 @@ import { Jauge, Legende, Repartition } from '../../composants/blocs/Repartition'
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
 import { INCONNUE, semainesVides } from '../../lib/blocsVides';
-import { jourMoisFr, nf, pct } from '../../lib/format';
+import { nf, pct, semaineFr } from '../../lib/format';
 import { useFinPeriode, usePlagePeriode } from '../../lib/usePlagePeriode';
 import type { DefinitionPage } from '../pages';
 
@@ -198,7 +198,7 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
               { cle: 'echouees', libelle: 'Échouées', couleur: 'rouge', type: 'pile' },
             ]}
             lecture={(s) =>
-              `Semaine du ${jourMoisFr(s.lundi)} : ${nf(s.valeurs.reussies)} réussies, ${nf(s.valeurs.echouees)} échouées.`
+              `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.reussies)} réussies, ${nf(s.valeurs.echouees)} échouées.`
             }
           />
         </Panneau>

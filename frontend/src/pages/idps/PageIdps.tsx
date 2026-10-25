@@ -6,7 +6,7 @@ import { CARTE_REGIONS } from '../../composants/carte/fondsDeCarte';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
 import { INCONNUE, semainesVides } from '../../lib/blocsVides';
-import { jourMoisFr, nf, pct } from '../../lib/format';
+import { nf, pct, semaineFr } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { useFinPeriode } from '../../lib/usePlagePeriode';
 import type { DefinitionPage } from '../pages';
@@ -227,7 +227,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
                 { cle: 'erreurs', libelle: 'Erreurs', couleur: 'rouge', type: 'barre' },
               ]}
               lecture={(s) =>
-                `Semaine du ${jourMoisFr(s.lundi)} : ${nf(s.valeurs.recus)} ordres reçus, ${nf(s.valeurs.erreurs)} erreurs.`
+                `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.recus)} ordres reçus, ${nf(s.valeurs.erreurs)} erreurs.`
               }
             />
           </Panneau>

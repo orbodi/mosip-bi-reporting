@@ -10,7 +10,7 @@ import { CARTE_REGIONS, carteRegion } from '../../composants/carte/fondsDeCarte'
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
 import { INCONNUE, semainesVides } from '../../lib/blocsVides';
-import { jourMoisFr, nf, pct } from '../../lib/format';
+import { nf, pct, semaineFr } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { useFinPeriode, usePlagePeriode } from '../../lib/usePlagePeriode';
 import type { DefinitionPage } from '../pages';
@@ -127,7 +127,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                 { cle: 'demandes', libelle: 'Demandes d’impression', couleur: 'vert', type: 'courbe' },
               ]}
               lecture={(s) =>
-                `Semaine du ${jourMoisFr(s.lundi)} : ${nf(s.valeurs.imprimees)} cartes imprimées, ${nf(s.valeurs.demandes)} demandes d’impression.`
+                `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.imprimees)} cartes imprimées, ${nf(s.valeurs.demandes)} demandes d’impression.`
               }
             />
           </Panneau>
@@ -142,9 +142,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
               ton="rouge"
               libelle="Demandes d’impression rejetées par semaine"
               series={[{ cle: 'rejetees', libelle: 'Demandes rejetées', couleur: 'rouge', type: 'barre' }]}
-              lecture={(s) =>
-                `Semaine du ${jourMoisFr(s.lundi)} : ${nf(s.valeurs.rejetees)} demandes rejetées.`
-              }
+              lecture={(s) => `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.rejetees)} demandes rejetées.`}
             />
             <p className="note-m note-m--filet">{nf(INCONNUE)} demande rejetée sur la période.</p>
           </Panneau>

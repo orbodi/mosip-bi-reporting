@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { SemaineValeurs } from '../../lib/blocsVides';
-import { dateFr, jourMoisCourt, nf } from '../../lib/format';
+import { dateFr, dimanche, etiquetteVisible, nf, semaineCourte, semaineDates } from '../../lib/format';
 import { jeton } from '../../lib/jetons';
 import { Graphique } from '../graphique/Graphique';
 import type { EChartsCoreOption } from '../graphique/echarts';
@@ -67,7 +67,7 @@ export function GraphiqueHebdo({
     const texte = jeton('--encre-2');
     const trait = jeton('--trait');
     const etiquette = (lundi: string, i: number) => {
-      if (!axeMois) return jourMoisCourt(lundi);
+      if (!axeMois) return semaineCourte(lundi);
       const mois = (l: string) => new Date(`${l}T00:00:00Z`).getUTCMonth();
       return i === 0 || mois(lundi) !== mois(semaines[i - 1].lundi) ? MOIS[mois(lundi)] : '';
     };
@@ -81,7 +81,13 @@ export function GraphiqueHebdo({
         data: semaines.map((s, i) => etiquette(s.lundi, i)),
         axisTick: { show: false },
         axisLine: { lineStyle: { color: trait } },
-        axisLabel: { color: texte, fontSize: 12, interval: 0, hideOverlap: true },
+        // Semaines : une étiquette sur deux au-delà de 8, la plus récente toujours visible. Mois : chaque début de mois.
+        axisLabel: {
+          color: texte,
+          fontSize: 12,
+          interval: axeMois ? 0 : etiquetteVisible(semaines.length, semaines.length > 8 ? 2 : 1),
+          hideOverlap: axeMois,
+        },
       },
       yAxis: {
         type: 'value',
@@ -128,7 +134,7 @@ export function GraphiqueHebdo({
       <Graphique
         option={option}
         hauteur={hauteur}
-        libelle={`${libelle}, du ${dateFr(semaines[0].lundi)} au ${dateFr(semaines[derniere].lundi)}`}
+        libelle={`${libelle}, du ${dateFr(semaines[0].lundi)} au ${dateFr(dimanche(semaines[derniere].lundi))}`}
         onSurvol={(c) => setSurvol(c?.indice ?? null)}
         onClic={(c) => setSurvol(c.indice ?? null)}
       />
@@ -138,7 +144,7 @@ export function GraphiqueHebdo({
           <caption className="visuellement-cache">{libelle}</caption>
           <thead>
             <tr>
-              <th scope="col">Semaine du</th>
+              <th scope="col">Semaine</th>
               {series.map((x) => (
                 <th key={x.cle} scope="col">
                   {x.libelle}
@@ -149,7 +155,7 @@ export function GraphiqueHebdo({
           <tbody>
             {semaines.map((s) => (
               <tr key={s.lundi}>
-                <th scope="row">{dateFr(s.lundi)}</th>
+                <th scope="row">{semaineDates(s.lundi)}</th>
                 {series.map((x) => (
                   <td key={x.cle} className="chiffre">
                     {nf(s.valeurs[x.cle] ?? Number.NaN)}

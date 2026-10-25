@@ -18,11 +18,11 @@ describe('Inscriptions et NIU par semaine', () => {
     expect(
       await (
         await blocAffiche()
-      ).findByText(texte('Semaine du 5 janvier : 20 230 inscriptions, 17 626 NIU générés (87,1 %).')),
+      ).findByText(texte('Semaine du 5 au 11 janvier : 20 230 inscriptions, 17 626 NIU générés (87,1 %).')),
     ).toBeInTheDocument();
     expect(bloc().getByText('12 dernières semaines complètes.')).toBeInTheDocument();
     expect(
-      bloc().getByRole('img', { name: /par semaine, du 20\/10\/2025 au 05\/01\/2026/ }),
+      bloc().getByRole('img', { name: /par semaine, du 20\/10\/2025 au 11\/01\/2026/ }),
     ).toBeInTheDocument();
     const tableau = within(bloc().getByRole('table', { hidden: true }));
     expect(tableau.getAllByRole('row', { hidden: true })).toHaveLength(13);
@@ -52,7 +52,7 @@ describe('Inscriptions et NIU par semaine', () => {
     expect(
       await (
         await blocAffiche()
-      ).findByText(texte('Semaine du 5 janvier : 20 230 inscriptions, 0 NIU générés (0,0 %).')),
+      ).findByText(texte('Semaine du 5 au 11 janvier : 20 230 inscriptions, 0 NIU générés (0,0 %).')),
     ).toBeInTheDocument();
     expect(bloc().queryByRole('note')).not.toBeInTheDocument();
     expect(
@@ -66,9 +66,9 @@ describe('Inscriptions et NIU par semaine', () => {
 
     const b = await blocAffiche();
     expect(
-      await b.findByText(texte('Semaine du 5 janvier : 0 inscriptions, 0 NIU générés (0,0 %).')),
+      await b.findByText(texte('Semaine du 5 au 11 janvier : 0 inscriptions, 0 NIU générés (0,0 %).')),
     ).toBeInTheDocument();
     expect(b.queryByRole('alert')).not.toBeInTheDocument();
-    expect(b.getByRole('img', { name: /par semaine, du 20\/10\/2025 au 05\/01\/2026/ })).toBeInTheDocument();
+    expect(b.getByRole('img', { name: /par semaine, du 20\/10\/2025 au 11\/01\/2026/ })).toBeInTheDocument();
   });
 });

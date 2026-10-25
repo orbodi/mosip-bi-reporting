@@ -4,10 +4,13 @@ import { useSemaines } from '../../api/enrolement';
 import { Graphique } from '../../composants/graphique/Graphique';
 import type { EChartsCoreOption } from '../../composants/graphique/echarts';
 import { INCONNUE, estConnu, semainesInconnues } from '../../lib/blocsVides';
-import { dateFr, jourMoisCourt, nf } from '../../lib/format';
+import { dateFr, dimanche, etiquetteVisible, nf, semaineCourte, semaineDates } from '../../lib/format';
 import { jeton } from '../../lib/jetons';
 import { lectureSemaine } from '../../lib/semaines';
 import { usePlageApi, usePlagePeriode } from '../../lib/usePlagePeriode';
+
+/** Une semaine sur deux porte son étiquette : « 19–25/10 » tient alors aussi sur mobile. */
+const PAS_ETIQUETTES = 2;
 
 function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOption {
   const couleurs = {
@@ -27,10 +30,15 @@ function option(donnees: InscriptionsParSemaine, active: number): EChartsCoreOpt
     tooltip: { show: false },
     xAxis: {
       type: 'category',
-      data: donnees.semaines.map((s) => jourMoisCourt(s.lundi)),
+      // « 19–25/10 » : la semaine se lit du lundi au dimanche. Une étiquette sur deux, la plus récente toujours visible.
+      data: donnees.semaines.map((s) => semaineCourte(s.lundi)),
       axisTick: { show: false },
       axisLine: { lineStyle: { color: couleurs.trait } },
-      axisLabel: { color: couleurs.texte, fontSize: 12, interval: 0, hideOverlap: true },
+      axisLabel: {
+        color: couleurs.texte,
+        fontSize: 12,
+        interval: etiquetteVisible(donnees.semaines.length, PAS_ETIQUETTES),
+      },
     },
     yAxis: {
       type: 'value',
@@ -130,7 +138,7 @@ export function BlocSemaines() {
           <Graphique
             option={graphique}
             hauteur={260}
-            libelle={`Inscriptions et NIU générés par semaine, du ${dateFr(semaines[0].lundi)} au ${dateFr(semaines[derniere].lundi)}`}
+            libelle={`Inscriptions et NIU générés par semaine, du ${dateFr(semaines[0].lundi)} au ${dateFr(dimanche(semaines[derniere].lundi))}`}
             onSurvol={(c) => setSurvol(c?.indice ?? null)}
             onClic={(c) => setSurvol(c.indice ?? null)}
           />
@@ -140,7 +148,7 @@ export function BlocSemaines() {
               <caption className="visuellement-cache">Inscriptions et NIU générés par semaine</caption>
               <thead>
                 <tr>
-                  <th scope="col">Semaine du</th>
+                  <th scope="col">Semaine</th>
                   <th scope="col">Inscriptions</th>
                   <th scope="col">NIU générés</th>
                 </tr>
@@ -148,7 +156,7 @@ export function BlocSemaines() {
               <tbody>
                 {semaines.map((s) => (
                   <tr key={s.lundi} className={s.dansLaPeriode ? undefined : 'hors-periode'}>
-                    <th scope="row">{dateFr(s.lundi)}</th>
+                    <th scope="row">{semaineDates(s.lundi)}</th>
                     <td className="chiffre">{nf(s.inscriptions)}</td>
                     <td className="chiffre">{nf(s.niuGeneres)}</td>
                   </tr>

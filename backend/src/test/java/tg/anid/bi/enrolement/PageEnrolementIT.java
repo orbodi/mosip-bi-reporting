@@ -48,7 +48,7 @@ class PageEnrolementIT {
 
     @BeforeEach
     void preparer() {
-        jdbc.sql("truncate bi.fait_enrolement_jour, bi.fait_niu_jour").update();
+        jdbc.sql("truncate bi.fait_enrolement_jour, bi.fait_niu_jour, bi.fait_delai_jour").update();
         // Centres du référentiel de dev : 10011 (Tône, Savanes), 10012 (Cinkassé, Savanes), 10021 (Kozah, Kara).
         jdbc.sql("""
                 insert into bi.fait_enrolement_jour (jour, centre_id, sexe, tranche_age, type_demande, inscriptions,
@@ -108,6 +108,40 @@ class PageEnrolementIT {
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("Cinkassé", 50L),
                         org.assertj.core.groups.Tuple.tuple("Tône", 100L));
         assertThat(t.lignes().stream().mapToLong(Territoire.LigneZone::inscriptions).sum()).isEqualTo(150);
+    }
+
+    @Test
+    void delaiMedianDeLaReceptionAuNiuParZoneEnHeures() {
+        // Histogrammes (migration V7) : Tône 3 NIU à 2 h, 2 à 10 h ; Cinkassé 1 à 30 h ; Kozah 4 à 5 h. Les
+        // renouvellements (UPDATE) et l'autre mesure (enrolement_reception) ne comptent pas.
+        jdbc.sql("""
+                insert into bi.fait_delai_jour (jour, centre_id, type_demande, mesure, classe_h, paquets)
+                select v.jour, z.id, v.type, v.mesure, v.classe, v.n
+                from (values (date '2026-01-08', '10011', 'NEW', 'reception_niu', 2, 3),
+                             (date '2026-01-08', '10011', 'NEW', 'reception_niu', 10, 2),
+                             (date '2026-01-09', '10012', 'NEW', 'reception_niu', 30, 1),
+                             (date '2026-01-09', '10021', 'NEW', 'reception_niu', 5, 4),
+                             (date '2026-01-09', '10021', 'UPDATE', 'reception_niu', 400, 50),
+                             (date '2026-01-09', '10011', 'NEW', 'enrolement_reception', 900, 50))
+                     as v (jour, code, type, mesure, classe, n)
+                join bi.zone z on z.code = v.code
+                """).update();
+
+        Territoire togo = service.territoire(null, null, null);
+        // Togo : 10 NIU, classes 2 (3), 5 (4), 10 (2), 30 (1) : la moitié est atteinte à 5 h.
+        assertThat(togo.delaiMedianH()).isEqualTo(5);
+        assertThat(togo.lignes()).filteredOn(l -> l.code().equals("SAV")).singleElement()
+                .extracting(Territoire.LigneZone::delaiMedianH).isEqualTo(2);
+        assertThat(togo.lignes()).filteredOn(l -> l.code().equals("KAR")).singleElement()
+                .extracting(Territoire.LigneZone::delaiMedianH).isEqualTo(5);
+        // Région sans NIU : pas de délai (affiché 0 par le front, jamais estimé).
+        assertThat(togo.lignes()).filteredOn(l -> l.code().equals("PLA")).singleElement()
+                .extracting(Territoire.LigneZone::delaiMedianH).isNull();
+
+        Territoire savanes = service.territoire(null, null, "SAV");
+        assertThat(savanes.delaiMedianH()).isEqualTo(2);
+        assertThat(savanes.lignes()).filteredOn(l -> l.nom().equals("Cinkassé")).singleElement()
+                .extracting(Territoire.LigneZone::delaiMedianH).isEqualTo(30);
     }
 
     @Test

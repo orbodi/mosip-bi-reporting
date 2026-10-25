@@ -232,6 +232,11 @@ export interface components {
       nonClassees: number;
       /** Format: int64 */
       preinscriptions: number;
+      /**
+       * Format: int32
+       * @description Délai médian de la réception au NIU (heures, premières inscriptions), null sans NIU
+       */
+      delaiMedianH?: number | null;
       lignes: components['schemas']['LigneZone'][];
     };
     LigneZone: {
@@ -253,6 +258,11 @@ export interface components {
       nonClassees: number;
       /** Format: int64 */
       preinscriptions: number;
+      /**
+       * Format: int32
+       * @description Délai médian de la réception au NIU (heures, premières inscriptions), null sans NIU
+       */
+      delaiMedianH?: number | null;
     };
     TopCentres: {
       perimetre: string;

@@ -141,7 +141,11 @@ export function BlocTerritoire() {
                   <th scope="col" className="tableau__nombre col-secondaire">
                     En cours
                   </th>
-                  <th scope="col" className="tableau__nombre col-secondaire">
+                  <th
+                    scope="col"
+                    className="tableau__nombre col-secondaire"
+                    title="De la réception du paquet par MOSIP au NIU"
+                  >
                     Délai médian
                   </th>
                 </tr>
@@ -178,7 +182,9 @@ export function BlocTerritoire() {
                       </td>
                       <td className="chiffre tableau__nombre col-secondaire">{nf(l.echouees)}</td>
                       <td className="chiffre tableau__nombre col-secondaire">{nf(l.enCours)}</td>
-                      <td className="chiffre tableau__nombre col-secondaire">{nf(INCONNUE)} j</td>
+                      <td className="chiffre tableau__nombre col-secondaire">
+                        {`${nf(l.delaiMedianH ?? INCONNUE)}\u00a0h`}
+                      </td>
                     </tr>
                   );
                 })}
@@ -194,6 +200,10 @@ export function BlocTerritoire() {
             <p className="texte-2 tableau-zones__note">
               Pré-inscriptions selon la préfecture de résidence déclarée ; inscriptions selon le centre
               d’enrôlement.
+            </p>
+            <p className="texte-2 tableau-zones__note">
+              Délai médian : de la réception du paquet par MOSIP au NIU, en heures, pour les premières
+              inscriptions dont le NIU a été généré sur la période.
             </p>
             {data.nonClassees > 0 && (
               <p className="alerte-donnees" role="note">

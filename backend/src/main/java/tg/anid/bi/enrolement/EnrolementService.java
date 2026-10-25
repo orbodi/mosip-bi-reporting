@@ -84,9 +84,13 @@ public class EnrolementService {
         String zone = portee.zoneEffective(zoneDemandee);
         String perimetre = nomPerimetre(zone);
         EnrolementRepository.Totaux t = repository.devenir(du, au, zone);
-        List<Territoire.LigneZone> lignes = repository.sousZones(du, au, zone);
+        Map<String, Integer> delais = repository.delaisMedians(du, au, zone);
+        List<Territoire.LigneZone> lignes = repository.sousZones(du, au, zone).stream()
+                .map(l -> l.avecDelai(delais.get(l.code())))
+                .toList();
         return new Territoire(perimetre, zone, du, au, t.inscriptions(), t.niuGeneres(), t.enCours(),
-                t.echouees(), t.rejetees(), t.nonClassees(), repository.preinscriptionsZone(du, au, zone), lignes);
+                t.echouees(), t.rejetees(), t.nonClassees(), repository.preinscriptionsZone(du, au, zone),
+                delais.get(EnrolementRepository.ZONE_ENTIERE), lignes);
     }
 
     /** Les cinq premiers centres de la portée selon le classement : inscriptions, echecs ou rejets. */

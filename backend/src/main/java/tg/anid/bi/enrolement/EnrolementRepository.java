@@ -232,8 +232,68 @@ public class EnrolementRepository {
                         rs.getLong("echouees"),
                         rs.getLong("rejetees"),
                         rs.getLong("non_classees"),
-                        rs.getLong("preinscriptions")))
+                        rs.getLong("preinscriptions"),
+                        null))
                 .list();
+    }
+
+    /** Clé de {@link #delaisMedians} pour la zone entière (les autres clés sont les codes des sous-zones). */
+    static final String ZONE_ENTIERE = "";
+
+    /**
+     * Délai médian de la réception au NIU, en heures, pour chaque sous-zone directe de {@code zone} (les régions si
+     * {@code zone} est null) et pour la zone entière (clé {@link #ZONE_ENTIERE}). Calculé sur les histogrammes de
+     * bi.fait_delai_jour (mesure reception_niu, nouvelles inscriptions, jour du NIU dans la période) : la médiane est
+     * la plus petite classe où le cumul atteint la moitié des NIU, exacte à l'heure près sous 48 h, au jour près
+     * au-delà. Une zone sans NIU n'a pas de clé.
+     */
+    public Map<String, Integer> delaisMedians(LocalDate du, LocalDate au, String zone) {
+        return jdbc.sql("""
+                        with recursive
+                        enfants as (
+                            select z.id, z.code
+                            from bi.zone z
+                            where (cast(:zone as text) is null and z.parent_id is null)
+                               or z.parent_id = (select r.id from bi.zone r where r.code = cast(:zone as text))
+                        ),
+                        descendance as (
+                            select e.code, e.id as zone_id from enfants e
+                            union all
+                            select d.code, z.id from bi.zone z join descendance d on z.parent_id = d.zone_id
+                        ),
+                        delais as (
+                            select d.code, f.classe_h, f.paquets
+                            from bi.fait_delai_jour f
+                            join descendance d on d.zone_id = f.centre_id
+                            where f.mesure = 'reception_niu'
+                              and f.type_demande = 'NEW'
+                              and (cast(:du as date) is null or f.jour >= cast(:du as date))
+                              and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                        ),
+                        histo as (
+                            select code, classe_h, sum(paquets) as n from delais group by 1, 2
+                            union all
+                            select cast(:entiere as text), classe_h, sum(paquets) from delais group by 2
+                        ),
+                        cumul as (
+                            select code, classe_h,
+                                   sum(n) over (partition by code order by classe_h) as cumule,
+                                   sum(n) over (partition by code) as total
+                            from histo
+                        )
+                        select code, min(classe_h) as mediane
+                        from cumul
+                        where 2 * cumule >= total
+                        group by code
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .param("zone", zone)
+                .param("entiere", ZONE_ENTIERE)
+                .query((rs, ligne) -> Map.entry(rs.getString("code"), rs.getInt("mediane")))
+                .list()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /**

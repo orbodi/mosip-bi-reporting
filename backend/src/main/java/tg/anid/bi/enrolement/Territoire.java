@@ -19,11 +19,13 @@ import java.util.List;
  * @param rejetees     inscriptions rejetées
  * @param nonClassees  statut MOSIP sans correspondance validée
  * @param preinscriptions pré-inscriptions dont la préfecture de résidence déclarée est dans la zone (jour de création)
+ * @param delaiMedianH délai médian de la réception au NIU, en heures (nouvelles inscriptions, NIU générés sur la
+ *                     période) ; null sans NIU
  * @param lignes       sous-zones dans l'ordre du référentiel (du nord au sud)
  */
 public record Territoire(String perimetre, String zone, LocalDate du, LocalDate au, long inscriptions,
                          long niuGeneres, long enCours, long echouees, long rejetees, long nonClassees,
-                         long preinscriptions, List<LigneZone> lignes) {
+                         long preinscriptions, Integer delaiMedianH, List<LigneZone> lignes) {
 
     /**
      * Une sous-zone et ses chiffres sur la période.
@@ -34,9 +36,16 @@ public record Territoire(String perimetre, String zone, LocalDate du, LocalDate 
      * @param horsReferentiel vrai pour la zone qui regroupe les centres absents du référentiel (affichée seulement si
      *                        elle a des inscriptions ou des pré-inscriptions)
      * @param preinscriptions pré-inscriptions dont la préfecture de résidence déclarée est dans la sous-zone
+     * @param delaiMedianH    délai médian de la réception au NIU dans la sous-zone, en heures ; null sans NIU
      */
     public record LigneZone(String code, String nom, String niveau, boolean horsReferentiel, long inscriptions,
                             long niuGeneres, long enCours, long echouees, long rejetees, long nonClassees,
-                            long preinscriptions) {
+                            long preinscriptions, Integer delaiMedianH) {
+
+        /** La même ligne, avec son délai médian. */
+        public LigneZone avecDelai(Integer delai) {
+            return new LigneZone(code, nom, niveau, horsReferentiel, inscriptions, niuGeneres, enCours, echouees,
+                    rejetees, nonClassees, preinscriptions, delai);
+        }
     }
 }

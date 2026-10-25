@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { dateFr, heureFr, jourMoisCourt, jourMoisFr, miseAJourFr, nf, part, pct } from './format';
+import {
+  dateFr,
+  heureFr,
+  jourMoisCourt,
+  jourMoisFr,
+  miseAJourFr,
+  nf,
+  part,
+  pct,
+  dimanche,
+  etiquetteVisible,
+  semaineCourte,
+  semaineDates,
+  semaineFr,
+} from './format';
 
 describe('nf', () => {
   it('sépare les milliers par une espace fine insécable', () => {
@@ -34,5 +48,22 @@ describe('jours d’une semaine', () => {
     expect(jourMoisFr('2026-01-05')).toBe('5 janvier');
     expect(jourMoisFr('2025-12-29')).toBe('29 décembre');
     expect(jourMoisCourt('2026-01-05')).toBe('05/01');
+  });
+
+  it('écrit une semaine du lundi au dimanche', () => {
+    expect(dimanche('2026-10-19')).toBe('2026-10-25');
+    expect(semaineCourte('2026-10-19')).toBe('19\u201325/10');
+    expect(semaineCourte('2026-09-28')).toBe('28/09\u201304/10');
+    expect(semaineCourte('2025-12-29')).toBe('29/12\u201304/01');
+    expect(semaineFr('2026-10-19')).toBe('du 19 au 25 octobre');
+    expect(semaineFr('2026-09-28')).toBe('du 28 septembre au 4 octobre');
+    expect(semaineFr('2026-01-05')).toBe('du 5 au 11 janvier');
+    expect(semaineDates('2026-10-19')).toBe('19/10/2026 au 25/10/2026');
+  });
+
+  it('garde toujours visible l’étiquette de la dernière semaine', () => {
+    const visible = etiquetteVisible(12, 2);
+    expect([0, 1, 9, 10, 11].map(visible)).toEqual([false, true, true, false, true]);
+    expect(etiquetteVisible(12, 1)(0)).toBe(true);
   });
 });

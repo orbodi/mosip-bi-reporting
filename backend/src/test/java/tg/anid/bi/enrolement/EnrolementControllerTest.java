@@ -89,10 +89,11 @@ class EnrolementControllerTest {
     @Test
     void renvoieLeTerritoireAvecUneLigneParSousZone() throws Exception {
         when(service.territoire(isNull(), isNull(), eq("SAV"))).thenReturn(new Territoire(
-                "Savanes", "SAV", null, null, 150, 130, 9, 1, 10, 0, 300,
-                List.of(new Territoire.LigneZone("SAV-02", "Tône", "prefecture", false, 100, 90, 4, 1, 5, 0, 180),
+                "Savanes", "SAV", null, null, 150, 130, 9, 1, 10, 0, 300, 7,
+                List.of(new Territoire.LigneZone("SAV-02", "Tône", "prefecture", false, 100, 90, 4, 1, 5, 0, 180,
+                                6),
                         new Territoire.LigneZone("SAV-01", "Cinkassé", "prefecture", false, 50, 40, 5, 0, 5, 0,
-                                120))));
+                                120, null))));
 
         mvc.perform(get("/api/v1/enrolement/territoire").param("zone", "SAV"))
                 .andExpect(status().isOk())
@@ -100,7 +101,9 @@ class EnrolementControllerTest {
                 .andExpect(jsonPath("$.inscriptions").value(150))
                 .andExpect(jsonPath("$.lignes[0].nom").value("Tône"))
                 .andExpect(jsonPath("$.lignes[1].rejetees").value(5))
-                .andExpect(jsonPath("$.lignes[1].horsReferentiel").value(false));
+                .andExpect(jsonPath("$.lignes[1].horsReferentiel").value(false))
+                .andExpect(jsonPath("$.delaiMedianH").value(7))
+                .andExpect(jsonPath("$.lignes[0].delaiMedianH").value(6));
     }
 
     @Test
