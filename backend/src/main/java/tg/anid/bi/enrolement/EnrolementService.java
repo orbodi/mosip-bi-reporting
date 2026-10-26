@@ -28,15 +28,17 @@ public class EnrolementService {
     static final String NATIONALITE_AUTRES = "Autres";
     /** Tranche des pré-inscrits dont le sexe est connu mais pas l'âge (dernière ligne de la pyramide). */
     static final String TRANCHE_AGE_INCONNU = "inconnu";
-    static final Set<String> CLASSEMENTS = Set.of("inscriptions", "echecs", "rejets");
+    static final Set<String> CLASSEMENTS = Set.of("inscriptions", "echecs", "rejets", "remontee");
     /** Tranches d'âge de la pyramide (maquette Enrôlement), de la plus jeune à la plus âgée. */
     static final List<String> TRANCHES_AGE = List.of("0-5", "6-14", "15-18", "19-25", "26-35", "36-45", "46-60",
             "60+");
 
     private final EnrolementRepository repository;
+    private final EnrolementTraitementRepository traitement;
 
-    public EnrolementService(EnrolementRepository repository) {
+    public EnrolementService(EnrolementRepository repository, EnrolementTraitementRepository traitement) {
         this.repository = repository;
+        this.traitement = traitement;
     }
 
     /**
@@ -53,8 +55,10 @@ public class EnrolementService {
         String zone = zone(zoneDemandee);
         String perimetre = nomPerimetre(zone);
         EnrolementRepository.Totaux t = repository.devenir(du, au, zone);
+        // « Dont bloqués » : stock à l'heure du calcul, sans date ; seulement sans période (pages de vue d'ensemble).
+        Long bloques = du == null && au == null ? traitement.bloques(zone) : null;
         return new DevenirInscriptions(perimetre, du, au, t.inscriptions(), t.niuGeneres(), t.enCours(),
-                t.echouees(), t.rejetees(), t.nonClassees());
+                t.echouees(), t.rejetees(), t.nonClassees(), bloques);
     }
 
     /**
@@ -107,11 +111,11 @@ public class EnrolementService {
                 delais.get(EnrolementRepository.ZONE_ENTIERE), lignes);
     }
 
-    /** Les cinq premiers centres de la zone selon le classement : inscriptions, echecs ou rejets. */
+    /** Les cinq premiers centres de la zone selon le classement : inscriptions, echecs, rejets ou remontee. */
     public TopCentres centres(LocalDate du, LocalDate au, String zoneDemandee, String classement) {
         verifierOrdre(du, au);
         if (!CLASSEMENTS.contains(classement)) {
-            throw new RequeteInvalide("Classement inconnu : choisir inscriptions, echecs ou rejets.");
+            throw new RequeteInvalide("Classement inconnu : choisir inscriptions, echecs, rejets ou remontee.");
         }
         String zone = zone(zoneDemandee);
         String perimetre = nomPerimetre(zone);

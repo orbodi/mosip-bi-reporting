@@ -15,7 +15,9 @@ import java.time.LocalDate;
  * @param echouees     traitement en échec technique
  * @param rejetees     inscriptions rejetées
  * @param nonClassees  statut MOSIP sans correspondance validée (doit rester à 0 une fois la règle validée)
+ * @param bloques      dont en cours depuis plus de 30 jours (stock à l'heure du dernier calcul) ; null quand une
+ *                     période est demandée, le stock n'étant pas daté
  */
 public record DevenirInscriptions(String perimetre, LocalDate du, LocalDate au, long inscriptions, long niuGeneres,
-                                  long enCours, long echouees, long rejetees, long nonClassees) {
+                                  long enCours, long echouees, long rejetees, long nonClassees, Long bloques) {
 }

@@ -24,11 +24,12 @@ import tg.anid.bi.commun.RequeteInvalide;
 class EnrolementControllerTest {
 
     private final EnrolementService service = mock(EnrolementService.class);
+    private final EnrolementTraitementService traitement = mock(EnrolementTraitementService.class);
     private MockMvc mvc;
 
     @BeforeEach
     void preparer() {
-        mvc = MockMvcBuilders.standaloneSetup(new EnrolementController(service))
+        mvc = MockMvcBuilders.standaloneSetup(new EnrolementController(service, traitement))
                 .setControllerAdvice(new GestionErreurs())
                 .build();
     }
@@ -38,7 +39,7 @@ class EnrolementControllerTest {
         LocalDate du = LocalDate.parse("2026-10-01");
         LocalDate au = LocalDate.parse("2026-10-15");
         when(service.devenir(eq(du), eq(au), isNull())).thenReturn(
-                new DevenirInscriptions("Ensemble du Togo", du, au, 1000, 933, 40, 1, 26, 0));
+                new DevenirInscriptions("Ensemble du Togo", du, au, 1000, 933, 40, 1, 26, 0, null));
 
         mvc.perform(get("/api/v1/enrolement/devenir").param("du", "2026-10-01").param("au", "2026-10-15"))
                 .andExpect(status().isOk())
@@ -49,6 +50,54 @@ class EnrolementControllerTest {
                 .andExpect(jsonPath("$.echouees").value(1))
                 .andExpect(jsonPath("$.rejetees").value(26))
                 .andExpect(jsonPath("$.nonClassees").value(0));
+    }
+
+    @Test
+    void renvoieLesEtapesDArretEnCoursDelaisEtSynchronisation() throws Exception {
+        when(traitement.etapes(isNull(), isNull(), isNull())).thenReturn(new ArretsParEtape("Ensemble du Togo",
+                null, null, 30, 4,
+                List.of(new ArretsParEtape.Etape("VALIDATE_PACKET", "Validation du paquet", 28),
+                        new ArretsParEtape.Etape(null, "Autres étapes", 2)),
+                List.of(new ArretsParEtape.Etape("OSI_VALIDATE", "Validation opérateur et superviseur", 4))));
+        when(traitement.enCours(isNull())).thenReturn(new PaquetsEnCours("Ensemble du Togo",
+                OffsetDateTime.parse("2026-10-26T08:40:00Z"), 30, 12, 5,
+                List.of(new PaquetsEnCours.Etape("MANUAL_VERIFICATION", "Vérification manuelle", 12, 5))));
+        when(traitement.delais(isNull(), isNull(), isNull())).thenReturn(new DelaisTraitement("Ensemble du Togo",
+                null, null, new DelaisTraitement.Mesure(100, 8, 246, 70),
+                new DelaisTraitement.Mesure(120, 1, 20, 115)));
+        when(traitement.synchronisation(isNull())).thenReturn(new SynchronisationNonRecue("Ensemble du Togo",
+                OffsetDateTime.parse("2026-10-26T08:40:00Z"), 1018, 505, OffsetDateTime.parse("2026-09-01T10:30:00Z")));
+
+        mvc.perform(get("/api/v1/enrolement/etapes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalRejets").value(30))
+                .andExpect(jsonPath("$.rejets[1].code").doesNotExist())
+                .andExpect(jsonPath("$.rejets[1].libelle").value("Autres étapes"))
+                .andExpect(jsonPath("$.echecs[0].inscriptions").value(4));
+        mvc.perform(get("/api/v1/enrolement/en-cours"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.seuilJours").value(30))
+                .andExpect(jsonPath("$.bloques").value(5))
+                .andExpect(jsonPath("$.etapes[0].code").value("MANUAL_VERIFICATION"));
+        mvc.perform(get("/api/v1/enrolement/delais"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.receptionNiu.medianeH").value(8))
+                .andExpect(jsonPath("$.receptionNiu.centile90H").value(246))
+                .andExpect(jsonPath("$.enrolementReception.moins24h").value(115));
+        mvc.perform(get("/api/v1/enrolement/synchronisation"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nonRecus").value(1018))
+                .andExpect(jsonPath("$.plusDe7Jours").value(505));
+    }
+
+    @Test
+    void leClassementRemonteeEstAccepte() throws Exception {
+        when(service.centres(isNull(), isNull(), isNull(), eq("remontee"))).thenReturn(new TopCentres(
+                "Ensemble du Togo", "remontee",
+                List.of(new TopCentres.CentreClasse(1, "10091", "EPP Mandouri", "Kpendjal", "Savanes", 412, 900))));
+        mvc.perform(get("/api/v1/enrolement/centres").param("classement", "remontee"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.centres[0].valeur").value(412));
     }
 
     @Test

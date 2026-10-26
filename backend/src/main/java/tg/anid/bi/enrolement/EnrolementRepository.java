@@ -58,7 +58,6 @@ public class EnrolementRepository {
     public record CasePreinscription(String sexe, String trancheAge, String nationalite, long demandes) {
     }
 
-    /** Nom de la zone (région, préfecture… centre) qui porte ce code. */
     /** Une zone du référentiel : nom et niveau. */
     public record ZoneConnue(String nom, String niveau) {
     }
@@ -94,6 +93,7 @@ public class EnrolementRepository {
                 .list();
     }
 
+    /** Nom de la zone (région, préfecture… centre) qui porte ce code. */
     public Optional<String> nomZone(String code) {
         return jdbc.sql("select nom from bi.zone where code = :code")
                 .param("code", code)
@@ -403,14 +403,24 @@ public class EnrolementRepository {
                               and (cast(:zone as text) is null or f.centre_id in (select id from perimetre))
                             group by f.centre_id
                         ),
+                        retards as (
+                            select s.centre_id, sum(s.paquets) as en_retard
+                            from bi.stock_synchro_non_recue s
+                            where s.anciennete = 'plus_7j'
+                              and (cast(:zone as text) is null or s.centre_id in (select id from perimetre))
+                            group by s.centre_id
+                        ),
                         classes as (
-                            select v.centre_id, v.inscriptions,
+                            select coalesce(v.centre_id, r.centre_id) as centre_id,
+                                   coalesce(v.inscriptions, 0) as inscriptions,
                                    case cast(:classement as text)
-                                       when 'echecs' then v.echouees
-                                       when 'rejets' then v.rejetees
-                                       else v.inscriptions
+                                       when 'echecs' then coalesce(v.echouees, 0)
+                                       when 'rejets' then coalesce(v.rejetees, 0)
+                                       when 'remontee' then coalesce(r.en_retard, 0)
+                                       else coalesce(v.inscriptions, 0)
                                    end as valeur
                             from valeurs v
+                            full join retards r on r.centre_id = v.centre_id
                         )
                         select z.code, z.nom, c.prefecture, c.region, k.valeur, k.inscriptions
                         from classes k

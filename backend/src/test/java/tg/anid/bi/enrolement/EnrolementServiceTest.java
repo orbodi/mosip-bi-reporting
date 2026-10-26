@@ -24,7 +24,8 @@ class EnrolementServiceTest {
     private static final LocalDate MERCREDI_14_JANVIER = LocalDate.parse("2026-01-14");
 
     private final EnrolementRepository repository = mock(EnrolementRepository.class);
-    private final EnrolementService service = new EnrolementService(repository);
+    private final EnrolementTraitementRepository traitement = mock(EnrolementTraitementRepository.class);
+    private final EnrolementService service = new EnrolementService(repository, traitement);
 
     @Test
     void douzeSemainesCompletesJusquAuDernierDimanche() {

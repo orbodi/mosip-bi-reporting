@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class EnrolementController {
 
     private final EnrolementService service;
+    private final EnrolementTraitementService traitement;
 
-    public EnrolementController(EnrolementService service) {
+    public EnrolementController(EnrolementService service, EnrolementTraitementService traitement) {
         this.service = service;
+        this.traitement = traitement;
     }
 
     /**
@@ -81,13 +83,48 @@ public class EnrolementController {
         return service.ageSexe(du, au, zone);
     }
 
-    /** Top des centres : les cinq premiers selon les inscriptions, les échecs ou les rejets. */
+    /** Où s'arrêtent les paquets : rejets et échecs par étape d'arrêt, au jour de réception. */
+    @GetMapping("/etapes")
+    public ArretsParEtape etapes(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone) {
+        return traitement.etapes(du, au, zone);
+    }
+
+    /** Paquets en cours par étape, dont bloqués depuis plus de 30 jours (stock à l'heure du dernier calcul). */
+    @GetMapping("/en-cours")
+    public PaquetsEnCours enCours(
+            @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone) {
+        return traitement.enCours(zone);
+    }
+
+    /** Délais : réception → NIU (médiane, 90e centile) et enrôlement → réception (dont moins de 24 h), en heures. */
+    @GetMapping("/delais")
+    public DelaisTraitement delais(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone) {
+        return traitement.delais(du, au, zone);
+    }
+
+    /** Paquets synchronisés par le poste, pas encore reçus par MOSIP (stock à l'heure du dernier calcul). */
+    @GetMapping("/synchronisation")
+    public SynchronisationNonRecue synchronisation(
+            @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone) {
+        return traitement.synchronisation(zone);
+    }
+
+    /**
+     * Top des centres : les cinq premiers selon les inscriptions, les échecs, les rejets, ou la remontée la plus lente
+     * (paquets synchronisés non reçus depuis plus de 7 jours, stock à l'heure du calcul).
+     */
     @GetMapping("/centres")
     public TopCentres centres(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
             @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone,
-            @RequestParam(defaultValue = "inscriptions") @Pattern(regexp = "inscriptions|echecs|rejets")
+            @RequestParam(defaultValue = "inscriptions") @Pattern(regexp = "inscriptions|echecs|rejets|remontee")
             String classement) {
         return service.centres(du, au, zone, classement);
     }
