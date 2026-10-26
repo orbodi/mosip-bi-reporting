@@ -45,7 +45,8 @@ public class SecuriteConfig {
     CorsConfigurationSource cors(BiProprietes proprietes) {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(proprietes.originesAutorisees());
-        config.setAllowedMethods(List.of("GET", "OPTIONS"));
+        // POST : seulement le suivi d'un dossier (le RID va dans le corps de la requête, jamais dans l'adresse).
+        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,6 +34,25 @@ public class GestionErreurs {
     ProblemDetail horsPortee(AccessDeniedException e) {
         ProblemDetail probleme = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
         probleme.setTitle("Accès refusé");
+        return probleme;
+    }
+
+    /**
+     * Corps de requête illisible (JSON mal formé) : 400, sans journaliser le message, qui pourrait reprendre une partie
+     * du corps (le RID du suivi d'un dossier).
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ProblemDetail corpsIllisible(HttpMessageNotReadableException e) {
+        ProblemDetail probleme = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Le corps de la requête est illisible.");
+        probleme.setTitle("Paramètres invalides");
+        return probleme;
+    }
+
+    @ExceptionHandler(ServiceIndisponible.class)
+    ProblemDetail serviceIndisponible(ServiceIndisponible e) {
+        ProblemDetail probleme = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
+        probleme.setTitle("Service indisponible");
         return probleme;
     }
 

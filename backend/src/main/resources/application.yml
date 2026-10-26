@@ -34,3 +34,6 @@ bi:
   securite:
     active: ${BI_SECURITE_ACTIVE:true}
   origines-autorisees: ${BI_ORIGINES_AUTORISEES:http://localhost:5173}
+  suivi:
+    # Clé de l'empreinte du RID (suivi d'un dossier), la même que la publication : SUIVI_HMAC_CLE de compose/.env.
+    cle: ${SUIVI_HMAC_CLE:}
