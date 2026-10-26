@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import type { LigneZone, Territoire, ZoneParente } from '../../api/client';
 import { useTerritoire } from '../../api/enrolement';
 import { useRegions } from '../../api/meta';
+import { Pagination } from '../../composants/blocs/Pagination';
 import { CARTE_REGIONS, carteRegion } from '../../composants/carte/fondsDeCarte';
 import { INCONNUE, territoireInconnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
+import { paginer, type TaillePage } from '../../lib/pagination';
 import {
   SEUIL_ALERTE_REJET,
   alerteRejet,
@@ -11,6 +14,7 @@ import {
   compteZones,
   enTeteNiveau,
   legendeSousZones,
+  nomPluriel,
   lignesDuTableau,
   nomNiveau,
   tauxNiu,
@@ -114,6 +118,11 @@ export function BlocTerritoire() {
       : undefined;
   const { visibles, vides } = lignesDuTableau(data.lignes ?? [], niveau, { masquerVides: !vide });
   const niveauxLignes = visibles.map((l) => l.niveau);
+  // Pagination (beaucoup de cantons et de localités) : 20 lignes par défaut ; on revient à la page 1 en changeant
+  // de zone (la page retenue ne vaut que pour la zone où elle a été choisie).
+  const [taille, setTaille] = useState<TaillePage>(20);
+  const [pageChoisie, setPageChoisie] = useState({ zone: code, page: 0 });
+  const tranche = paginer(visibles, pageChoisie.zone === code ? pageChoisie.page : 0, taille);
   const preinscriptions = avecPreinscriptions(niveau);
   const regionsComptees = (data.lignes ?? []).filter((l) => !l.horsReferentiel).length;
   const totalNational =
@@ -267,7 +276,7 @@ export function BlocTerritoire() {
               </tr>
             </thead>
             <tbody>
-              {visibles.map((l) => {
+              {tranche.lignes.map((l) => {
                 const alerte = alerteRejet(l);
                 const mele = new Set(niveauxLignes).size > 1;
                 return (
@@ -312,6 +321,20 @@ export function BlocTerritoire() {
               })}
             </tbody>
           </table>
+          <Pagination
+            page={tranche.page}
+            pages={tranche.pages}
+            debut={tranche.debut}
+            fin={tranche.fin}
+            total={tranche.total}
+            taille={taille}
+            quoi={nomPluriel(niveauxLignes)}
+            onPage={(page) => setPageChoisie({ zone: code, page })}
+            onTaille={(t) => {
+              setTaille(t);
+              setPageChoisie({ zone: code, page: 0 });
+            }}
+          />
           {visibles.length === 0 && (
             <p className="texte-2 tableau-zones__note">
               {niveau === 'centre'

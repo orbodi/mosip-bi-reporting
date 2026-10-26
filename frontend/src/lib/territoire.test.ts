@@ -9,6 +9,7 @@ import {
   enTeteNiveau,
   lectureZone,
   legendeSousZones,
+  nomPluriel,
   lignesDuTableau,
   tauxNiu,
   titreTerritoire,
@@ -74,6 +75,8 @@ describe('niveaux du territoire', () => {
     expect(enTeteNiveau(['localite'])).toBe('Localité');
     expect(enTeteNiveau(['localite', 'centre'])).toBe('Zone');
     expect(enTeteNiveau([])).toBe('Zone');
+    expect(nomPluriel(['localite'])).toBe('localités');
+    expect(nomPluriel(['localite', 'centre'])).toBe('sous-zones');
   });
 
   it('garde l’ordre nord-sud des régions et préfectures, trie par inscriptions plus bas, masque les vides', () => {

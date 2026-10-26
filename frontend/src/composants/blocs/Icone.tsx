@@ -320,10 +320,20 @@ export function Drapeau({ libelle }: { libelle?: string }) {
   );
 }
 
-export function Chevron({ bas = false, taille = 14 }: { bas?: boolean; taille?: number }) {
+export function Chevron({
+  bas = false,
+  gauche = false,
+  taille = 14,
+}: {
+  bas?: boolean;
+  /** Pointe vers la gauche (page précédente). */
+  gauche?: boolean;
+  taille?: number;
+}) {
+  const points = bas ? '6 9 12 15 18 9' : gauche ? '15 6 9 12 15 18' : '9 6 15 12 9 18';
   return (
     <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" className="chevron">
-      {bas ? <polyline points="6 9 12 15 18 9" /> : <polyline points="9 6 15 12 9 18" />}
+      <polyline points={points} />
     </svg>
   );
 }

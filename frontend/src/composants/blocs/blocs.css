@@ -739,3 +739,66 @@
 .pyramide__barre--vide {
   background: var(--fond);
 }
+
+/* Pagination sous un tableau de zones (beaucoup de cantons et de localités). */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+  margin-top: var(--e-3);
+}
+.pagination__position {
+  margin: 0;
+}
+.pagination__taille,
+.pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: var(--e-1);
+}
+.pagination__bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 var(--e-2);
+  border: 1px solid var(--trait);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  color: var(--bleu);
+  font: inherit;
+  font-size: var(--t-s);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.pagination__bouton:hover:not(:disabled) {
+  border-color: var(--bleu);
+}
+.pagination__bouton[aria-pressed='true'] {
+  border-color: var(--bleu);
+  background: var(--bleu-clair);
+  font-weight: 600;
+}
+.pagination__bouton[aria-current='page'] {
+  border-color: var(--bleu);
+  background: var(--bleu);
+  color: var(--sur-bleu);
+  font-weight: 600;
+}
+.pagination__bouton:disabled {
+  color: var(--bord-champ);
+  cursor: default;
+}
+.pagination__trou {
+  min-width: 20px;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  .pagination__bouton {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

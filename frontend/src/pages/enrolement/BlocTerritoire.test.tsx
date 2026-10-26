@@ -129,6 +129,36 @@ describe('Territoire', () => {
     ]);
   });
 
+  it('pagine les longues listes : 20 lignes par défaut, puis 10, pages numérotées', async () => {
+    simulerApi();
+    afficher('/enrolement?zone=SAV-02-K2');
+    const utilisateur = userEvent.setup();
+
+    const tableau = within(
+      await (await blocAffiche()).findByRole('table', { name: 'Localités du canton Canton de Dapaong' }),
+    );
+    expect(tableau.getAllByRole('rowheader')).toHaveLength(20);
+    expect(bloc().getByText(/^1–20 sur 25 localités$/)).toBeInTheDocument();
+    const pages = within(bloc().getByRole('navigation', { name: 'Pages du tableau des localités' }));
+    expect(pages.getByRole('button', { name: 'Page précédente' })).toBeDisabled();
+    expect(pages.getByRole('button', { name: 'Page 1' })).toHaveAttribute('aria-current', 'page');
+
+    await utilisateur.click(pages.getByRole('button', { name: 'Page 2' }));
+    expect(tableau.getAllByRole('rowheader').map((c) => c.textContent)).toEqual([
+      'Localité 21',
+      'Localité 22',
+      'Localité 23',
+      'Localité 24',
+      'Localité 25',
+    ]);
+    expect(bloc().getByText(/^21–25 sur 25 localités$/)).toBeInTheDocument();
+
+    await utilisateur.click(bloc().getByRole('button', { name: '10 lignes par page' }));
+    expect(tableau.getAllByRole('rowheader')).toHaveLength(10);
+    expect(bloc().getByText(/^1–10 sur 25 localités$/)).toBeInTheDocument();
+    expect(pages.getByRole('button', { name: 'Page 3' })).toBeInTheDocument();
+  });
+
   it('un ancien lien ?region= ouvre toujours la région', async () => {
     simulerApi();
     afficher('/enrolement?region=SAV');

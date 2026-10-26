@@ -146,8 +146,35 @@ export const TERRITOIRE_CANTON: Territoire = {
   lignes: LIGNES_CANTON,
 };
 
+// Un canton de 25 localités (pagination : 20 par page par défaut), inscriptions décroissantes de 2 500 à 100.
+const LIGNES_CANTON_LONG = Array.from({ length: 25 }, (_, i) => ({
+  ...zone(
+    `SAV-02-L${100 + i}`,
+    `Localité ${String(i + 1).padStart(2, '0')}`,
+    'localite',
+    2500 - i * 100,
+    2000 - i * 80,
+    10,
+  ),
+  preinscriptions: 0,
+}));
+
+export const TERRITOIRE_CANTON_LONG: Territoire = {
+  perimetre: 'Canton de Dapaong',
+  zone: 'SAV-02-K2',
+  niveau: 'canton',
+  ascendants: [
+    { code: 'SAV', nom: 'Savanes', niveau: 'region' },
+    { code: 'SAV-02', nom: 'Tône', niveau: 'prefecture' },
+    { code: 'SAV-02-C2', nom: 'Tône 2', niveau: 'commune' },
+  ],
+  ...totaux(LIGNES_CANTON_LONG),
+  lignes: LIGNES_CANTON_LONG,
+};
+
 const TERRITOIRES: Record<string, Territoire> = {
   SAV: TERRITOIRE_SAVANES,
+  'SAV-02-K2': TERRITOIRE_CANTON_LONG,
   'SAV-02': TERRITOIRE_TONE,
   'SAV-02-K1': TERRITOIRE_CANTON,
 };

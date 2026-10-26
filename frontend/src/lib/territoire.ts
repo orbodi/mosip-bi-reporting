@@ -106,6 +106,12 @@ export function enTeteNiveau(niveauxLignes: string[]): string {
   return distincts.length === 1 && NIVEAUX[distincts[0]] ? majuscule(NIVEAUX[distincts[0]].nom) : 'Zone';
 }
 
+/** « localités », « cantons »… ou « sous-zones » quand les lignes mêlent deux niveaux. */
+export function nomPluriel(niveauxLignes: string[]): string {
+  const distincts = [...new Set(niveauxLignes)];
+  return distincts.length === 1 ? niveau(distincts[0]).pluriel : AUTRE.pluriel;
+}
+
 /** « 1 localité » ou « 12 localités » (« sous-zones » quand les niveaux sont mêlés). */
 export function compteZones(nombre: number, niveauxLignes: string[]): string {
   const distincts = [...new Set(niveauxLignes)];

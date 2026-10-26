@@ -6,9 +6,11 @@ import { useMeta } from '../../api/meta';
 import { ChampChoix, type OptionChoix } from '../../composants/blocs/ChampChoix';
 import { Chevron } from '../../composants/blocs/Icone';
 import { GrandChiffre } from '../../composants/blocs/Indicateur';
+import { Pagination } from '../../composants/blocs/Pagination';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { nf, part, pct } from '../../lib/format';
+import { paginer, type TaillePage } from '../../lib/pagination';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import type { DefinitionPage } from '../pages';
 import {
@@ -168,6 +170,9 @@ function Explorateur() {
   const [chemin, setChemin] = useState<string[]>([]);
   const [par, setPar] = useState<string>('sous');
   const [mode, setMode] = useState<Mode>('n');
+  // Pagination du tableau (beaucoup de cantons, de localités ou de mois) ; l'export CSV garde toutes les lignes.
+  const [taille, setTaille] = useState<TaillePage>(20);
+  const [page, setPage] = useState(0);
 
   const { regions } = useFiltreRegion();
   const meta = useMeta();
@@ -261,6 +266,14 @@ function Explorateur() {
   })();
 
   const totaux = reel && territoire.data ? valeursDe(territoire.data) : choisis.map(() => Number.NaN);
+  // La page revient à 1 quand les lignes changent (autre zone, autre ventilation) : clé des lignes affichées.
+  const cleLignes = `${cleSource}|${parEffectif}|${chemin.join('/')}|${periode}`;
+  const [clePage, setClePage] = useState(cleLignes);
+  const tranche = paginer(lignes, clePage === cleLignes ? page : 0, taille);
+  const allerPage = (p: number) => {
+    setClePage(cleLignes);
+    setPage(p);
+  };
 
   const cellule = (v: number, j: number, ligne: number[]) => {
     if (modeEffectif === 'pt') return pct(part(v, totaux[j]));
@@ -515,7 +528,7 @@ function Explorateur() {
                 </tr>
               </thead>
               <tbody>
-                {lignes.map((l) => (
+                {tranche.lignes.map((l) => (
                   <tr key={l.id}>
                     <th scope="row">
                       {l.ouvrable && territoireOk ? (
@@ -550,6 +563,22 @@ function Explorateur() {
               </tbody>
             </table>
           </div>
+        )}
+        {parEffectif !== 'total' && (
+          <Pagination
+            page={tranche.page}
+            pages={tranche.pages}
+            debut={tranche.debut}
+            fin={tranche.fin}
+            total={tranche.total}
+            taille={taille}
+            quoi="lignes"
+            onPage={allerPage}
+            onTaille={(t) => {
+              setTaille(t);
+              allerPage(0);
+            }}
+          />
         )}
       </Panneau>
     </>
