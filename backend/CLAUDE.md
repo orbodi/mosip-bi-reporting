@@ -28,3 +28,11 @@ Java 21, Spring Boot 4.1, Maven. Package racine `tg.anid.bi`, découpé par doma
 - `mvn spring-boot:run -Dspring-boot.run.profiles=dev,demo` : en plus, deux ans d'inscriptions fictives pour la page
   Enrôlement (`db/demo`) ; base vide ou déjà en démonstration, jamais avec la chaîne temps réel
 - `mvn test` puis `mvn verify` avant de rendre la main quand le backend a changé.
+- Sur le serveur pipeline (sans accès à Maven Central : cache `bi-anid_cache-maven`), depuis `mosip-cdc/compose` :
+  - unitaires : `docker compose -f docker-compose.dashboard.yml run --rm --no-deps api mvn -q -o test` ;
+  - intégration : dans un conteneur Maven simple, **sans** les variables du service `api` (avec `SPRING_FLYWAY_USER`,
+    Flyway ouvre une connexion à part et Testcontainers lui donne une base jetable qui disparaît après les
+    migrations), et sans l'étape jar (plugin absent du cache) :
+    `docker run --rm -v /data/mosip-bi-reporting/backend:/backend -v bi-anid_cache-maven:/root/.m2
+    -v /var/run/docker.sock:/var/run/docker.sock -e TESTCONTAINERS_RYUK_DISABLED=true -w /backend
+    maven:3.9-eclipse-temurin-21 mvn -q -o test-compile failsafe:integration-test failsafe:verify`.

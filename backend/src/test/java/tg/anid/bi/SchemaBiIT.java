@@ -33,7 +33,7 @@ class SchemaBiIT {
 
         assertThat(meta.sources())
                 .extracting(FraicheurSource::source)
-                .containsExactly("enrolement", "cartes", "abis", "idps", "authentifications");
+                .containsExactly("enrolement", "cartes", "abis", "idps", "authentifications", "preinscription");
         assertThat(meta.sources().get(0).premiereDonnee()).hasToString("2024-01-01");
         assertThat(meta.sources().get(0).derniereDonnee()).isNotNull();
     }
