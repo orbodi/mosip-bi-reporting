@@ -97,6 +97,15 @@ export function legendeSousZones(
   return `${majuscule(lignes.pluriel)} ${niveau(niveauZone).de} ${nom}`;
 }
 
+/**
+ * En-tête de la colonne des noms du tableau : le niveau des lignes (« Région », « Préfecture », « Commune »…), ou
+ * « Zone » quand elles mêlent deux niveaux (un centre rattaché directement au canton).
+ */
+export function enTeteNiveau(niveauxLignes: string[]): string {
+  const distincts = [...new Set(niveauxLignes)];
+  return distincts.length === 1 && NIVEAUX[distincts[0]] ? majuscule(NIVEAUX[distincts[0]].nom) : 'Zone';
+}
+
 /** « 1 localité » ou « 12 localités » (« sous-zones » quand les niveaux sont mêlés). */
 export function compteZones(nombre: number, niveauxLignes: string[]): string {
   const distincts = [...new Set(niveauxLignes)];

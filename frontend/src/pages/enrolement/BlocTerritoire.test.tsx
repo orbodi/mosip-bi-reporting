@@ -28,6 +28,8 @@ describe('Territoire', () => {
     ]);
     // Pré-inscriptions, première colonne de chiffres (Savanes : 180 096 dans la simulation).
     expect(tableau.getByRole('columnheader', { name: 'Pré-inscriptions' })).toBeInTheDocument();
+    // La colonne des noms porte le niveau des lignes.
+    expect(tableau.getByRole('columnheader', { name: 'Région' })).toBeInTheDocument();
     expect(within(lignes[0]).getAllByRole('cell')[0].textContent?.replace(/\s/g, ' ')).toBe('180 096');
     // Savanes : 16 072 rejets sur 450 239 inscriptions = 3,6 % → ▲ (seuil 3,5 %).
     expect(within(lignes[0]).getByLabelText('Taux de rejet élevé')).toBeInTheDocument();
@@ -85,6 +87,7 @@ describe('Territoire', () => {
     const communes = within(bloc().getByRole('table', { name: 'Communes de la préfecture Tône' }));
     // Triées par inscriptions ; « Tône 3 », sans inscription, n'est pas affichée mais comptée.
     expect(communes.getAllByRole('rowheader').map((c) => c.textContent)).toEqual(['Tône 2', 'Tône 1']);
+    expect(communes.getByRole('columnheader', { name: 'Commune' })).toBeInTheDocument();
     expect(bloc().getByText(/Le tableau omet 1 commune sans inscription sur la période/)).toBeInTheDocument();
     // Pas de colonne Pré-inscriptions sous la préfecture : elles ne sont situées qu'à la préfecture.
     expect(communes.queryByRole('columnheader', { name: 'Pré-inscriptions' })).not.toBeInTheDocument();
@@ -116,6 +119,7 @@ describe('Territoire', () => {
     expect(tableau.getByRole('button', { name: /Nano/ })).toBeInTheDocument();
     expect(tableau.queryByRole('button', { name: /EPP Nano/ })).not.toBeInTheDocument();
     expect(tableau.getByText('(centre)')).toBeInTheDocument();
+    expect(tableau.getByRole('columnheader', { name: 'Zone' })).toBeInTheDocument();
     const fil = within(bloc().getByRole('navigation', { name: 'Fil d’Ariane du territoire' }));
     expect(fil.getAllByRole('button').map((b) => b.textContent)).toEqual([
       'Togo',

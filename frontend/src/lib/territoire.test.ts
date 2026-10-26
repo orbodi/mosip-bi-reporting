@@ -6,6 +6,7 @@ import {
   classeTauxNiu,
   cleNom,
   compteZones,
+  enTeteNiveau,
   lectureZone,
   legendeSousZones,
   lignesDuTableau,
@@ -68,6 +69,11 @@ describe('niveaux du territoire', () => {
     expect(compteZones(1, ['localite'])).toBe('1 localité');
     expect(compteZones(3, ['localite'])).toBe('3 localités');
     expect(compteZones(1, ['localite', 'centre'])).toBe('1 sous-zone');
+    expect(enTeteNiveau(['region', 'region'])).toBe('Région');
+    expect(enTeteNiveau(['prefecture'])).toBe('Préfecture');
+    expect(enTeteNiveau(['localite'])).toBe('Localité');
+    expect(enTeteNiveau(['localite', 'centre'])).toBe('Zone');
+    expect(enTeteNiveau([])).toBe('Zone');
   });
 
   it('garde l’ordre nord-sud des régions et préfectures, trie par inscriptions plus bas, masque les vides', () => {

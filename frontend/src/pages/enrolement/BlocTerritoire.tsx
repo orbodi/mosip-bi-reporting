@@ -9,6 +9,7 @@ import {
   alerteRejet,
   avecPreinscriptions,
   compteZones,
+  enTeteNiveau,
   legendeSousZones,
   lignesDuTableau,
   nomNiveau,
@@ -235,7 +236,7 @@ export function BlocTerritoire() {
             </caption>
             <thead>
               <tr>
-                <th scope="col">Zone</th>
+                <th scope="col">{enTeteNiveau(niveauxLignes)}</th>
                 {preinscriptions && (
                   <th scope="col" className="tableau__nombre col-secondaire">
                     Pré-inscriptions
