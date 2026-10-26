@@ -40,6 +40,8 @@ describe('Où s’arrêtent les paquets', () => {
 
     const bloc = await blocAffiche();
     const rejets = within(await bloc.findByRole('list', { name: 'Rejetés par étape' }));
+    // La liste existe avant la réponse (vide) : attendre les étapes de l'API.
+    await rejets.findByText('Refus au poste');
     expect(rejets.getAllByRole('listitem').map((l) => l.firstChild?.firstChild?.textContent)).toEqual([
       'Refus au poste',
       'Déduplication démographique',
@@ -58,8 +60,11 @@ describe('Où s’arrêtent les paquets', () => {
 
     const bloc = await blocAffiche();
     const enCours = within(await bloc.findByRole('article', { name: 'En cours' }));
-    expect(await enCours.findByText(/bloqués depuis plus de 30 jours/)).toHaveTextContent(
-      texte(`${nf(59264)} bloqués depuis plus de 30 jours`),
+    // La ligne des bloqués est là avant la réponse, avec 0 : attendre le chiffre de l'API.
+    await waitFor(() =>
+      expect(enCours.getByText(/bloqués depuis plus de 30 jours/)).toHaveTextContent(
+        texte(`${nf(59264)} bloqués depuis plus de 30 jours`),
+      ),
     );
     const manuelle = enCours.getByText('Vérification manuelle').closest('li')!;
     expect(within(manuelle).getByText(/récents/)).toHaveTextContent(

@@ -106,17 +106,23 @@ describe('Devenir des inscriptions', () => {
     afficher('/enrolement');
 
     const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
-    const detail = await bloc.findByText(/bloqués depuis plus de 30 jours/);
-    expect(detail).toHaveTextContent('dont 12 bloqués depuis plus de 30 jours');
-    expect(detail.closest('li')).toHaveTextContent(/^En cours/);
+    // Avant la réponse, la ligne est déjà là avec 0 (valeur inconnue) : attendre le chiffre de l'API.
+    await waitFor(() =>
+      expect(bloc.getByText(/bloqués depuis plus de 30 jours/)).toHaveTextContent(
+        'dont 12 bloqués depuis plus de 30 jours',
+      ),
+    );
+    expect(bloc.getByText(/bloqués depuis plus de 30 jours/).closest('li')).toHaveTextContent(/^En cours/);
   });
 
   it('sans le stock des bloqués (période demandée), n’écrit pas « dont bloqués »', async () => {
     simulerApi({ ...DEVENIR, bloques: null });
     afficher('/enrolement?periode=7j');
 
-    expect(await screen.findByText(nf(40))).toBeInTheDocument();
-    expect(screen.queryByText(/bloqués depuis plus de 30 jours/)).not.toBeInTheDocument();
+    const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
+    expect(await bloc.findByText(nf(40))).toBeInTheDocument();
+    // Le bloc « Où s'arrêtent les paquets » garde sa ligne de bloqués : seule la carte « En cours » est regardée.
+    expect(bloc.queryByText(/bloqués depuis plus de 30 jours/)).not.toBeInTheDocument();
   });
 
   it('signale les inscriptions non classées sans les répartir', async () => {
