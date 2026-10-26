@@ -5,10 +5,29 @@ import { useTopCentres, type ClassementCentres } from '../../api/enrolement';
 import { nf } from '../../lib/format';
 import { usePlageApi } from '../../lib/usePlagePeriode';
 
-const ONGLETS: { id: ClassementCentres; libelle: string; colonne: string }[] = [
-  { id: 'inscriptions', libelle: 'Plus d’enregistrements', colonne: 'Inscriptions' },
-  { id: 'echecs', libelle: 'Plus d’échecs', colonne: 'Échecs' },
-  { id: 'rejets', libelle: 'Plus de rejets', colonne: 'Rejets' },
+interface Onglet {
+  id: ClassementCentres;
+  libelle: string;
+  colonne: string;
+  /** Précision sous l'en-tête de la colonne des valeurs. */
+  precision?: string;
+  vide: string;
+}
+
+const VIDE_PERIODE = 'Aucun centre de ce classement sur la période.';
+
+const ONGLETS: Onglet[] = [
+  { id: 'inscriptions', libelle: 'Plus d’enregistrements', colonne: 'Inscriptions', vide: VIDE_PERIODE },
+  { id: 'echecs', libelle: 'Plus d’échecs', colonne: 'Échecs', vide: VIDE_PERIODE },
+  { id: 'rejets', libelle: 'Plus de rejets', colonne: 'Rejets', vide: VIDE_PERIODE },
+  // Stock à l'heure du calcul : paquets synchronisés par le poste, pas encore reçus par MOSIP après 7 jours.
+  {
+    id: 'remontee',
+    libelle: 'Remontée la plus lente',
+    colonne: 'Paquets en retard',
+    precision: 'synchronisés, non reçus après 7 jours',
+    vide: 'Aucun centre n’a de paquet synchronisé non reçu depuis plus de 7 jours.',
+  },
 ];
 
 const CENTRES_INCONNUS: CentreClasse[] = [1, 2, 3, 4, 5].map((rang) => ({
@@ -21,13 +40,14 @@ const CENTRES_INCONNUS: CentreClasse[] = [1, 2, 3, 4, 5].map((rang) => ({
   inscriptions: Number.NaN,
 }));
 
-function Classement({ classement, colonne }: { classement: ClassementCentres; colonne: string }) {
+function Classement({ onglet }: { onglet: Onglet }) {
+  const classement = onglet.id;
   const { plage, prete } = usePlageApi('enrolement');
   // National : le bloc ne suit pas la zone ouverte dans le bloc Territoire.
   const { data, isPending } = useTopCentres(plage, undefined, classement, prete);
 
   if (data && data.centres.length === 0) {
-    return <p className="texte-2">Aucun centre de ce classement sur la période.</p>;
+    return <p className="texte-2">{onglet.vide}</p>;
   }
   // Sans réponse de l'API, le tableau garde ses cinq rangs, chiffres à 0.
   const centres = data?.centres ?? CENTRES_INCONNUS;
@@ -36,14 +56,20 @@ function Classement({ classement, colonne }: { classement: ClassementCentres; co
       {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
       <table className="tableau tableau-centres">
         <caption className="visuellement-cache">
-          {ONGLETS.find((o) => o.id === classement)?.libelle} : {data?.perimetre ?? 'Ensemble du Togo'}
+          {onglet.libelle} : {data?.perimetre ?? 'Ensemble du Togo'}
         </caption>
         <thead>
           <tr>
             <th scope="col">Rang</th>
             <th scope="col">Centre</th>
             <th scope="col" className="tableau__nombre">
-              {colonne}
+              {onglet.colonne}
+              {onglet.precision && (
+                <>
+                  {' '}
+                  <span className="texte-2 tableau-centres__precision">{onglet.precision}</span>
+                </>
+              )}
             </th>
           </tr>
         </thead>
@@ -68,7 +94,8 @@ function Classement({ classement, colonne }: { classement: ClassementCentres; co
 
 /**
  * Bloc « Top des centres » : les cinq centres qui ont le plus d'inscriptions, d'échecs ou de rejets sur la période,
- * sur tout le Togo. Onglets React Aria : flèches du clavier pour changer de classement.
+ * ou le plus de paquets synchronisés non reçus après 7 jours (remontée la plus lente), sur tout le Togo.
+ * Onglets React Aria : flèches du clavier pour changer de classement.
  */
 export function BlocTopCentres() {
   const [onglet, setOnglet] = useState<ClassementCentres>('inscriptions');
@@ -89,7 +116,7 @@ export function BlocTopCentres() {
         </TabList>
         {ONGLETS.map((o) => (
           <TabPanel key={o.id} id={o.id} className="onglets__panneau">
-            <Classement classement={o.id} colonne={o.colonne} />
+            <Classement onglet={o} />
           </TabPanel>
         ))}
       </Tabs>

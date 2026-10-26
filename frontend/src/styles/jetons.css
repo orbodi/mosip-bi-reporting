@@ -36,11 +36,13 @@
   --serie-3: #0e8a62;
   --rouge-fonce: #8e1f1f;
 
-  /* Couleur fixe par statut d'inscription (maquette, bloc « Devenir des inscriptions ») */
+  /* Couleur fixe par statut d'inscription (maquette, bloc « Devenir des inscriptions ») ; en cours et échoué
+     foncés le 25/10/2026 pour 3:1 sur blanc (3,6:1 et 3,8:1) ; bloqué = en cours sans activité depuis 30 jours. */
   --statut-niu: #1f4e8c;
-  --statut-en-cours: #fab219;
-  --statut-echoue: #ec835a;
+  --statut-en-cours: #b07d00;
+  --statut-echoue: #d2632a;
   --statut-rejete: #d03b3b;
+  --statut-bloque: #6b4a00;
   --statut-non-classe: #7f8c9d;
 
   /* Typographie */

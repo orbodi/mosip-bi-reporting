@@ -101,6 +101,24 @@ describe('Devenir des inscriptions', () => {
     expect(bloc.queryByText('–')).not.toBeInTheDocument();
   });
 
+  it('en cours : dont bloqués depuis plus de 30 jours, quand l’API donne le stock', async () => {
+    simulerApi({ ...DEVENIR, bloques: 12 });
+    afficher('/enrolement');
+
+    const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
+    const detail = await bloc.findByText(/bloqués depuis plus de 30 jours/);
+    expect(detail).toHaveTextContent('dont 12 bloqués depuis plus de 30 jours');
+    expect(detail.closest('li')).toHaveTextContent(/^En cours/);
+  });
+
+  it('sans le stock des bloqués (période demandée), n’écrit pas « dont bloqués »', async () => {
+    simulerApi({ ...DEVENIR, bloques: null });
+    afficher('/enrolement?periode=7j');
+
+    expect(await screen.findByText(nf(40))).toBeInTheDocument();
+    expect(screen.queryByText(/bloqués depuis plus de 30 jours/)).not.toBeInTheDocument();
+  });
+
   it('signale les inscriptions non classées sans les répartir', async () => {
     simulerApi({ ...DEVENIR, niuGeneres: 900, nonClassees: 33 });
     afficher('/enrolement');

@@ -4,11 +4,15 @@ import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import type {
   AgeSexe,
+  ArretsParEtape,
+  DelaisTraitement,
   InscriptionsParSemaine,
   LigneZone,
+  PaquetsEnCours,
   Preinscriptions,
   ProfilPreinscriptions,
   Region,
+  SynchronisationNonRecue,
   Territoire,
   TopCentres,
 } from '../api/client';
@@ -246,6 +250,66 @@ export const CENTRES: Record<string, TopCentres> = {
     ],
   },
   rejets: { perimetre: 'Ensemble du Togo', classement: 'rejets', centres: [] },
+  remontee: {
+    perimetre: 'Ensemble du Togo',
+    classement: 'remontee',
+    centres: [
+      {
+        rang: 1,
+        code: '20004',
+        nom: 'Complexe scolaire Les Lauriers',
+        prefecture: 'Golfe',
+        region: 'Grand Lomé',
+        valeur: 138,
+        inscriptions: 9120,
+      },
+    ],
+  },
+};
+
+/** Étapes d'arrêt : sommes égales aux rejetés (86 496) et échoués (9 218) du bloc Devenir par défaut. */
+export const ETAPES: ArretsParEtape = {
+  perimetre: 'Ensemble du Togo',
+  totalRejets: 86496,
+  totalEchecs: 9218,
+  rejets: [
+    { code: 'REFUS_POSTE', libelle: 'Refus au poste', inscriptions: 50133 },
+    { code: 'DEMOGRAPHIC_VERIFICATION', libelle: 'Déduplication démographique', inscriptions: 20541 },
+    { code: 'BIOGRAPHIC_VERIFICATION', libelle: 'Déduplication biométrique', inscriptions: 14752 },
+    { code: null, libelle: 'Autres étapes', inscriptions: 1070 },
+  ],
+  echecs: [
+    { code: 'UPLOAD_PACKET', libelle: 'Envoi du paquet', inscriptions: 1053 },
+    { code: 'OSI_VALIDATE', libelle: 'Validation opérateur et superviseur', inscriptions: 8165 },
+  ],
+};
+
+/** Paquets en cours : total égal aux en cours (123 639) du bloc Devenir par défaut. */
+export const EN_COURS: PaquetsEnCours = {
+  perimetre: 'Ensemble du Togo',
+  calculeLe: '2026-01-14T11:45:00Z',
+  seuilJours: 30,
+  total: 123639,
+  bloques: 59264,
+  etapes: [
+    { code: 'PACKET_RECEIVER', libelle: 'Réception du paquet', inscriptions: 7476, bloques: 0 },
+    { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', inscriptions: 112618, bloques: 58834 },
+    { code: null, libelle: 'Autres étapes', inscriptions: 3545, bloques: 430 },
+  ],
+};
+
+export const DELAIS: DelaisTraitement = {
+  perimetre: 'Ensemble du Togo',
+  receptionNiu: { paquets: 3058886, medianeH: 8, centile90H: 240, moins24h: 2500000 },
+  enrolementReception: { paquets: 3278239, medianeH: 5, centile90H: 30, moins24h: 3009423 },
+};
+
+export const SYNCHRONISATION: SynchronisationNonRecue = {
+  perimetre: 'Ensemble du Togo',
+  calculeLe: '2026-01-14T11:45:00Z',
+  nonRecus: 932,
+  plusDe7Jours: 505,
+  plusAncienneLe: '2025-01-06T08:00:00Z',
 };
 
 export const PREINSCRIPTIONS: Preinscriptions = {
@@ -320,8 +384,13 @@ const PAR_DEFAUT: Record<string, Reponse> = {
     echouees: 9218,
     rejetees: 86496,
     nonClassees: 0,
+    bloques: 59264,
   },
   '/enrolement/semaines': SEMAINES,
+  '/enrolement/etapes': ETAPES,
+  '/enrolement/en-cours': EN_COURS,
+  '/enrolement/delais': DELAIS,
+  '/enrolement/synchronisation': SYNCHRONISATION,
   '/enrolement/territoire': (url: URL) =>
     TERRITOIRES[url.searchParams.get('zone') ?? ''] ?? TERRITOIRE_NATIONAL,
   '/enrolement/centres': (url: URL) => CENTRES[url.searchParams.get('classement') ?? 'inscriptions'],

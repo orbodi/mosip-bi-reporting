@@ -1,7 +1,8 @@
 /**
  * Types de l'API, générés par openapi-typescript depuis /v3/api-docs (npm run api:types, backend démarré).
  * Amorce écrite à la main pour /api/v1/meta, /api/v1/meta/regions et /api/v1/enrolement/* (devenir, semaines,
- * territoire, centres, preinscriptions, age-sexe) : la régénérer dès que le backend tourne.
+ * territoire, centres, preinscriptions, age-sexe, etapes, en-cours, delais, synchronisation) : la régénérer dès
+ * que le backend tourne.
  * Ne pas modifier à la main ensuite.
  */
 export interface paths {
@@ -140,13 +141,81 @@ export interface paths {
           du?: string;
           au?: string;
           zone?: string;
-          classement?: 'inscriptions' | 'echecs' | 'rejets';
+          classement?: 'inscriptions' | 'echecs' | 'rejets' | 'remontee';
         };
       };
       responses: {
         200: {
           content: {
             'application/json': components['schemas']['TopCentres'];
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/enrolement/etapes': {
+    get: {
+      parameters: {
+        query?: {
+          du?: string;
+          au?: string;
+          zone?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['ArretsParEtape'];
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/enrolement/en-cours': {
+    get: {
+      parameters: {
+        query?: {
+          zone?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['PaquetsEnCours'];
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/enrolement/delais': {
+    get: {
+      parameters: {
+        query?: {
+          du?: string;
+          au?: string;
+          zone?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['DelaisTraitement'];
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/enrolement/synchronisation': {
+    get: {
+      parameters: {
+        query?: {
+          zone?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['SynchronisationNonRecue'];
           };
         };
       };
@@ -188,6 +257,11 @@ export interface components {
       rejetees: number;
       /** Format: int64 */
       nonClassees: number;
+      /**
+       * Format: int64
+       * @description Dont en cours depuis plus de 30 jours (stock), null quand une période est demandée
+       */
+      bloques?: number | null;
     };
     Region: {
       code: string;
@@ -351,6 +425,82 @@ export interface components {
       valeur: number;
       /** Format: int64 */
       inscriptions: number;
+    };
+    ArretsParEtape: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      /** Format: int64 */
+      totalRejets: number;
+      /** Format: int64 */
+      totalEchecs: number;
+      rejets: components['schemas']['EtapeArret'][];
+      echecs: components['schemas']['EtapeArret'][];
+    };
+    EtapeArret: {
+      /** @description Code MOSIP de l'étape (ou REFUS_POSTE), null pour « Autres étapes » */
+      code?: string | null;
+      libelle: string;
+      /** Format: int64 */
+      inscriptions: number;
+    };
+    PaquetsEnCours: {
+      perimetre: string;
+      /** Format: date-time */
+      calculeLe?: string | null;
+      /** Format: int32 */
+      seuilJours: number;
+      /** Format: int64 */
+      total: number;
+      /** Format: int64 */
+      bloques: number;
+      etapes: components['schemas']['EtapeEnCours'][];
+    };
+    EtapeEnCours: {
+      code?: string | null;
+      libelle: string;
+      /** Format: int64 */
+      inscriptions: number;
+      /** Format: int64 */
+      bloques: number;
+    };
+    DelaisTraitement: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      receptionNiu: components['schemas']['Mesure'];
+      enrolementReception: components['schemas']['Mesure'];
+    };
+    Mesure: {
+      /** Format: int64 */
+      paquets: number;
+      /**
+       * Format: int32
+       * @description Borne basse de la classe de la médiane, en heures ; null sans paquet
+       */
+      medianeH?: number | null;
+      /**
+       * Format: int32
+       * @description Borne basse de la classe du 90e centile, en heures ; null sans paquet
+       */
+      centile90H?: number | null;
+      /** Format: int64 */
+      moins24h: number;
+    };
+    SynchronisationNonRecue: {
+      perimetre: string;
+      /** Format: date-time */
+      calculeLe?: string | null;
+      /** Format: int64 */
+      nonRecus: number;
+      /** Format: int64 */
+      plusDe7Jours: number;
+      /** Format: date-time */
+      plusAncienneLe?: string | null;
     };
   };
 }

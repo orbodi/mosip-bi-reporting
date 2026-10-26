@@ -1,6 +1,6 @@
 import { useDevenirInscriptions } from '../../api/enrolement';
 import { Icone } from '../../composants/blocs/Icone';
-import { devenirInconnu, estConnu } from '../../lib/blocsVides';
+import { depuisApi, devenirInconnu, estConnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
 import { usePlagePeriode } from '../../lib/usePlagePeriode';
 import './enrolement.css';
@@ -18,10 +18,13 @@ interface Statut {
   cle: 'niu' | 'en-cours' | 'echoue' | 'rejete' | 'non-classe';
   libelle: string;
   valeur: number;
+  /** Paquets en cours bloqués depuis plus de 30 jours (carte « En cours »). */
+  bloques?: number;
 }
 
 /**
- * Bloc « Devenir des inscriptions » (maquette Enrôlement) : NIU générés, en cours, échoués, rejetés.
+ * Bloc « Devenir des inscriptions » (maquette Enrôlement) : NIU générés, en cours (dont bloqués), échoués,
+ * rejetés.
  * Suit le filtre Période ; relu toutes les 30 s (pipeline temps réel). Contrôle affiché si des statuts MOSIP n'ont
  * pas encore de correspondance validée (« non classées »), jamais réparties d'office.
  */
@@ -39,7 +42,13 @@ export function BlocDevenir() {
   const connu = estConnu(d.inscriptions);
   const statuts: Statut[] = [
     { cle: 'niu', libelle: 'NIU générés', valeur: d.niuGeneres },
-    { cle: 'en-cours', libelle: 'En cours', valeur: d.enCours },
+    // « dont N bloqués » : stock sans date, absent quand une période est demandée (bloques null de l'API).
+    {
+      cle: 'en-cours',
+      libelle: 'En cours',
+      valeur: d.enCours,
+      bloques: !data || data.bloques != null ? depuisApi(data?.bloques) : undefined,
+    },
     { cle: 'echoue', libelle: 'Échoués', valeur: d.echouees },
     { cle: 'rejete', libelle: 'Rejetés', valeur: d.rejetees },
     ...(d.nonClassees > 0
@@ -91,6 +100,11 @@ export function BlocDevenir() {
               </span>
               <span className="chiffre carte-statut__valeur">{nf(s.valeur)}</span>
               <span className="texte-2 carte-statut__part">{pct(part(s.valeur, total))}</span>
+              {s.bloques !== undefined && (
+                <span className="carte-statut__detail">
+                  dont <strong className="chiffre">{nf(s.bloques)}</strong> bloqués depuis plus de 30 jours
+                </span>
+              )}
             </div>
           </li>
         ))}

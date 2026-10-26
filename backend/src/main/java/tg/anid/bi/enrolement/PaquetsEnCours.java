@@ -1,5 +1,6 @@
 package tg.anid.bi.enrolement;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public record PaquetsEnCours(String perimetre, OffsetDateTime calculeLe, int seu
      * @param inscriptions paquets en cours à cette étape
      * @param bloques      dont bloqués
      */
+    @Schema(name = "EtapeEnCours")
     public record Etape(String code, String libelle, long inscriptions, long bloques) {
     }
 }

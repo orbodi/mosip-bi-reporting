@@ -16,6 +16,13 @@ export type AgeSexe = components['schemas']['AgeSexe'];
 export type TrancheAgeSexe = components['schemas']['Tranche'];
 export type ProfilPreinscriptions = components['schemas']['ProfilPreinscriptions'];
 export type NationalitePreinscription = components['schemas']['Nationalite'];
+export type ArretsParEtape = components['schemas']['ArretsParEtape'];
+export type EtapeArret = components['schemas']['EtapeArret'];
+export type PaquetsEnCours = components['schemas']['PaquetsEnCours'];
+export type EtapeEnCours = components['schemas']['EtapeEnCours'];
+export type DelaisTraitement = components['schemas']['DelaisTraitement'];
+export type MesureDelai = components['schemas']['Mesure'];
+export type SynchronisationNonRecue = components['schemas']['SynchronisationNonRecue'];
 
 /**
  * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la

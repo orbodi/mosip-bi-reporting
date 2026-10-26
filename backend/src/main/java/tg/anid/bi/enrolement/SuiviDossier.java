@@ -1,5 +1,6 @@
 package tg.anid.bi.enrolement;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 
 /**
@@ -31,6 +32,7 @@ public record SuiviDossier(String typeDemande, String devenir, boolean bloque, C
      * @param libelle libellé français
      * @param statut  statut MOSIP de la dernière transaction (SUCCESS, FAILED…), null si inconnu
      */
+    @Schema(name = "EtapeSuivi")
     public record Etape(String code, String libelle, String statut) {
     }
 

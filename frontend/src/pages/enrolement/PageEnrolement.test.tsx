@@ -8,7 +8,7 @@ const texte = (t: string) => t.replace(/\s+/g, ' ');
 describe('Page Enrôlement', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('présente les sept blocs dans l’ordre de la maquette', async () => {
+  it('présente les neuf blocs dans l’ordre de la maquette', async () => {
     simulerApi();
     afficher('/enrolement');
 
@@ -18,6 +18,8 @@ describe('Page Enrôlement', () => {
       'Profil des pré-inscrits',
       'Devenir des inscriptions',
       'Inscriptions et NIU par semaine',
+      'Où s’arrêtent les paquets',
+      'Délais de traitement',
       'Territoire : vue nationale',
       'NIU générés par âge et par sexe',
       'Top des centres',

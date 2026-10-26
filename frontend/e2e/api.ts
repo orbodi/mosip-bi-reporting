@@ -111,6 +111,56 @@ const CENTRES: Record<string, unknown[]> = {
   ],
   echecs: [centre(1, '20103', 'EPP Worgou G/A', 'Tône', 'Savanes', 161)],
   rejets: [centre(1, '20105', 'Lycée Nassable', 'Tône', 'Savanes', 412)],
+  remontee: [centre(1, '20104', 'EPP Gbetsogbe, Port autonome', 'Golfe', 'Grand Lomé', 138)],
+};
+
+// Lot 5 : étapes d'arrêt, paquets en cours (dont bloqués), délais, synchronisés non reçus.
+const ETAPES = {
+  perimetre: 'Ensemble du Togo',
+  totalRejets: 158407,
+  totalEchecs: 109010,
+  rejets: [
+    { code: 'REFUS_POSTE', libelle: 'Refus au poste', inscriptions: 90133 },
+    { code: 'DEMOGRAPHIC_VERIFICATION', libelle: 'Déduplication démographique', inscriptions: 37541 },
+    { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', inscriptions: 27680 },
+    { code: 'UIN_GENERATOR', libelle: 'Génération du NIU', inscriptions: 1983 },
+    { code: null, libelle: 'Autres étapes', inscriptions: 1070 },
+  ],
+  echecs: [
+    { code: 'UPLOAD_PACKET', libelle: 'Envoi du paquet', inscriptions: 7114 },
+    { code: 'OSI_VALIDATE', libelle: 'Validation opérateur et superviseur', inscriptions: 100987 },
+    { code: null, libelle: 'Autres étapes', inscriptions: 909 },
+  ],
+};
+const EN_COURS = {
+  perimetre: 'Ensemble du Togo',
+  calculeLe: '2026-01-14T11:45:00Z',
+  seuilJours: 30,
+  total: 64315,
+  bloques: 59264,
+  etapes: [
+    { code: 'PACKET_RECEIVER', libelle: 'Réception du paquet', inscriptions: 2350, bloques: 0 },
+    {
+      code: 'BIOGRAPHIC_VERIFICATION',
+      libelle: 'Déduplication biométrique',
+      inscriptions: 1822,
+      bloques: 308,
+    },
+    { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', inscriptions: 58598, bloques: 58526 },
+    { code: null, libelle: 'Autres étapes', inscriptions: 1545, bloques: 430 },
+  ],
+};
+const DELAIS = {
+  perimetre: 'Ensemble du Togo',
+  receptionNiu: { paquets: 6000000, medianeH: 8, centile90H: 240, moins24h: 4800000 },
+  enrolementReception: { paquets: 6380570, medianeH: 5, centile90H: 30, moins24h: 5858637 },
+};
+const SYNCHRONISATION = {
+  perimetre: 'Ensemble du Togo',
+  calculeLe: '2026-01-14T11:45:00Z',
+  nonRecus: 932,
+  plusDe7Jours: 505,
+  plusAncienneLe: '2025-01-06T08:00:00Z',
 };
 
 // Pyramide de la maquette (en NIU), de la plus jeune à la plus âgée, comme l'API.
@@ -126,6 +176,12 @@ const PYRAMIDE: [string, number, number][] = [
 ];
 
 export async function simulerEnrolement(page: Page) {
+  await page.route('**/api/v1/enrolement/etapes*', (route) => route.fulfill({ json: ETAPES }));
+  await page.route('**/api/v1/enrolement/en-cours*', (route) => route.fulfill({ json: EN_COURS }));
+  await page.route('**/api/v1/enrolement/delais*', (route) => route.fulfill({ json: DELAIS }));
+  await page.route('**/api/v1/enrolement/synchronisation*', (route) =>
+    route.fulfill({ json: SYNCHRONISATION }),
+  );
   await page.route('**/api/v1/enrolement/preinscriptions/profil*', (route) =>
     route.fulfill({
       json: {

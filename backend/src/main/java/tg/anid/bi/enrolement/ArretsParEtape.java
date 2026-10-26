@@ -1,5 +1,6 @@
 package tg.anid.bi.enrolement;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public record ArretsParEtape(String perimetre, LocalDate du, LocalDate au, long 
      * @param libelle      libellé français (seeds/ref_regprc_etapes.csv)
      * @param inscriptions paquets arrêtés à cette étape
      */
+    @Schema(name = "EtapeArret")
     public record Etape(String code, String libelle, long inscriptions) {
     }
 }

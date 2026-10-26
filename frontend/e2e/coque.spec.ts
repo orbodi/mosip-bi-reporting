@@ -37,6 +37,7 @@ const DEVENIR = {
   echouees: 9218,
   rejetees: 86496,
   nonClassees: 0,
+  bloques: 59264,
 };
 
 test.beforeEach(async ({ page }) => {

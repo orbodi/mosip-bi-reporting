@@ -36,6 +36,40 @@ describe('Top des centres', () => {
     ).toBeInTheDocument();
   });
 
+  it('remontée la plus lente : paquets synchronisés non reçus après 7 jours', async () => {
+    const appels = simulerApi();
+    afficher('/enrolement');
+    const utilisateur = userEvent.setup();
+
+    await (await blocAffiche()).findByText('EPP Doumassesse I G/B');
+    await utilisateur.click(bloc().getByRole('tab', { name: 'Remontée la plus lente' }));
+    expect(await (await blocAffiche()).findByText('Complexe scolaire Les Lauriers')).toBeInTheDocument();
+    expect(
+      bloc().getByRole('columnheader', { name: 'Paquets en retard synchronisés, non reçus après 7 jours' }),
+    ).toBeInTheDocument();
+    expect(bloc().getByText('138')).toBeInTheDocument();
+    expect(appels.some((u) => u.searchParams.get('classement') === 'remontee')).toBe(true);
+  });
+
+  it('remontée : sans centre en retard, le dit', async () => {
+    simulerApi({
+      '/enrolement/centres': (url: URL) => ({
+        perimetre: 'Ensemble du Togo',
+        classement: url.searchParams.get('classement'),
+        centres: [],
+      }),
+    });
+    afficher('/enrolement');
+    const utilisateur = userEvent.setup();
+
+    await utilisateur.click((await blocAffiche()).getByRole('tab', { name: 'Remontée la plus lente' }));
+    expect(
+      await (
+        await blocAffiche()
+      ).findByText('Aucun centre n’a de paquet synchronisé non reçu depuis plus de 7 jours.'),
+    ).toBeInTheDocument();
+  });
+
   it('reste national quand une région est ouverte dans le bloc Territoire', async () => {
     const appels = simulerApi();
     afficher('/enrolement?region=GLO');
