@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import type { LigneMotif, MotifsArret } from '../api/client';
-import { borneHauteDelaiH, colonnesArrets, largeurBarre } from './traitement';
+import {
+  borneHauteDelaiH,
+  colonnesArrets,
+  etapeDuMotif,
+  largeurBarre,
+  SOURCE_AUTRES_CAS,
+} from './traitement';
 
 const ligne = (
   stage: string | null,
   motif: string | null,
   inscriptions: number,
   bloques = 0,
+  autresEtapes = 0,
 ): LigneMotif => ({
   motif,
   libelle: motif ? `${motif} (fr)` : 'Autres cas',
@@ -14,6 +21,7 @@ const ligne = (
   piste: motif ? `${motif} (à vérifier)` : null,
   stage,
   stageLibelle: stage ? `${stage} (fr)` : null,
+  autresEtapes,
   inscriptions,
   bloques,
 });
@@ -27,7 +35,7 @@ const MOTIFS: MotifsArret = {
   bloques: 600,
   rejets: [
     ligne('PacketValidatorStage', 'REFUS_SUPERVISEUR', 90),
-    ligne('DemoDedupeStage', 'DOUBLON_ABIS', 55),
+    ligne('DemoDedupeStage', 'DOUBLON_ABIS', 55, 0, 2),
     ligne(null, null, 5),
   ],
   echecs: [ligne('OSIValidatorStage', 'BIOMETRIE_NON_CONCORDANTE', 50)],
@@ -59,17 +67,45 @@ describe('Où s’arrêtent les paquets', () => {
         'REFUS_SUPERVISEUR (MOSIP)',
         'REFUS_SUPERVISEUR (à vérifier)',
       ],
-      ['DOUBLON_ABIS (fr)', 'DemoDedupeStage (fr)', 'DOUBLON_ABIS (MOSIP)', 'DOUBLON_ABIS (à vérifier)'],
-      ['Autres cas', null, null, null],
+      [
+        'DOUBLON_ABIS (fr)',
+        'DemoDedupeStage (fr) et 2\u00a0autres étapes',
+        'DOUBLON_ABIS (MOSIP)',
+        'DOUBLON_ABIS (à vérifier)',
+      ],
+      ['Autres cas', SOURCE_AUTRES_CAS, null, null],
     ]);
     expect(rejets.lignes.map((l) => l.principale)).toEqual([true, false, false]);
     expect(rejets.lignes[1].part).toBeCloseTo(55 / 150);
-    expect(rejets.lignes.map((l) => l.cle)).toEqual([
-      'PacketValidatorStage:REFUS_SUPERVISEUR',
-      'DemoDedupeStage:DOUBLON_ABIS',
-      'autres',
-    ]);
+    expect(rejets.lignes.map((l) => l.cle)).toEqual(['REFUS_SUPERVISEUR', 'DOUBLON_ABIS', 'autres']);
     expect(enCours.lignes[0]).toMatchObject({ principale: true, bloques: 590, valeur: 650 });
+  });
+
+  it('nomme l’étape principale, puis le nombre d’autres étapes où MOSIP pose le motif', () => {
+    expect(etapeDuMotif('Vérification manuelle', 0)).toBe('Vérification manuelle');
+    expect(etapeDuMotif('Vérification manuelle', 1)).toBe('Vérification manuelle et 1\u00a0autre étape');
+    expect(etapeDuMotif('Vérification manuelle', 6)).toBe('Vérification manuelle et 6\u00a0autres étapes');
+    expect(etapeDuMotif(null, 3)).toBeNull();
+    expect(SOURCE_AUTRES_CAS).toBe('Motifs de moins de 1\u00a0% chacun');
+  });
+
+  it('colle « ; » et « : » au mot précédent dans les libellés et les pistes, pas dans le message de MOSIP', () => {
+    const [rejets] = colonnesArrets({
+      ...MOTIFS,
+      rejets: [
+        {
+          ...ligne('OSIValidatorStage', 'IRIS', 10),
+          libelle: 'Création du NIU refusée : donnée invalide',
+          commentaire: 'Biometric data - Iris did not match',
+          piste: 'Iris mal enregistré ; MOSIP ne dit pas laquelle.',
+        },
+      ],
+    }).colonnes;
+    expect(rejets.lignes[0]).toMatchObject({
+      libelle: 'Création du NIU refusée\u00a0: donnée invalide',
+      piste: 'Iris mal enregistré\u00a0; MOSIP ne dit pas laquelle.',
+      commentaire: 'Biometric data - Iris did not match',
+    });
   });
 
   it('« Autres cas » seul en tête n’est pas mis en avant', () => {

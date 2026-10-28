@@ -13,6 +13,7 @@ import {
   semaineCourte,
   semaineDates,
   semaineFr,
+  typographie,
 } from './format';
 
 describe('nf', () => {
@@ -22,6 +23,16 @@ describe('nf', () => {
   });
   it('affiche 0 pour une valeur indisponible', () => {
     expect(nf(Number.NaN)).toBe('0');
+  });
+});
+
+describe('typographie', () => {
+  it('met une espace insécable avant ; : ! ? et dans les guillemets', () => {
+    expect(typographie('Doublon possible : un vérificateur doit trancher ; vite ?')).toBe(
+      'Doublon possible\u00a0: un vérificateur doit trancher\u00a0; vite\u00a0?',
+    );
+    expect(typographie('le « motif »')).toBe('le «\u00a0motif\u00a0»');
+    expect(typographie('Sans ponctuation')).toBe('Sans ponctuation');
   });
 });
 

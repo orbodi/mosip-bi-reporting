@@ -26,6 +26,14 @@ const formatHeure = new Intl.DateTimeFormat('fr-FR', {
   timeZone: FUSEAU,
 });
 
+/**
+ * Ponctuation française d'un texte du catalogue : espace insécable avant « ; : ! ? » et à l'intérieur des guillemets,
+ * pour que le signe ne passe jamais seul en début de ligne.
+ */
+export function typographie(texte: string): string {
+  return texte.replace(/ +([;:!?»])/g, `${ESPACE_INSECABLE}$1`).replace(/« +/g, `«${ESPACE_INSECABLE}`);
+}
+
 const espacesFines = (texte: string) => texte.replace(/[\s\u00a0\u202f]/g, ESPACE_FINE);
 
 /**

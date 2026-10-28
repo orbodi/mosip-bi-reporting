@@ -2,7 +2,10 @@ package tg.anid.bi.enrolement;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
 
@@ -77,8 +80,9 @@ public class EnrolementTraitementService {
     }
 
     /**
-     * Rejets et échecs (sur la période) et paquets en cours (stock) par étape et motif, dans la zone : du plus fréquent
-     * au moins fréquent, les lignes de moins de 1 % du devenir regroupées en « Autres cas ».
+     * Rejets et échecs (sur la période) et paquets en cours (stock) par motif, dans la zone : une ligne par motif toutes
+     * étapes confondues, du plus fréquent au moins fréquent, les motifs de moins de 1 % du devenir regroupés en
+     * « Autres cas ».
      */
     public MotifsArret motifs(LocalDate du, LocalDate au, String zoneDemandee) {
         verifierOrdre(du, au);
@@ -94,16 +98,43 @@ public class EnrolementTraitementService {
                 rejets, echecs, enCours);
     }
 
-    /** Lignes d'un devenir, dans l'ordre reçu (du plus fréquent au moins fréquent), petites lignes regroupées. */
+    /**
+     * Un motif d'un devenir, toutes étapes confondues : la ligne de son étape la plus fréquente, le nombre d'étapes où
+     * il est posé et ses paquets.
+     */
+    private record MotifFusionne(EnrolementTraitementRepository.Motif principale, int etapes, long inscriptions,
+                                 long bloques) {
+
+        MotifFusionne(EnrolementTraitementRepository.Motif m) {
+            this(m, 1, m.inscriptions(), m.bloques());
+        }
+
+        MotifFusionne avec(MotifFusionne autre) {
+            EnrolementTraitementRepository.Motif p = autre.principale().inscriptions() > principale.inscriptions()
+                    ? autre.principale() : principale;
+            return new MotifFusionne(p, etapes + autre.etapes(), inscriptions + autre.inscriptions(),
+                    bloques + autre.bloques());
+        }
+    }
+
+    /**
+     * Lignes d'un devenir : une par motif (étapes additionnées, étape principale = la plus fréquente), du plus
+     * fréquent au moins fréquent (à égalité, l'ordre du dépôt), petits motifs regroupés.
+     */
     private static List<MotifsArret.Ligne> lignesMotif(List<EnrolementTraitementRepository.Motif> motifs,
                                                        String devenir) {
-        return regrouper(motifs.stream().filter(m -> devenir.equals(m.devenir())).toList(),
-                EnrolementTraitementRepository.Motif::inscriptions,
-                m -> new MotifsArret.Ligne(m.motif(), m.motifLibelle(), m.motifCommentaire(), m.motifPiste(),
-                        m.stage(), m.stageLibelle(), m.inscriptions(), m.bloques()),
-                reste -> new MotifsArret.Ligne(null, AUTRES_CAS, null, null, null, null,
-                        somme(reste, EnrolementTraitementRepository.Motif::inscriptions),
-                        somme(reste, EnrolementTraitementRepository.Motif::bloques)));
+        Map<String, MotifFusionne> parMotif = new LinkedHashMap<>();
+        motifs.stream().filter(m -> devenir.equals(m.devenir()))
+                .forEach(m -> parMotif.merge(m.motif(), new MotifFusionne(m), MotifFusionne::avec));
+        List<MotifFusionne> tries = parMotif.values().stream()
+                .sorted(Comparator.comparingLong(MotifFusionne::inscriptions).reversed())
+                .toList();
+        return regrouper(tries, MotifFusionne::inscriptions,
+                f -> new MotifsArret.Ligne(f.principale().motif(), f.principale().motifLibelle(),
+                        f.principale().motifCommentaire(), f.principale().motifPiste(), f.principale().stage(),
+                        f.principale().stageLibelle(), f.etapes() - 1, f.inscriptions(), f.bloques()),
+                reste -> new MotifsArret.Ligne(null, AUTRES_CAS, null, null, null, null, 0,
+                        somme(reste, MotifFusionne::inscriptions), somme(reste, MotifFusionne::bloques)));
     }
 
     /** Paquets en cours depuis plus de 30 jours dans la zone : « dont bloqués » du bloc « Devenir ». */

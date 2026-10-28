@@ -76,7 +76,8 @@ class TraitementIT {
                      as v (code, etape, libelle, ordre, anciennete, n)
                 join bi.zone z on z.code = v.code
                 """).update();
-        // Motifs (V9), mêmes totaux : rejetés 10 (Tône, 05/01) + 2 (Kozah, 07/01), échoués 4, en cours 6 + 3.
+        // Motifs (V9), mêmes totaux : rejetés 10 (Tône, 05/01) + 2 (Kozah, 07/01), échoués 4, en cours 6 + 3. Le refus
+        // de Kozah est posé à une autre étape que celui de Tône : une seule ligne de motif, deux étapes.
         jdbc.sql("""
                 insert into bi.fait_arret_motif_jour (jour, centre_id, type_demande, devenir, stage, stage_libelle,
                                                       stage_ordre, motif, motif_libelle, motif_commentaire,
@@ -92,8 +93,9 @@ class TraitementIT {
                              (date '2026-01-05', '10011', 'echoue', 'OSIValidatorStage', 'Validation de l''agent', 45,
                               'BIOMETRIE_NON_CONCORDANTE', 'Vérification biométrique non concordante',
                               'Biometric data did not match', 4),
-                             (date '2026-01-07', '10021', 'rejete', 'PacketValidatorStage', 'Validation du paquet', 30,
-                              'REFUS_SUPERVISEUR', 'Refusé par le superviseur du centre', 'Rejected by Supervisor', 2))
+                             (date '2026-01-07', '10021', 'rejete', 'DemoDedupeStage', 'Déduplication démographique',
+                              50, 'REFUS_SUPERVISEUR', 'Refusé par le superviseur du centre', 'Rejected by Supervisor',
+                              2))
                      as v (jour, code, devenir, stage, stage_libelle, ordre, motif, libelle, commentaire, n)
                 join bi.zone z on z.code = v.code
                 """).update();
@@ -184,14 +186,21 @@ class TraitementIT {
         MotifsArret togo = traitement.motifs(null, null, null);
         DevenirInscriptions d = service.devenir(null, null, null);
 
-        // Rejetés : Refus par le superviseur (7 + 2 = 9) puis doublon ABIS (3), du plus fréquent au moins fréquent.
+        // Rejetés : Refus par le superviseur (7 + 2 = 9, deux étapes) puis doublon ABIS (3), du plus fréquent au moins
+        // fréquent.
         assertThat(togo.rejets()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::inscriptions)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("REFUS_SUPERVISEUR", 9L),
                         org.assertj.core.groups.Tuple.tuple("DOUBLON_ABIS", 3L));
         assertThat(togo.rejets().getFirst().commentaire()).isEqualTo("Rejected by Supervisor");
         assertThat(togo.rejets().getFirst().piste()).isEqualTo("La personne doit se réenrôler.");
         assertThat(togo.enCours().getFirst().piste()).isNull();
-        assertThat(togo.rejets().getFirst().stageLibelle()).isEqualTo("Validation du paquet");
+        // Étape principale : Validation du paquet (7), et une autre étape (Déduplication démographique, 2).
+        assertThat(togo.rejets().getFirst()).extracting(MotifsArret.Ligne::stageLibelle,
+                        MotifsArret.Ligne::autresEtapes)
+                .containsExactly("Validation du paquet", 1);
+        assertThat(traitement.motifs(null, null, "KAR").rejets().getFirst()).extracting(
+                        MotifsArret.Ligne::stageLibelle, MotifsArret.Ligne::autresEtapes)
+                .containsExactly("Déduplication démographique", 0);
         assertThat(togo.totalRejets()).isEqualTo(d.rejetees()).isEqualTo(12);
         assertThat(togo.totalEchecs()).isEqualTo(d.echouees()).isEqualTo(4);
         assertThat(togo.totalEnCours()).isEqualTo(d.enCours()).isEqualTo(9);

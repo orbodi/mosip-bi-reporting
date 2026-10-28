@@ -58,9 +58,13 @@ describe('Où s’arrêtent les paquets', () => {
     expect(premiere).toHaveTextContent(
       'À vérifier : Le superviseur a refusé le paquet au poste ; MOSIP ne transmet pas sa raison.',
     );
-    // « Autres cas » : ni étape, ni message, ni piste.
+    // Un motif posé à plusieurs étapes : une seule ligne, l'étape principale et le nombre des autres.
+    expect(rejets.getAllByRole('listitem')[2]).toHaveTextContent(
+      'Vérification manuelle et 6 autres étapes · Match Found by Manual Verifier',
+    );
+    // « Autres cas » : ce que la ligne regroupe, ni message ni piste.
     const autres = rejets.getAllByRole('listitem')[3];
-    expect(autres.querySelector('.etape-arret__source')).toBeEmptyDOMElement();
+    expect(autres.querySelector('.etape-arret__source')).toHaveTextContent('Motifs de moins de 1 % chacun');
     expect(within(autres).queryByText(/À vérifier/)).not.toBeInTheDocument();
   });
 

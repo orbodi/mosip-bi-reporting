@@ -2,6 +2,7 @@ package tg.anid.bi.enrolement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -104,15 +105,21 @@ class EnrolementTraitementServiceTest {
                 motif("en_cours", "UinGeneratorStage", "ERREUR_TECHNIQUE", 2, 2),
                 motif("echoue", "OSIValidatorStage", "BIOMETRIE_NON_CONCORDANTE", 90, 0),
                 motif("echoue", "PacketUploaderStage", "PAQUET_PERDU", 10, 0),
-                motif("rejete", "PacketValidatorStage", "REFUS_SUPERVISEUR", 600, 0),
-                motif("rejete", "DemoDedupeStage", "DOUBLON_ABIS", 395, 0),
-                motif("rejete", "BioDedupeStage", "DOUBLON_VERIFICATEUR", 5, 0)));
+                motif("rejete", "PacketValidatorStage", "REFUS_SUPERVISEUR", 425, 0),
+                motif("rejete", "DemoDedupeStage", "DOUBLON_ABIS", 285, 0),
+                motif("rejete", "ManualVerificationStage", "DOUBLON_VERIFICATEUR", 280, 0),
+                motif("rejete", "BioDedupeStage", "DOUBLON_VERIFICATEUR", 5, 0),
+                motif("rejete", "DemoDedupeStage", "DOUBLON_VERIFICATEUR", 5, 0)));
 
         MotifsArret m = service.motifs(null, null, null);
 
-        // Rejetés : une seule petite ligne (5 sur 1 000) garde son motif.
-        assertThat(m.rejets()).extracting(MotifsArret.Ligne::motif)
-                .containsExactly("REFUS_SUPERVISEUR", "DOUBLON_ABIS", "DOUBLON_VERIFICATEUR");
+        // Rejetés : une ligne par motif. Le doublon du vérificateur, posé à trois étapes (280 + 5 + 5), compte 290 et
+        // passe devant le doublon ABIS (285) ; ses deux petites parts ne vont pas dans « Autres cas ».
+        assertThat(m.rejets()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::inscriptions,
+                        MotifsArret.Ligne::stage, MotifsArret.Ligne::autresEtapes)
+                .containsExactly(tuple("REFUS_SUPERVISEUR", 425L, "PacketValidatorStage", 0),
+                        tuple("DOUBLON_VERIFICATEUR", 290L, "ManualVerificationStage", 2),
+                        tuple("DOUBLON_ABIS", 285L, "DemoDedupeStage", 0));
         assertThat(m.rejets().getFirst()).extracting(MotifsArret.Ligne::libelle, MotifsArret.Ligne::commentaire,
                         MotifsArret.Ligne::piste, MotifsArret.Ligne::stage, MotifsArret.Ligne::stageLibelle)
                 .containsExactly("REFUS_SUPERVISEUR (fr)", "REFUS_SUPERVISEUR (MOSIP)",
@@ -123,6 +130,7 @@ class EnrolementTraitementServiceTest {
         assertThat(m.enCours().getLast()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::piste,
                         MotifsArret.Ligne::stage, MotifsArret.Ligne::inscriptions, MotifsArret.Ligne::bloques)
                 .containsExactly(null, null, null, 5L, 3L);
+        assertThat(m.enCours().getLast().autresEtapes()).isZero();
         // Totaux = sommes des lignes (contrôle avec le bloc « Devenir »).
         assertThat(m.totalRejets()).isEqualTo(1000);
         assertThat(m.totalEchecs()).isEqualTo(100);

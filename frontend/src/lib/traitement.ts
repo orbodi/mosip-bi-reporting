@@ -1,15 +1,18 @@
 import type { LigneMotif, MotifsArret } from '../api/client';
 import { estConnu, INCONNUE } from './blocsVides';
-import { part } from './format';
+import { nf, part, typographie } from './format';
 
 export type CleArret = 'rejete' | 'echoue' | 'en-cours';
 
 export interface LigneArret {
-  /** Clé React : étape et motif, « autres » pour le regroupement « Autres cas ». */
+  /** Clé React : le motif, « autres » pour le regroupement « Autres cas ». */
   cle: string;
   /** Motif en français (« Rejeté par le superviseur du centre »). */
   libelle: string;
-  /** Étape de traitement en français, null pour « Autres cas ». */
+  /**
+   * Étape principale en français, suivie du nombre d'autres étapes où MOSIP pose le motif (« Vérification manuelle
+   * et 6 autres étapes ») ; pour « Autres cas », ce que la ligne regroupe.
+   */
   etape: string | null;
   /** Message type de MOSIP pour ce motif (catalogue), null si aucun. */
   commentaire: string | null;
@@ -35,11 +38,22 @@ export interface ColonneArret {
   lignes: LigneArret[];
 }
 
+/** Seuil des petits motifs regroupés par l'API (EnrolementTraitementService.PART_MINIMALE_POURCENT). */
+export const SOURCE_AUTRES_CAS = 'Motifs de moins de 1\u00a0% chacun';
+
+/** « Vérification manuelle », « Vérification manuelle et 1 autre étape », « … et 6 autres étapes ». */
+export function etapeDuMotif(stageLibelle: string | null | undefined, autresEtapes: number): string | null {
+  if (!stageLibelle) return null;
+  if (autresEtapes <= 0) return stageLibelle;
+  const autres = autresEtapes === 1 ? 'autre étape' : 'autres étapes';
+  return `${stageLibelle} et ${nf(autresEtapes)}\u00a0${autres}`;
+}
+
 /**
  * Colonnes du bloc « Où s'arrêtent les paquets » (GET /enrolement/motifs) : rejetés, échoués, en cours, chacune avec
- * ses lignes étape × motif dans l'ordre de l'API (du plus fréquent au moins fréquent, « Autres cas » en dernier). Les
- * paquets sans NIU sont la somme des trois totaux. Sans réponse de l'API, la colonne garde son titre, total inconnu
- * (affiché 0) et aucune ligne.
+ * une ligne par motif (toutes étapes confondues) dans l'ordre de l'API (du plus fréquent au moins fréquent, « Autres
+ * cas » en dernier). Libellés et pistes avec la ponctuation française. Les paquets sans NIU sont la somme des trois
+ * totaux. Sans réponse de l'API, la colonne garde son titre, total inconnu (affiché 0) et aucune ligne.
  */
 export function colonnesArrets(motifs?: MotifsArret): { sansNiu: number; colonnes: ColonneArret[] } {
   const brutes: { cle: CleArret; titre: string; total: number; bloques: number; lignes: LigneMotif[] }[] = [
@@ -75,11 +89,11 @@ export function colonnesArrets(motifs?: MotifsArret): { sansNiu: number; colonne
       part: part(c.total, sansNiu),
       bloques: c.bloques,
       lignes: c.lignes.map((l, i) => ({
-        cle: l.motif ? `${l.stage ?? ''}:${l.motif}` : 'autres',
-        libelle: l.libelle,
-        etape: l.stageLibelle ?? null,
+        cle: l.motif ?? 'autres',
+        libelle: typographie(l.libelle),
+        etape: l.motif ? etapeDuMotif(l.stageLibelle, l.autresEtapes) : SOURCE_AUTRES_CAS,
         commentaire: l.commentaire ?? null,
-        piste: l.piste ?? null,
+        piste: l.piste ? typographie(l.piste) : null,
         valeur: l.inscriptions,
         bloques: l.bloques,
         part: part(l.inscriptions, c.total),

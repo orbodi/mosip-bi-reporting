@@ -494,9 +494,14 @@ export interface components {
       commentaire?: string | null;
       /** @description Ce qu'il faut vérifier pour ce motif (catalogue), null pour « Autres cas » */
       piste?: string | null;
-      /** @description Étape de traitement de MOSIP (reg_stage_name), null pour « Autres cas » */
+      /** @description Étape principale de MOSIP (reg_stage_name), celle qui compte le plus de paquets pour ce motif ; null pour « Autres cas » */
       stage?: string | null;
       stageLibelle?: string | null;
+      /**
+       * Format: int32
+       * @description Nombre d'autres étapes où MOSIP pose ce motif (0 si une seule, et pour « Autres cas »)
+       */
+      autresEtapes: number;
       /** Format: int64 */
       inscriptions: number;
       /** Format: int64 */
