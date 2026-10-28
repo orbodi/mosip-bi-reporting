@@ -3,9 +3,11 @@ package tg.anid.bi.enrolement;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
 
@@ -99,21 +101,28 @@ public class EnrolementTraitementService {
     }
 
     /**
-     * Un motif d'un devenir, toutes étapes confondues : la ligne de son étape la plus fréquente, le nombre d'étapes où
-     * il est posé et ses paquets.
+     * Un motif d'un devenir, toutes étapes confondues : la ligne de son étape la plus fréquente, les étapes où il est
+     * posé (par leur nom en français : MOSIP donne deux codes, PacketValidatorStage et VALIDATE_PACKET, à la même
+     * étape « Validation du paquet ») et ses paquets.
      */
-    private record MotifFusionne(EnrolementTraitementRepository.Motif principale, int etapes, long inscriptions,
-                                 long bloques) {
+    private record MotifFusionne(EnrolementTraitementRepository.Motif principale, Set<String> etapes,
+                                 long inscriptions, long bloques) {
 
         MotifFusionne(EnrolementTraitementRepository.Motif m) {
-            this(m, 1, m.inscriptions(), m.bloques());
+            this(m, Set.of(nomEtape(m)), m.inscriptions(), m.bloques());
         }
 
         MotifFusionne avec(MotifFusionne autre) {
             EnrolementTraitementRepository.Motif p = autre.principale().inscriptions() > principale.inscriptions()
                     ? autre.principale() : principale;
-            return new MotifFusionne(p, etapes + autre.etapes(), inscriptions + autre.inscriptions(),
+            Set<String> toutes = new HashSet<>(etapes);
+            toutes.addAll(autre.etapes());
+            return new MotifFusionne(p, Set.copyOf(toutes), inscriptions + autre.inscriptions(),
                     bloques + autre.bloques());
+        }
+
+        private static String nomEtape(EnrolementTraitementRepository.Motif m) {
+            return m.stageLibelle() != null ? m.stageLibelle() : String.valueOf(m.stage());
         }
     }
 
@@ -132,7 +141,7 @@ public class EnrolementTraitementService {
         return regrouper(tries, MotifFusionne::inscriptions,
                 f -> new MotifsArret.Ligne(f.principale().motif(), f.principale().motifLibelle(),
                         f.principale().motifCommentaire(), f.principale().motifPiste(), f.principale().stage(),
-                        f.principale().stageLibelle(), f.etapes() - 1, f.inscriptions(), f.bloques()),
+                        f.principale().stageLibelle(), f.etapes().size() - 1, f.inscriptions(), f.bloques()),
                 reste -> new MotifsArret.Ligne(null, AUTRES_CAS, null, null, null, null, 0,
                         somme(reste, MotifFusionne::inscriptions), somme(reste, MotifFusionne::bloques)));
     }

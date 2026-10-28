@@ -103,7 +103,10 @@ class EnrolementTraitementServiceTest {
                 motif("en_cours", "PacketReceiverStage", "RECU_EN_ATTENTE", 95, 0),
                 motif("en_cours", "FmsStage", "ETAPE_FRANCHIE", 3, 1),
                 motif("en_cours", "UinGeneratorStage", "ERREUR_TECHNIQUE", 2, 2),
-                motif("echoue", "OSIValidatorStage", "BIOMETRIE_NON_CONCORDANTE", 90, 0),
+                motif("echoue", "OSIValidatorStage", "BIOMETRIE_NON_CONCORDANTE", 88, 0),
+                // Deux codes MOSIP pour la même étape (même nom en français) : pas une « autre étape ».
+                new EnrolementTraitementRepository.Motif("echoue", "OSI_VALIDATE", "OSIValidatorStage (fr)", 45,
+                        "BIOMETRIE_NON_CONCORDANTE", "BIOMETRIE_NON_CONCORDANTE (fr)", null, null, 2, 0),
                 motif("echoue", "PacketUploaderStage", "PAQUET_PERDU", 10, 0),
                 motif("rejete", "PacketValidatorStage", "REFUS_SUPERVISEUR", 425, 0),
                 motif("rejete", "DemoDedupeStage", "DOUBLON_ABIS", 285, 0),
@@ -124,6 +127,9 @@ class EnrolementTraitementServiceTest {
                         MotifsArret.Ligne::piste, MotifsArret.Ligne::stage, MotifsArret.Ligne::stageLibelle)
                 .containsExactly("REFUS_SUPERVISEUR (fr)", "REFUS_SUPERVISEUR (MOSIP)",
                         "REFUS_SUPERVISEUR (à vérifier)", "PacketValidatorStage", "PacketValidatorStage (fr)");
+        assertThat(m.echecs().getFirst()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::inscriptions,
+                        MotifsArret.Ligne::stage, MotifsArret.Ligne::autresEtapes)
+                .containsExactly("BIOMETRIE_NON_CONCORDANTE", 90L, "OSIValidatorStage", 0);
         // En cours : deux petites lignes (3 et 2 sur 1 000) regroupées en « Autres cas », bloqués compris.
         assertThat(m.enCours()).extracting(MotifsArret.Ligne::libelle)
                 .containsExactly("FILE_VERIF_MANUELLE (fr)", "RECU_EN_ATTENTE (fr)", "Autres cas");
