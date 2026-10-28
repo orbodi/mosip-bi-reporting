@@ -1,10 +1,10 @@
-import { useEnCours, useEtapes } from '../../api/enrolement';
+import { useMotifs } from '../../api/enrolement';
 import { nf, pct } from '../../lib/format';
 import { colonnesArrets, largeurBarre, type ColonneArret, type LigneArret } from '../../lib/traitement';
 import { usePlageApi } from '../../lib/usePlagePeriode';
 import './enrolement.css';
 
-/** Seuil des paquets bloqués quand l'API ne l'a pas encore donné (PaquetsEnCours.seuilJours). */
+/** Seuil des paquets bloqués quand l'API ne l'a pas encore donné (MotifsArret.seuilJours). */
 const SEUIL_JOURS = 30;
 
 function Piste({ ligne, colonne }: { ligne: LigneArret; colonne: ColonneArret }) {
@@ -54,7 +54,7 @@ function Colonne({ colonne, seuil }: { colonne: ColonneArret; seuil: number }) {
           </p>
         )}
       </header>
-      <ul className="arret__etapes" aria-label={`${colonne.titre} par étape`}>
+      <ul className="arret__etapes" aria-label={`${colonne.titre} par motif`}>
         {colonne.lignes.map((l) => (
           <li key={l.cle} className={`etape-arret${l.principale ? ' etape-arret--principale' : ''}`}>
             <div className="etape-arret__ligne">
@@ -62,7 +62,15 @@ function Colonne({ colonne, seuil }: { colonne: ColonneArret; seuil: number }) {
               <span className="etape-arret__valeur chiffre">{nf(l.valeur)}</span>
             </div>
             <div className="etape-arret__ligne etape-arret__ligne--2">
-              {l.code ? <span className="etape-arret__code">{l.code}</span> : <span />}
+              <span className="etape-arret__source">
+                {l.etape}
+                {l.etape && l.commentaire && ' · '}
+                {l.commentaire && (
+                  <span className="etape-arret__commentaire" lang="en">
+                    {l.commentaire}
+                  </span>
+                )}
+              </span>
               <span className="etape-arret__pct chiffre">{pct(l.part)}</span>
             </div>
             <Piste ligne={l} colonne={colonne} />
@@ -96,16 +104,16 @@ function Colonne({ colonne, seuil }: { colonne: ColonneArret; seuil: number }) {
 }
 
 /**
- * Bloc « Où s'arrêtent les paquets » : pour chaque paquet sans NIU, l'étape du traitement où il s'est arrêté
- * (rejetés, échoués : GET /enrolement/etapes) ou où il attend (en cours, dont bloqués : GET /enrolement/en-cours),
- * dans l'ordre du traitement. National. Les barres sont la part de la colonne ; les nombres sont écrits à côté.
+ * Bloc « Où s'arrêtent les paquets » (décision du 26/10/2026) : pour chaque paquet sans NIU, le motif donné par MOSIP
+ * (status_comment, traduit par le catalogue des motifs) et l'étape de traitement, du plus fréquent au moins fréquent,
+ * pour les rejetés, les échoués et les en cours dont bloqués (GET /enrolement/motifs). National. Les barres sont la
+ * part de la colonne ; les nombres sont écrits à côté.
  */
 export function BlocArrets() {
   const { plage, prete } = usePlageApi('enrolement');
-  const etapes = useEtapes(plage, prete);
-  const enCours = useEnCours();
-  const { sansNiu, colonnes } = colonnesArrets(etapes.data, enCours.data);
-  const seuil = enCours.data?.seuilJours ?? SEUIL_JOURS;
+  const { data, isPending } = useMotifs(plage, prete);
+  const { sansNiu, colonnes } = colonnesArrets(data);
+  const seuil = data?.seuilJours ?? SEUIL_JOURS;
 
   return (
     <section className="panneau bloc-pleine-largeur bloc-arrets" aria-labelledby="titre-arrets">
@@ -115,17 +123,15 @@ export function BlocArrets() {
             <h2 id="titre-arrets" className="titre-bloc">
               Où s’arrêtent les paquets
             </h2>
-            <span className="pastille-portee">{etapes.data?.perimetre ?? 'Ensemble du Togo'}</span>
+            <span className="pastille-portee">{data?.perimetre ?? 'Ensemble du Togo'}</span>
           </div>
           <p className="texte-2 bloc__sous-titre">
-            <strong className="chiffre">{nf(sansNiu)}</strong> paquets n’ont pas de NIU. Pour chacun, l’étape
-            du traitement où il s’est arrêté, dans l’ordre du traitement.
+            <strong className="chiffre">{nf(sansNiu)}</strong> paquets n’ont pas de NIU. Pour chacun, le motif
+            donné par MOSIP et l’étape du traitement, du plus fréquent au moins fréquent.
           </p>
         </div>
       </div>
-      {(etapes.isPending || enCours.isPending) && (
-        <p className="texte-2 etat-chargement">Chargement des chiffres…</p>
-      )}
+      {isPending && <p className="texte-2 etat-chargement">Chargement des chiffres…</p>}
       <div className="arrets">
         {colonnes.map((c) => (
           <Colonne key={c.cle} colonne={c} seuil={seuil} />

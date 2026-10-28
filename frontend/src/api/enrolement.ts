@@ -4,13 +4,12 @@ import {
   RAFRAICHISSEMENT_MS,
   lireApi,
   type AgeSexe,
-  type ArretsParEtape,
   type DelaisTraitement,
   type DevenirInscriptions,
   type Preinscriptions,
   type ProfilPreinscriptions,
   type InscriptionsParSemaine,
-  type PaquetsEnCours,
+  type MotifsArret,
   type SynchronisationNonRecue,
   type Territoire,
   type TopCentres,
@@ -86,14 +85,12 @@ export function useAgeSexe(plage: Plage | undefined, zone: string | undefined, a
   return useBlocEnrolement<AgeSexe>('age-sexe', plage, active, { zone });
 }
 
-/** Où s'arrêtent les paquets : rejets et échecs par étape d'arrêt ; national (GET /api/v1/enrolement/etapes). */
-export function useEtapes(plage: Plage | undefined, active = true) {
-  return useBlocEnrolement<ArretsParEtape>('etapes', plage, active);
-}
-
-/** Paquets en cours par étape, dont bloqués ; stock sans période, national (GET /api/v1/enrolement/en-cours). */
-export function useEnCours() {
-  return useBlocEnrolement<PaquetsEnCours>('en-cours', undefined, true);
+/**
+ * Où s'arrêtent les paquets, par étape et motif de MOSIP : rejets et échecs sur la période, en cours dont bloqués
+ * (stock) ; national (GET /api/v1/enrolement/motifs).
+ */
+export function useMotifs(plage: Plage | undefined, active = true) {
+  return useBlocEnrolement<MotifsArret>('motifs', plage, active);
 }
 
 /** Délais de traitement en heures ; national (GET /api/v1/enrolement/delais). */

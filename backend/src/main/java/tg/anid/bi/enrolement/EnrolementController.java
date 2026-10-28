@@ -92,6 +92,18 @@ public class EnrolementController {
         return traitement.etapes(du, au, zone);
     }
 
+    /**
+     * Où s'arrêtent les paquets, par étape et motif (status_comment de MOSIP rangé par le catalogue) : rejets et échecs
+     * au jour de réception, en cours dont bloqués (stock).
+     */
+    @GetMapping("/motifs")
+    public MotifsArret motifs(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone) {
+        return traitement.motifs(du, au, zone);
+    }
+
     /** Paquets en cours par étape, dont bloqués depuis plus de 30 jours (stock à l'heure du dernier calcul). */
     @GetMapping("/en-cours")
     public PaquetsEnCours enCours(

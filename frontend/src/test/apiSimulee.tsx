@@ -4,11 +4,10 @@ import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import type {
   AgeSexe,
-  ArretsParEtape,
   DelaisTraitement,
   InscriptionsParSemaine,
   LigneZone,
-  PaquetsEnCours,
+  MotifsArret,
   Preinscriptions,
   ProfilPreinscriptions,
   Region,
@@ -267,34 +266,104 @@ export const CENTRES: Record<string, TopCentres> = {
   },
 };
 
-/** Étapes d'arrêt : sommes égales aux rejetés (86 496) et échoués (9 218) du bloc Devenir par défaut. */
-export const ETAPES: ArretsParEtape = {
-  perimetre: 'Ensemble du Togo',
-  totalRejets: 86496,
-  totalEchecs: 9218,
-  rejets: [
-    { code: 'REFUS_POSTE', libelle: 'Refus au poste', inscriptions: 50133 },
-    { code: 'DEMOGRAPHIC_VERIFICATION', libelle: 'Déduplication démographique', inscriptions: 20541 },
-    { code: 'BIOGRAPHIC_VERIFICATION', libelle: 'Déduplication biométrique', inscriptions: 14752 },
-    { code: null, libelle: 'Autres étapes', inscriptions: 1070 },
-  ],
-  echecs: [
-    { code: 'UPLOAD_PACKET', libelle: 'Envoi du paquet', inscriptions: 1053 },
-    { code: 'OSI_VALIDATE', libelle: 'Validation opérateur et superviseur', inscriptions: 8165 },
-  ],
-};
-
-/** Paquets en cours : total égal aux en cours (123 639) du bloc Devenir par défaut. */
-export const EN_COURS: PaquetsEnCours = {
+/**
+ * Motifs : totaux égaux aux rejetés (86 496), échoués (9 218) et en cours (123 639, dont 59 264 bloqués) du bloc
+ * Devenir par défaut ; lignes du plus fréquent au moins fréquent, comme l'API.
+ */
+export const MOTIFS: MotifsArret = {
   perimetre: 'Ensemble du Togo',
   calculeLe: '2026-01-14T11:45:00Z',
   seuilJours: 30,
-  total: 123639,
+  totalRejets: 86496,
+  totalEchecs: 9218,
+  totalEnCours: 123639,
   bloques: 59264,
-  etapes: [
-    { code: 'PACKET_RECEIVER', libelle: 'Réception du paquet', inscriptions: 7476, bloques: 0 },
-    { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', inscriptions: 112618, bloques: 58834 },
-    { code: null, libelle: 'Autres étapes', inscriptions: 3545, bloques: 430 },
+  rejets: [
+    {
+      motif: 'REFUS_SUPERVISEUR',
+      libelle: 'Refusé par le superviseur du centre',
+      commentaire: 'Rejected by Supervisor',
+      stage: 'PacketValidatorStage',
+      stageLibelle: 'Validation du paquet',
+      inscriptions: 50133,
+      bloques: 0,
+    },
+    {
+      motif: 'DOUBLON_ABIS',
+      libelle: 'Doublon : empreintes, iris ou visage déjà enregistrés',
+      commentaire: 'Biometric Duplicate was Found in ABIS',
+      stage: 'DemoDedupeStage',
+      stageLibelle: 'Déduplication démographique',
+      inscriptions: 20541,
+      bloques: 0,
+    },
+    {
+      motif: 'DOUBLON_VERIFICATEUR',
+      libelle: 'Doublon confirmé par un vérificateur',
+      commentaire: 'Match Found by Manual Verifier',
+      stage: 'ManualVerificationStage',
+      stageLibelle: 'Vérification manuelle',
+      inscriptions: 14752,
+      bloques: 0,
+    },
+    {
+      motif: null,
+      libelle: 'Autres cas',
+      commentaire: null,
+      stage: null,
+      stageLibelle: null,
+      inscriptions: 1070,
+      bloques: 0,
+    },
+  ],
+  echecs: [
+    {
+      motif: 'BIOMETRIE_NON_CONCORDANTE',
+      libelle: 'Vérification biométrique de l’agent, du superviseur ou du parent non concordante',
+      commentaire: 'Biometric data did not match',
+      stage: 'OSIValidatorStage',
+      stageLibelle: 'Validation de l’agent, du superviseur et du parent',
+      inscriptions: 8165,
+      bloques: 0,
+    },
+    {
+      motif: 'PAQUET_PERDU',
+      libelle: 'Paquet perdu ou abîmé pendant le transfert',
+      commentaire: 'Packet not found in Landing Zone / Packet Upload Failed',
+      stage: 'PacketUploaderStage',
+      stageLibelle: 'Envoi du paquet',
+      inscriptions: 1053,
+      bloques: 0,
+    },
+  ],
+  enCours: [
+    {
+      motif: 'FILE_VERIF_MANUELLE',
+      libelle: 'En attente de vérification manuelle (doublon possible)',
+      commentaire: 'Manual verification Sent to queue',
+      stage: 'BioDedupeStage',
+      stageLibelle: 'Déduplication biométrique',
+      inscriptions: 112618,
+      bloques: 58834,
+    },
+    {
+      motif: 'RECU_EN_ATTENTE',
+      libelle: 'Reçu, en attente de traitement',
+      commentaire: 'Packet is Uploaded to Landing Zone / Packet Store',
+      stage: 'PacketReceiverStage',
+      stageLibelle: 'Réception du paquet',
+      inscriptions: 7476,
+      bloques: 0,
+    },
+    {
+      motif: null,
+      libelle: 'Autres cas',
+      commentaire: null,
+      stage: null,
+      stageLibelle: null,
+      inscriptions: 3545,
+      bloques: 430,
+    },
   ],
 };
 
@@ -387,8 +456,7 @@ const PAR_DEFAUT: Record<string, Reponse> = {
     bloques: 59264,
   },
   '/enrolement/semaines': SEMAINES,
-  '/enrolement/etapes': ETAPES,
-  '/enrolement/en-cours': EN_COURS,
+  '/enrolement/motifs': MOTIFS,
   '/enrolement/delais': DELAIS,
   '/enrolement/synchronisation': SYNCHRONISATION,
   '/enrolement/territoire': (url: URL) =>

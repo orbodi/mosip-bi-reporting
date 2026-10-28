@@ -12,8 +12,9 @@ import tg.anid.bi.commun.RequeteInvalide;
 import tg.anid.bi.commun.RessourceIntrouvable;
 
 /**
- * Blocs du traitement des paquets de la page Enrôlement (migration V7) : où s'arrêtent les paquets, paquets en cours,
- * délais, synchronisés non reçus. Chaque utilisateur a accès à tout le Togo (décision du 25/10/2026).
+ * Blocs du traitement des paquets de la page Enrôlement (migrations V7, V9) : où s'arrêtent les paquets (par étape ou
+ * par motif), paquets en cours, délais, synchronisés non reçus. Chaque utilisateur a accès à tout le Togo (décision
+ * du 25/10/2026).
  */
 @Service
 public class EnrolementTraitementService {
@@ -22,6 +23,7 @@ public class EnrolementTraitementService {
     /** Une étape sous cette part du total (en %) va dans « Autres étapes ». */
     static final int PART_MINIMALE_POURCENT = 1;
     static final String AUTRES_ETAPES = "Autres étapes";
+    static final String AUTRES_CAS = "Autres cas";
     /** Ancienneté (jours) au-delà de laquelle un paquet en cours est dit bloqué (stock_en_cours, plus_30j). */
     static final int SEUIL_BLOQUE_JOURS = 30;
     static final String RECEPTION_NIU = "reception_niu";
@@ -72,6 +74,36 @@ public class EnrolementTraitementService {
         return new PaquetsEnCours(perimetre, repository.enCoursCalculeLe(), SEUIL_BLOQUE_JOURS,
                 somme(etapes, PaquetsEnCours.Etape::inscriptions), somme(etapes, PaquetsEnCours.Etape::bloques),
                 etapes);
+    }
+
+    /**
+     * Rejets et échecs (sur la période) et paquets en cours (stock) par étape et motif, dans la zone : du plus fréquent
+     * au moins fréquent, les lignes de moins de 1 % du devenir regroupées en « Autres cas ».
+     */
+    public MotifsArret motifs(LocalDate du, LocalDate au, String zoneDemandee) {
+        verifierOrdre(du, au);
+        String zone = zone(zoneDemandee);
+        String perimetre = nomPerimetre(zone);
+        List<EnrolementTraitementRepository.Motif> motifs = repository.parMotif(du, au, zone);
+        List<MotifsArret.Ligne> rejets = lignesMotif(motifs, "rejete");
+        List<MotifsArret.Ligne> echecs = lignesMotif(motifs, "echoue");
+        List<MotifsArret.Ligne> enCours = lignesMotif(motifs, "en_cours");
+        return new MotifsArret(perimetre, du, au, repository.enCoursMotifCalculeLe(), SEUIL_BLOQUE_JOURS,
+                somme(rejets, MotifsArret.Ligne::inscriptions), somme(echecs, MotifsArret.Ligne::inscriptions),
+                somme(enCours, MotifsArret.Ligne::inscriptions), somme(enCours, MotifsArret.Ligne::bloques),
+                rejets, echecs, enCours);
+    }
+
+    /** Lignes d'un devenir, dans l'ordre reçu (du plus fréquent au moins fréquent), petites lignes regroupées. */
+    private static List<MotifsArret.Ligne> lignesMotif(List<EnrolementTraitementRepository.Motif> motifs,
+                                                       String devenir) {
+        return regrouper(motifs.stream().filter(m -> devenir.equals(m.devenir())).toList(),
+                EnrolementTraitementRepository.Motif::inscriptions,
+                m -> new MotifsArret.Ligne(m.motif(), m.motifLibelle(), m.motifCommentaire(), m.stage(),
+                        m.stageLibelle(), m.inscriptions(), m.bloques()),
+                reste -> new MotifsArret.Ligne(null, AUTRES_CAS, null, null, null,
+                        somme(reste, EnrolementTraitementRepository.Motif::inscriptions),
+                        somme(reste, EnrolementTraitementRepository.Motif::bloques)));
     }
 
     /** Paquets en cours depuis plus de 30 jours dans la zone : « dont bloqués » du bloc « Devenir ». */

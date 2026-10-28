@@ -88,12 +88,58 @@ class EnrolementTraitementServiceTest {
         assertThat(p.seuilJours()).isEqualTo(30);
     }
 
+    private static EnrolementTraitementRepository.Motif motif(String devenir, String stage, String motif,
+                                                             long inscriptions, long bloques) {
+        return new EnrolementTraitementRepository.Motif(devenir, stage, stage + " (fr)", 10, motif, motif + " (fr)",
+                motif + " (MOSIP)", inscriptions, bloques);
+    }
+
+    @Test
+    void motifsDuPlusFrequentAuMoinsFrequentPetitesLignesEnAutresCas() {
+        // Ordre du dépôt : du plus fréquent au moins fréquent dans chaque devenir.
+        when(repository.parMotif(isNull(), isNull(), isNull())).thenReturn(List.of(
+                motif("en_cours", "BioDedupeStage", "FILE_VERIF_MANUELLE", 900, 850),
+                motif("en_cours", "PacketReceiverStage", "RECU_EN_ATTENTE", 95, 0),
+                motif("en_cours", "FmsStage", "ETAPE_FRANCHIE", 3, 1),
+                motif("en_cours", "UinGeneratorStage", "ERREUR_TECHNIQUE", 2, 2),
+                motif("echoue", "OSIValidatorStage", "BIOMETRIE_NON_CONCORDANTE", 90, 0),
+                motif("echoue", "PacketUploaderStage", "PAQUET_PERDU", 10, 0),
+                motif("rejete", "PacketValidatorStage", "REFUS_SUPERVISEUR", 600, 0),
+                motif("rejete", "DemoDedupeStage", "DOUBLON_ABIS", 395, 0),
+                motif("rejete", "BioDedupeStage", "DOUBLON_VERIFICATEUR", 5, 0)));
+
+        MotifsArret m = service.motifs(null, null, null);
+
+        // Rejetés : une seule petite ligne (5 sur 1 000) garde son motif.
+        assertThat(m.rejets()).extracting(MotifsArret.Ligne::motif)
+                .containsExactly("REFUS_SUPERVISEUR", "DOUBLON_ABIS", "DOUBLON_VERIFICATEUR");
+        assertThat(m.rejets().getFirst()).extracting(MotifsArret.Ligne::libelle, MotifsArret.Ligne::commentaire,
+                        MotifsArret.Ligne::stage, MotifsArret.Ligne::stageLibelle)
+                .containsExactly("REFUS_SUPERVISEUR (fr)", "REFUS_SUPERVISEUR (MOSIP)", "PacketValidatorStage",
+                        "PacketValidatorStage (fr)");
+        // En cours : deux petites lignes (3 et 2 sur 1 000) regroupées en « Autres cas », bloqués compris.
+        assertThat(m.enCours()).extracting(MotifsArret.Ligne::libelle)
+                .containsExactly("FILE_VERIF_MANUELLE (fr)", "RECU_EN_ATTENTE (fr)", "Autres cas");
+        assertThat(m.enCours().getLast()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::stage,
+                        MotifsArret.Ligne::inscriptions, MotifsArret.Ligne::bloques)
+                .containsExactly(null, null, 5L, 3L);
+        // Totaux = sommes des lignes (contrôle avec le bloc « Devenir »).
+        assertThat(m.totalRejets()).isEqualTo(1000);
+        assertThat(m.totalEchecs()).isEqualTo(100);
+        assertThat(m.totalEnCours()).isEqualTo(1000);
+        assertThat(m.bloques()).isEqualTo(853);
+        assertThat(m.seuilJours()).isEqualTo(30);
+        assertThat(m.perimetre()).isEqualTo("Ensemble du Togo");
+    }
+
     @Test
     void zoneInconnueEtDatesInverseesSontRefusees() {
         when(zones.nomZone("XX")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.synchronisation("XX")).isInstanceOf(RessourceIntrouvable.class);
         assertThatThrownBy(() -> service.delais(LocalDate.parse("2026-10-20"), LocalDate.parse("2026-10-01"), null))
+                .isInstanceOf(RequeteInvalide.class);
+        assertThatThrownBy(() -> service.motifs(LocalDate.parse("2026-10-20"), LocalDate.parse("2026-10-01"), null))
                 .isInstanceOf(RequeteInvalide.class);
     }
 }

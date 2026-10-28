@@ -1,34 +1,45 @@
 import { describe, expect, it } from 'vitest';
-import type { ArretsParEtape, PaquetsEnCours } from '../api/client';
-import { borneHauteDelaiH, codeMosip, colonnesArrets, largeurBarre } from './traitement';
+import type { LigneMotif, MotifsArret } from '../api/client';
+import { borneHauteDelaiH, colonnesArrets, largeurBarre } from './traitement';
 
-const ARRETS: ArretsParEtape = {
-  perimetre: 'Ensemble du Togo',
-  totalRejets: 150,
-  totalEchecs: 50,
-  rejets: [
-    { code: 'REFUS_POSTE', libelle: 'Refus au poste', inscriptions: 90 },
-    { code: 'DEMOGRAPHIC_VERIFICATION', libelle: 'Déduplication démographique', inscriptions: 55 },
-    { code: null, libelle: 'Autres étapes', inscriptions: 5 },
-  ],
-  echecs: [{ code: 'OSI_VALIDATE', libelle: 'Validation opérateur et superviseur', inscriptions: 50 }],
-};
+const ligne = (
+  stage: string | null,
+  motif: string | null,
+  inscriptions: number,
+  bloques = 0,
+): LigneMotif => ({
+  motif,
+  libelle: motif ? `${motif} (fr)` : 'Autres cas',
+  commentaire: motif ? `${motif} (MOSIP)` : null,
+  stage,
+  stageLibelle: stage ? `${stage} (fr)` : null,
+  inscriptions,
+  bloques,
+});
 
-const EN_COURS: PaquetsEnCours = {
+const MOTIFS: MotifsArret = {
   perimetre: 'Ensemble du Togo',
   seuilJours: 30,
-  total: 800,
+  totalRejets: 150,
+  totalEchecs: 50,
+  totalEnCours: 800,
   bloques: 600,
-  etapes: [
-    { code: 'PACKET_RECEIVER', libelle: 'Réception du paquet', inscriptions: 100, bloques: 0 },
-    { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', inscriptions: 650, bloques: 590 },
-    { code: null, libelle: 'Autres étapes', inscriptions: 50, bloques: 10 },
+  rejets: [
+    ligne('PacketValidatorStage', 'REFUS_SUPERVISEUR', 90),
+    ligne('DemoDedupeStage', 'DOUBLON_ABIS', 55),
+    ligne(null, null, 5),
+  ],
+  echecs: [ligne('OSIValidatorStage', 'BIOMETRIE_NON_CONCORDANTE', 50)],
+  enCours: [
+    ligne('BioDedupeStage', 'FILE_VERIF_MANUELLE', 650, 590),
+    ligne('PacketReceiverStage', 'RECU_EN_ATTENTE', 100),
+    ligne(null, null, 50, 10),
   ],
 };
 
 describe('Où s’arrêtent les paquets', () => {
   it('additionne les trois colonnes en paquets sans NIU, chacune avec sa part', () => {
-    const { sansNiu, colonnes } = colonnesArrets(ARRETS, EN_COURS);
+    const { sansNiu, colonnes } = colonnesArrets(MOTIFS);
     expect(sansNiu).toBe(1000);
     expect(colonnes.map((c) => [c.titre, c.total, c.part])).toEqual([
       ['Rejetés', 150, 0.15],
@@ -38,32 +49,30 @@ describe('Où s’arrêtent les paquets', () => {
     expect(colonnes[2].bloques).toBe(600);
   });
 
-  it('garde l’ordre du traitement, met en avant la plus grosse étape, hors « Autres étapes »', () => {
-    const [rejets, , enCours] = colonnesArrets(ARRETS, EN_COURS).colonnes;
-    expect(rejets.lignes.map((l) => l.libelle)).toEqual([
-      'Refus au poste',
-      'Déduplication démographique',
-      'Autres étapes',
+  it('garde l’ordre de l’API (du plus fréquent au moins fréquent) et met en avant le premier motif', () => {
+    const [rejets, , enCours] = colonnesArrets(MOTIFS).colonnes;
+    expect(rejets.lignes.map((l) => [l.libelle, l.etape, l.commentaire])).toEqual([
+      ['REFUS_SUPERVISEUR (fr)', 'PacketValidatorStage (fr)', 'REFUS_SUPERVISEUR (MOSIP)'],
+      ['DOUBLON_ABIS (fr)', 'DemoDedupeStage (fr)', 'DOUBLON_ABIS (MOSIP)'],
+      ['Autres cas', null, null],
     ]);
-    expect(rejets.lignes.filter((l) => l.principale).map((l) => l.libelle)).toEqual(['Refus au poste']);
+    expect(rejets.lignes.map((l) => l.principale)).toEqual([true, false, false]);
     expect(rejets.lignes[1].part).toBeCloseTo(55 / 150);
-    expect(enCours.lignes[1]).toMatchObject({ principale: true, bloques: 590 });
-    expect(
-      colonnesArrets(ARRETS, { ...EN_COURS, etapes: [EN_COURS.etapes[2]] }).colonnes[2].lignes[0].principale,
-    ).toBe(false);
+    expect(rejets.lignes.map((l) => l.cle)).toEqual([
+      'PacketValidatorStage:REFUS_SUPERVISEUR',
+      'DemoDedupeStage:DOUBLON_ABIS',
+      'autres',
+    ]);
+    expect(enCours.lignes[0]).toMatchObject({ principale: true, bloques: 590, valeur: 650 });
   });
 
-  it('montre les codes MOSIP, pas les codes propres au BI ni le regroupement', () => {
-    expect(codeMosip('DEMOGRAPHIC_VERIFICATION')).toBe('DEMOGRAPHIC_VERIFICATION');
-    expect(codeMosip('REFUS_POSTE')).toBeNull();
-    expect(codeMosip(null)).toBeNull();
-    const [rejets] = colonnesArrets(ARRETS, EN_COURS).colonnes;
-    expect(rejets.lignes.map((l) => l.code)).toEqual([null, 'DEMOGRAPHIC_VERIFICATION', null]);
-    expect(rejets.lignes.map((l) => l.cle)).toEqual(['REFUS_POSTE', 'DEMOGRAPHIC_VERIFICATION', 'autres']);
+  it('« Autres cas » seul en tête n’est pas mis en avant', () => {
+    const { colonnes } = colonnesArrets({ ...MOTIFS, echecs: [ligne(null, null, 50)] });
+    expect(colonnes[1].lignes[0].principale).toBe(false);
   });
 
-  it('sans réponse de l’API : trois colonnes, totaux inconnus, aucune étape', () => {
-    const { sansNiu, colonnes } = colonnesArrets(undefined, EN_COURS);
+  it('sans réponse de l’API : trois colonnes, totaux inconnus, aucune ligne', () => {
+    const { sansNiu, colonnes } = colonnesArrets(undefined);
     expect(Number.isNaN(sansNiu)).toBe(true);
     expect(colonnes).toHaveLength(3);
     expect(Number.isNaN(colonnes[0].total)).toBe(true);

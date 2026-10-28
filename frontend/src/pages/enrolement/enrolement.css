@@ -560,9 +560,6 @@
   justify-content: space-between;
   gap: var(--e-3);
 }
-.etape-arret__ligne--2 {
-  align-items: center;
-}
 .etape-arret__nom {
   font-size: var(--t-s);
   font-weight: 500;
@@ -575,14 +572,18 @@
 .etape-arret--principale .etape-arret__valeur {
   font-weight: 700;
 }
-.etape-arret__code {
-  padding: 0 6px;
-  border-radius: var(--r-s);
-  background: var(--fond);
+.etape-arret__ligne--2 {
+  align-items: baseline;
+}
+/* Étape en français · message type de MOSIP (en anglais, en italique) */
+.etape-arret__source {
+  min-width: 0;
   color: var(--encre-2);
   font-size: var(--t-xs);
-  letter-spacing: 0.02em;
   overflow-wrap: anywhere;
+}
+.etape-arret__commentaire {
+  font-style: italic;
 }
 .etape-arret__pct {
   color: var(--encre-2);

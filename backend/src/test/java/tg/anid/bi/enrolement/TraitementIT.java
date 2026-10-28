@@ -38,7 +38,8 @@ class TraitementIT {
     void preparer() {
         jdbc.sql("""
                 truncate bi.fait_enrolement_jour, bi.fait_arret_etape_jour, bi.stock_en_cours,
-                         bi.stock_synchro_non_recue, bi.fait_delai_jour
+                         bi.stock_synchro_non_recue, bi.fait_delai_jour, bi.fait_arret_motif_jour,
+                         bi.stock_en_cours_motif
                 """).update();
         // Faits : 10011 : 100 paquets (80 NIU, 6 en cours, 4 échoués, 10 rejetés) ; 10021 : 50 (45 NIU, 3 en cours,
         // 0 échoué, 2 rejetés).
@@ -73,6 +74,43 @@ class TraitementIT {
                              ('10011', 'PACKET_RECEIVER', 'Réception du paquet', 10, 'moins_7j', 1),
                              ('10021', 'PACKET_RECEIVER', 'Réception du paquet', 10, '7_30j', 3))
                      as v (code, etape, libelle, ordre, anciennete, n)
+                join bi.zone z on z.code = v.code
+                """).update();
+        // Motifs (V9), mêmes totaux : rejetés 10 (Tône, 05/01) + 2 (Kozah, 07/01), échoués 4, en cours 6 + 3.
+        jdbc.sql("""
+                insert into bi.fait_arret_motif_jour (jour, centre_id, type_demande, devenir, stage, stage_libelle,
+                                                      stage_ordre, motif, motif_libelle, motif_commentaire,
+                                                      inscriptions)
+                select v.jour, z.id, 'NEW', v.devenir, v.stage, v.stage_libelle, v.ordre, v.motif, v.libelle,
+                       v.commentaire, v.n
+                from (values (date '2026-01-05', '10011', 'rejete', 'PacketValidatorStage', 'Validation du paquet', 30,
+                              'REFUS_SUPERVISEUR', 'Refusé par le superviseur du centre', 'Rejected by Supervisor', 7),
+                             (date '2026-01-05', '10011', 'rejete', 'DemoDedupeStage', 'Déduplication démographique',
+                              50, 'DOUBLON_ABIS', 'Doublon : empreintes, iris ou visage déjà enregistrés',
+                              'Biometric Duplicate was Found in ABIS', 3),
+                             (date '2026-01-05', '10011', 'echoue', 'OSIValidatorStage', 'Validation de l''agent', 45,
+                              'BIOMETRIE_NON_CONCORDANTE', 'Vérification biométrique non concordante',
+                              'Biometric data did not match', 4),
+                             (date '2026-01-07', '10021', 'rejete', 'PacketValidatorStage', 'Validation du paquet', 30,
+                              'REFUS_SUPERVISEUR', 'Refusé par le superviseur du centre', 'Rejected by Supervisor', 2))
+                     as v (jour, code, devenir, stage, stage_libelle, ordre, motif, libelle, commentaire, n)
+                join bi.zone z on z.code = v.code
+                """).update();
+        jdbc.sql("""
+                insert into bi.stock_en_cours_motif (centre_id, type_demande, stage, stage_libelle, stage_ordre, motif,
+                                                     motif_libelle, motif_commentaire, anciennete, inscriptions,
+                                                     calcule_le)
+                select z.id, 'NEW', v.stage, v.stage_libelle, v.ordre, v.motif, v.libelle, v.commentaire, v.anciennete,
+                       v.n, timestamptz '2026-01-14 11:50Z'
+                from (values ('10011', 'BioDedupeStage', 'Déduplication biométrique', 55, 'FILE_VERIF_MANUELLE',
+                              'En attente de vérification manuelle', 'Manual verification Sent to queue', 'plus_30j', 4),
+                             ('10011', 'BioDedupeStage', 'Déduplication biométrique', 55, 'FILE_VERIF_MANUELLE',
+                              'En attente de vérification manuelle', 'Manual verification Sent to queue', 'moins_7j', 1),
+                             ('10011', 'PacketReceiverStage', 'Réception du paquet', 10, 'RECU_EN_ATTENTE',
+                              'Reçu, en attente de traitement', 'Packet is Uploaded to Landing Zone', 'moins_7j', 1),
+                             ('10021', 'PacketReceiverStage', 'Réception du paquet', 10, 'RECU_EN_ATTENTE',
+                              'Reçu, en attente de traitement', 'Packet is Uploaded to Landing Zone', '7_30j', 3))
+                     as v (code, stage, stage_libelle, ordre, motif, libelle, commentaire, anciennete, n)
                 join bi.zone z on z.code = v.code
                 """).update();
         jdbc.sql("""
@@ -138,6 +176,37 @@ class TraitementIT {
         // Avec une période, le stock n'est pas daté : pas de « dont bloqués ».
         assertThat(service.devenir(LocalDate.parse("2026-01-01"), null, null).bloques()).isNull();
         assertThat(traitement.enCours("KAR").total()).isEqualTo(service.devenir(null, null, "KAR").enCours());
+    }
+
+    @Test
+    void motifsEgauxAuDevenirTriesParNombre() {
+        MotifsArret togo = traitement.motifs(null, null, null);
+        DevenirInscriptions d = service.devenir(null, null, null);
+
+        // Rejetés : Refus par le superviseur (7 + 2 = 9) puis doublon ABIS (3), du plus fréquent au moins fréquent.
+        assertThat(togo.rejets()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::inscriptions)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("REFUS_SUPERVISEUR", 9L),
+                        org.assertj.core.groups.Tuple.tuple("DOUBLON_ABIS", 3L));
+        assertThat(togo.rejets().getFirst().commentaire()).isEqualTo("Rejected by Supervisor");
+        assertThat(togo.rejets().getFirst().stageLibelle()).isEqualTo("Validation du paquet");
+        assertThat(togo.totalRejets()).isEqualTo(d.rejetees()).isEqualTo(12);
+        assertThat(togo.totalEchecs()).isEqualTo(d.echouees()).isEqualTo(4);
+        assertThat(togo.totalEnCours()).isEqualTo(d.enCours()).isEqualTo(9);
+        assertThat(togo.bloques()).isEqualTo(d.bloques()).isEqualTo(4);
+        assertThat(togo.enCours().getFirst()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::inscriptions,
+                        MotifsArret.Ligne::bloques)
+                .containsExactly("FILE_VERIF_MANUELLE", 5L, 4L);
+        assertThat(togo.calculeLe()).isNotNull();
+
+        MotifsArret kara = traitement.motifs(null, null, "KAR");
+        assertThat(kara.perimetre()).isEqualTo("Kara");
+        assertThat(kara.totalRejets()).isEqualTo(service.devenir(null, null, "KAR").rejetees()).isEqualTo(2);
+        assertThat(kara.totalEnCours()).isEqualTo(3);
+        assertThat(kara.echecs()).isEmpty();
+
+        LocalDate jour = LocalDate.parse("2026-01-05");
+        assertThat(traitement.motifs(jour, jour, null).totalRejets())
+                .isEqualTo(service.devenir(jour, jour, null).rejetees()).isEqualTo(10);
     }
 
     @Test

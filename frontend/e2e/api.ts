@@ -114,40 +114,137 @@ const CENTRES: Record<string, unknown[]> = {
   remontee: [centre(1, '20104', 'EPP Gbetsogbe, Port autonome', 'Golfe', 'Grand Lomé', 138)],
 };
 
-// Lot 5 : étapes d'arrêt, paquets en cours (dont bloqués), délais, synchronisés non reçus.
-const ETAPES = {
-  perimetre: 'Ensemble du Togo',
-  totalRejets: 158407,
-  totalEchecs: 109010,
-  rejets: [
-    { code: 'REFUS_POSTE', libelle: 'Refus au poste', inscriptions: 90133 },
-    { code: 'DEMOGRAPHIC_VERIFICATION', libelle: 'Déduplication démographique', inscriptions: 37541 },
-    { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', inscriptions: 27680 },
-    { code: 'UIN_GENERATOR', libelle: 'Génération du NIU', inscriptions: 1983 },
-    { code: null, libelle: 'Autres étapes', inscriptions: 1070 },
-  ],
-  echecs: [
-    { code: 'UPLOAD_PACKET', libelle: 'Envoi du paquet', inscriptions: 7114 },
-    { code: 'OSI_VALIDATE', libelle: 'Validation opérateur et superviseur', inscriptions: 100987 },
-    { code: null, libelle: 'Autres étapes', inscriptions: 909 },
-  ],
-};
-const EN_COURS = {
+// Lot 5 : motifs d'arrêt (rejetés, échoués, en cours dont bloqués), délais, synchronisés non reçus.
+const MOTIFS = {
   perimetre: 'Ensemble du Togo',
   calculeLe: '2026-01-14T11:45:00Z',
   seuilJours: 30,
-  total: 64315,
+  totalRejets: 158407,
+  totalEchecs: 109010,
+  totalEnCours: 64315,
   bloques: 59264,
-  etapes: [
-    { code: 'PACKET_RECEIVER', libelle: 'Réception du paquet', inscriptions: 2350, bloques: 0 },
+  rejets: [
     {
-      code: 'BIOGRAPHIC_VERIFICATION',
-      libelle: 'Déduplication biométrique',
-      inscriptions: 1822,
-      bloques: 308,
+      motif: 'REFUS_SUPERVISEUR',
+      libelle: 'Refusé par le superviseur du centre',
+      commentaire: 'Rejected by Supervisor',
+      stage: 'PacketValidatorStage',
+      stageLibelle: 'Validation du paquet',
+      inscriptions: 90810,
+      bloques: 0,
     },
-    { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', inscriptions: 58598, bloques: 58526 },
-    { code: null, libelle: 'Autres étapes', inscriptions: 1545, bloques: 430 },
+    {
+      motif: 'DOUBLON_ABIS',
+      libelle: 'Doublon : empreintes, iris ou visage déjà enregistrés',
+      commentaire: 'Biometric Duplicate was Found in ABIS',
+      stage: 'DemoDedupeStage',
+      stageLibelle: 'Déduplication démographique',
+      inscriptions: 37690,
+      bloques: 0,
+    },
+    {
+      motif: 'DOUBLON_VERIFICATEUR',
+      libelle: 'Doublon confirmé par un vérificateur',
+      commentaire: 'Match Found by Manual Verifier',
+      stage: 'ManualVerificationStage',
+      stageLibelle: 'Vérification manuelle',
+      inscriptions: 26904,
+      bloques: 0,
+    },
+    {
+      motif: 'DONNEES_INVALIDES_NIU',
+      libelle: 'Données du dossier invalides à la création du NIU',
+      commentaire: 'UIN Generation failed - Invalid Input Parameter',
+      stage: 'UinGeneratorStage',
+      stageLibelle: 'Génération du NIU',
+      inscriptions: 1140,
+      bloques: 0,
+    },
+    {
+      motif: null,
+      libelle: 'Autres cas',
+      commentaire: null,
+      stage: null,
+      stageLibelle: null,
+      inscriptions: 1863,
+      bloques: 0,
+    },
+  ],
+  echecs: [
+    {
+      motif: 'BIOMETRIE_NON_CONCORDANTE',
+      libelle: 'Vérification biométrique de l’agent, du superviseur ou du parent non concordante',
+      commentaire: 'Biometric data did not match',
+      stage: 'OSIValidatorStage',
+      stageLibelle: 'Validation de l’agent, du superviseur et du parent',
+      inscriptions: 97576,
+      bloques: 0,
+    },
+    {
+      motif: 'PAQUET_PERDU',
+      libelle: 'Paquet perdu ou abîmé pendant le transfert',
+      commentaire: 'Packet not found in Landing Zone / Packet Upload Failed',
+      stage: 'PacketUploaderStage',
+      stageLibelle: 'Envoi du paquet',
+      inscriptions: 6988,
+      bloques: 0,
+    },
+    {
+      motif: 'SANS_NIU_OU_BIOMETRIE',
+      libelle: 'Agent, superviseur ou parent sans NIU ou sans biométrie enregistrée',
+      commentaire: 'Biometric data / UIN not available in database',
+      stage: 'OSIValidatorStage',
+      stageLibelle: 'Validation de l’agent, du superviseur et du parent',
+      inscriptions: 3319,
+      bloques: 0,
+    },
+    {
+      motif: null,
+      libelle: 'Autres cas',
+      commentaire: null,
+      stage: null,
+      stageLibelle: null,
+      inscriptions: 1127,
+      bloques: 0,
+    },
+  ],
+  enCours: [
+    {
+      motif: 'FILE_VERIF_MANUELLE',
+      libelle: 'En attente de vérification manuelle (doublon possible)',
+      commentaire: 'Manual verification Sent to queue',
+      stage: 'BioDedupeStage',
+      stageLibelle: 'Déduplication biométrique',
+      inscriptions: 51707,
+      bloques: 51200,
+    },
+    {
+      motif: 'ERREUR_VERIF_MANUELLE',
+      libelle: 'Erreur pendant la vérification manuelle',
+      commentaire: 'Error in manual verification',
+      stage: 'ManualVerificationStage',
+      stageLibelle: 'Vérification manuelle',
+      inscriptions: 6775,
+      bloques: 6700,
+    },
+    {
+      motif: 'RECU_EN_ATTENTE',
+      libelle: 'Reçu, en attente de traitement',
+      commentaire: 'Packet is Uploaded to Landing Zone / Packet Store',
+      stage: 'PacketReceiverStage',
+      stageLibelle: 'Réception du paquet',
+      inscriptions: 5099,
+      bloques: 0,
+    },
+    {
+      motif: null,
+      libelle: 'Autres cas',
+      commentaire: null,
+      stage: null,
+      stageLibelle: null,
+      inscriptions: 734,
+      bloques: 1364,
+    },
   ],
 };
 const DELAIS = {
@@ -176,8 +273,7 @@ const PYRAMIDE: [string, number, number][] = [
 ];
 
 export async function simulerEnrolement(page: Page) {
-  await page.route('**/api/v1/enrolement/etapes*', (route) => route.fulfill({ json: ETAPES }));
-  await page.route('**/api/v1/enrolement/en-cours*', (route) => route.fulfill({ json: EN_COURS }));
+  await page.route('**/api/v1/enrolement/motifs*', (route) => route.fulfill({ json: MOTIFS }));
   await page.route('**/api/v1/enrolement/delais*', (route) => route.fulfill({ json: DELAIS }));
   await page.route('**/api/v1/enrolement/synchronisation*', (route) =>
     route.fulfill({ json: SYNCHRONISATION }),

@@ -34,27 +34,31 @@ describe('Où s’arrêtent les paquets', () => {
     ).toBeInTheDocument();
   });
 
-  it('nomme chaque étape en français, le code MOSIP en complément, dans l’ordre du traitement', async () => {
+  it('donne pour chaque ligne le motif, l’étape et le message de MOSIP, du plus fréquent au moins fréquent', async () => {
     simulerApi();
     afficher('/enrolement');
 
     const bloc = await blocAffiche();
-    const rejets = within(await bloc.findByRole('list', { name: 'Rejetés par étape' }));
-    // La liste existe avant la réponse (vide) : attendre les étapes de l'API.
-    await rejets.findByText('Refus au poste');
+    const rejets = within(await bloc.findByRole('list', { name: 'Rejetés par motif' }));
+    // La liste existe avant la réponse (vide) : attendre les lignes de l'API.
+    await rejets.findByText('Refusé par le superviseur du centre');
     expect(rejets.getAllByRole('listitem').map((l) => l.firstChild?.firstChild?.textContent)).toEqual([
-      'Refus au poste',
-      'Déduplication démographique',
-      'Déduplication biométrique',
-      'Autres étapes',
+      'Refusé par le superviseur du centre',
+      'Doublon : empreintes, iris ou visage déjà enregistrés',
+      'Doublon confirmé par un vérificateur',
+      'Autres cas',
     ]);
-    expect(rejets.getByText('BIOGRAPHIC_VERIFICATION')).toBeInTheDocument();
-    // REFUS_POSTE est un code du BI, pas de MOSIP : seul le libellé est montré.
-    expect(bloc.queryByText('REFUS_POSTE')).not.toBeInTheDocument();
-    expect(rejets.getByText(texte(pct(50133 / 86496)))).toBeInTheDocument();
+    const premiere = rejets.getAllByRole('listitem')[0];
+    expect(premiere).toHaveTextContent(texte(nf(50133)));
+    expect(premiere).toHaveTextContent('Validation du paquet · Rejected by Supervisor');
+    expect(within(premiere).getByText('Rejected by Supervisor')).toHaveAttribute('lang', 'en');
+    expect(premiere).toHaveTextContent(texte(pct(50133 / 86496)));
+    expect(premiere).toHaveClass('etape-arret--principale');
+    // « Autres cas » : ni étape ni message.
+    expect(rejets.getAllByRole('listitem')[3].querySelector('.etape-arret__source')).toBeEmptyDOMElement();
   });
 
-  it('en cours : bloqués depuis plus de 30 jours, en tête de colonne et par étape', async () => {
+  it('en cours : bloqués depuis plus de 30 jours, en tête de colonne et par motif', async () => {
     simulerApi();
     afficher('/enrolement');
 
@@ -66,8 +70,8 @@ describe('Où s’arrêtent les paquets', () => {
         texte(`${nf(59264)} bloqués depuis plus de 30 jours`),
       ),
     );
-    const manuelle = enCours.getByText('Vérification manuelle').closest('li')!;
-    expect(within(manuelle).getByText(/récents/)).toHaveTextContent(
+    const file = enCours.getByText('En attente de vérification manuelle (doublon possible)').closest('li')!;
+    expect(within(file).getByText(/récents/)).toHaveTextContent(
       texte(`${nf(58834)} bloqués · ${nf(112618 - 58834)} récents`),
     );
     expect(enCours.getByRole('list', { name: 'Légende' })).toHaveTextContent(
@@ -75,21 +79,18 @@ describe('Où s’arrêtent les paquets', () => {
     );
   });
 
-  it('reste national et sans période (stock des en cours)', async () => {
+  it('reste national', async () => {
     const appels = simulerApi();
     afficher('/enrolement?zone=SAV');
 
     await blocAffiche();
-    await waitFor(() => expect(appels.some((u) => u.pathname.endsWith('/enrolement/en-cours'))).toBe(true));
-    const lus = appels.filter((u) => /\/enrolement\/(etapes|en-cours)$/.test(u.pathname));
+    await waitFor(() => expect(appels.some((u) => u.pathname.endsWith('/enrolement/motifs'))).toBe(true));
+    const lus = appels.filter((u) => u.pathname.endsWith('/enrolement/motifs'));
     expect(lus.every((u) => !u.searchParams.has('zone'))).toBe(true);
-    expect(lus.filter((u) => u.pathname.endsWith('en-cours')).every((u) => !u.searchParams.has('du'))).toBe(
-      true,
-    );
   });
 
-  it('sans réponse de l’API : trois colonnes à 0, sans étape ni message', async () => {
-    simulerApi({ '/enrolement/etapes': undefined, '/enrolement/en-cours': undefined });
+  it('sans réponse de l’API : trois colonnes à 0, sans ligne ni message', async () => {
+    simulerApi({ '/enrolement/motifs': undefined });
     afficher('/enrolement');
 
     const bloc = await blocAffiche();
@@ -98,6 +99,6 @@ describe('Où s’arrêtent les paquets', () => {
     expect(bloc.getByText(/paquets n’ont pas de NIU/)).toHaveTextContent(/^0 paquets/);
     expect(bloc.getAllByText('0').length).toBeGreaterThanOrEqual(4);
     expect(bloc.queryByRole('alert')).not.toBeInTheDocument();
-    expect(bloc.queryByText('Vérification manuelle')).not.toBeInTheDocument();
+    expect(bloc.queryAllByRole('listitem').filter((l) => l.closest('.arret__etapes'))).toHaveLength(0);
   });
 });

@@ -8,8 +8,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Lecture des tables de la migration V7 (étapes d'arrêt, paquets en cours, délais, synchronisés non reçus), pour
- * une zone et toute sa descendance jusqu'aux centres, ou tout le Togo si {@code zone} est null.
+ * Lecture des tables des migrations V7 et V9 (étapes d'arrêt, motifs, paquets en cours, délais, synchronisés non
+ * reçus), pour une zone et toute sa descendance jusqu'aux centres, ou tout le Togo si {@code zone} est null.
  */
 @Repository
 public class EnrolementTraitementRepository {
@@ -34,6 +34,11 @@ public class EnrolementTraitementRepository {
 
     /** Paquets en cours à une étape, dont bloqués (ancienneté plus_30j). */
     public record EnCoursEtape(String etape, String libelle, int ordre, long inscriptions, long bloques) {
+    }
+
+    /** Paquets d'un devenir (rejete, echoue, en_cours) à une étape et un motif ; bloqués pour les en cours. */
+    public record Motif(String devenir, String stage, String stageLibelle, int stageOrdre, String motif,
+                        String motifLibelle, String motifCommentaire, long inscriptions, long bloques) {
     }
 
     /** Une classe d'histogramme de délai : borne basse en heures, paquets. */
@@ -82,6 +87,53 @@ public class EnrolementTraitementRepository {
                 .query((rs, ligne) -> new EnCoursEtape(rs.getString("etape"), rs.getString("libelle"),
                         rs.getInt("ordre"), rs.getLong("inscriptions"), rs.getLong("bloques")))
                 .list();
+    }
+
+    /**
+     * Rejets et échecs par étape et motif, au jour de réception (bornes incluses, null = non bornée), puis paquets en
+     * cours par étape et motif (stock, sans période), du plus fréquent au moins fréquent dans chaque devenir.
+     */
+    public List<Motif> parMotif(LocalDate du, LocalDate au, String zone) {
+        return jdbc.sql(PERIMETRE + """
+                        select devenir, stage, stage_libelle, stage_ordre, motif, motif_libelle, motif_commentaire,
+                               inscriptions, bloques
+                        from (
+                            select f.devenir, f.stage, min(f.stage_libelle) as stage_libelle,
+                                   min(f.stage_ordre) as stage_ordre, f.motif, min(f.motif_libelle) as motif_libelle,
+                                   min(f.motif_commentaire) as motif_commentaire,
+                                   sum(f.inscriptions) as inscriptions, 0 as bloques
+                            from bi.fait_arret_motif_jour f
+                            where (cast(:du as date) is null or f.jour >= cast(:du as date))
+                              and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                              and (cast(:zone as text) is null or f.centre_id in (select id from perimetre))
+                            group by f.devenir, f.stage, f.motif
+                            union all
+                            select 'en_cours', s.stage, min(s.stage_libelle), min(s.stage_ordre), s.motif,
+                                   min(s.motif_libelle), min(s.motif_commentaire), sum(s.inscriptions),
+                                   coalesce(sum(s.inscriptions) filter (where s.anciennete = 'plus_30j'), 0)
+                            from bi.stock_en_cours_motif s
+                            where cast(:zone as text) is null or s.centre_id in (select id from perimetre)
+                            group by s.stage, s.motif
+                        ) m
+                        where inscriptions > 0
+                        order by devenir, inscriptions desc, stage_ordre, stage, motif
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .param("zone", zone)
+                .query((rs, ligne) -> new Motif(rs.getString("devenir"), rs.getString("stage"),
+                        rs.getString("stage_libelle"), rs.getInt("stage_ordre"), rs.getString("motif"),
+                        rs.getString("motif_libelle"), rs.getString("motif_commentaire"), rs.getLong("inscriptions"),
+                        rs.getLong("bloques")))
+                .list();
+    }
+
+    /** Heure du dernier calcul du stock des paquets en cours par motif (null tant que rien n'est publié). */
+    public OffsetDateTime enCoursMotifCalculeLe() {
+        return jdbc.sql("select max(calcule_le) as calcule_le from bi.stock_en_cours_motif")
+                .query((rs, ligne) -> rs.getObject("calcule_le", OffsetDateTime.class))
+                .list()
+                .getFirst();
     }
 
     /** Heure du dernier calcul du stock des paquets en cours (null tant que rien n'est publié). */

@@ -1,7 +1,7 @@
 /**
  * Types de l'API, générés par openapi-typescript depuis /v3/api-docs (npm run api:types, backend démarré).
  * Amorce écrite à la main pour /api/v1/meta, /api/v1/meta/regions et /api/v1/enrolement/* (devenir, semaines,
- * territoire, centres, preinscriptions, age-sexe, etapes, en-cours, delais, synchronisation) : la régénérer dès
+ * territoire, centres, preinscriptions, age-sexe, etapes, motifs, en-cours, delais, synchronisation) : la régénérer dès
  * que le backend tourne.
  * Ne pas modifier à la main ensuite.
  */
@@ -166,6 +166,24 @@ export interface paths {
         200: {
           content: {
             'application/json': components['schemas']['ArretsParEtape'];
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/enrolement/motifs': {
+    get: {
+      parameters: {
+        query?: {
+          du?: string;
+          au?: string;
+          zone?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['MotifsArret'];
           };
         };
       };
@@ -445,6 +463,42 @@ export interface components {
       libelle: string;
       /** Format: int64 */
       inscriptions: number;
+    };
+    MotifsArret: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      /** Format: date-time */
+      calculeLe?: string | null;
+      /** Format: int32 */
+      seuilJours: number;
+      /** Format: int64 */
+      totalRejets: number;
+      /** Format: int64 */
+      totalEchecs: number;
+      /** Format: int64 */
+      totalEnCours: number;
+      /** Format: int64 */
+      bloques: number;
+      rejets: components['schemas']['LigneMotif'][];
+      echecs: components['schemas']['LigneMotif'][];
+      enCours: components['schemas']['LigneMotif'][];
+    };
+    LigneMotif: {
+      /** @description Code du motif (REFUS_SUPERVISEUR…), null pour « Autres cas » */
+      motif?: string | null;
+      libelle: string;
+      /** @description Message type de MOSIP pour ce motif (catalogue), null si aucun */
+      commentaire?: string | null;
+      /** @description Étape de traitement de MOSIP (reg_stage_name), null pour « Autres cas » */
+      stage?: string | null;
+      stageLibelle?: string | null;
+      /** Format: int64 */
+      inscriptions: number;
+      /** Format: int64 */
+      bloques: number;
     };
     PaquetsEnCours: {
       perimetre: string;
