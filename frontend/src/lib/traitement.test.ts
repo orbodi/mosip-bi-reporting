@@ -11,6 +11,7 @@ const ligne = (
   motif,
   libelle: motif ? `${motif} (fr)` : 'Autres cas',
   commentaire: motif ? `${motif} (MOSIP)` : null,
+  piste: motif ? `${motif} (à vérifier)` : null,
   stage,
   stageLibelle: stage ? `${stage} (fr)` : null,
   inscriptions,
@@ -51,10 +52,15 @@ describe('Où s’arrêtent les paquets', () => {
 
   it('garde l’ordre de l’API (du plus fréquent au moins fréquent) et met en avant le premier motif', () => {
     const [rejets, , enCours] = colonnesArrets(MOTIFS).colonnes;
-    expect(rejets.lignes.map((l) => [l.libelle, l.etape, l.commentaire])).toEqual([
-      ['REFUS_SUPERVISEUR (fr)', 'PacketValidatorStage (fr)', 'REFUS_SUPERVISEUR (MOSIP)'],
-      ['DOUBLON_ABIS (fr)', 'DemoDedupeStage (fr)', 'DOUBLON_ABIS (MOSIP)'],
-      ['Autres cas', null, null],
+    expect(rejets.lignes.map((l) => [l.libelle, l.etape, l.commentaire, l.piste])).toEqual([
+      [
+        'REFUS_SUPERVISEUR (fr)',
+        'PacketValidatorStage (fr)',
+        'REFUS_SUPERVISEUR (MOSIP)',
+        'REFUS_SUPERVISEUR (à vérifier)',
+      ],
+      ['DOUBLON_ABIS (fr)', 'DemoDedupeStage (fr)', 'DOUBLON_ABIS (MOSIP)', 'DOUBLON_ABIS (à vérifier)'],
+      ['Autres cas', null, null, null],
     ]);
     expect(rejets.lignes.map((l) => l.principale)).toEqual([true, false, false]);
     expect(rejets.lignes[1].part).toBeCloseTo(55 / 150);

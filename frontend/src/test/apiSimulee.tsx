@@ -281,8 +281,10 @@ export const MOTIFS: MotifsArret = {
   rejets: [
     {
       motif: 'REFUS_SUPERVISEUR',
-      libelle: 'Refusé par le superviseur du centre',
+      libelle: 'Rejeté par le superviseur du centre',
       commentaire: 'Rejected by Supervisor',
+      piste:
+        'Le superviseur a refusé le paquet au poste ; MOSIP ne transmet pas sa raison. La personne doit se réenrôler.',
       stage: 'PacketValidatorStage',
       stageLibelle: 'Validation du paquet',
       inscriptions: 50133,
@@ -290,8 +292,9 @@ export const MOTIFS: MotifsArret = {
     },
     {
       motif: 'DOUBLON_ABIS',
-      libelle: 'Doublon : empreintes, iris ou visage déjà enregistrés',
+      libelle: 'Doublon biométrique trouvé par l’ABIS',
       commentaire: 'Biometric Duplicate was Found in ABIS',
+      piste: 'La personne est déjà enregistrée (empreintes, iris ou visage) : demande en double.',
       stage: 'DemoDedupeStage',
       stageLibelle: 'Déduplication démographique',
       inscriptions: 20541,
@@ -299,8 +302,9 @@ export const MOTIFS: MotifsArret = {
     },
     {
       motif: 'DOUBLON_VERIFICATEUR',
-      libelle: 'Doublon confirmé par un vérificateur',
+      libelle: 'Doublon confirmé par le vérificateur',
       commentaire: 'Match Found by Manual Verifier',
+      piste: 'Après comparaison manuelle avec un dossier existant : même personne.',
       stage: 'ManualVerificationStage',
       stageLibelle: 'Vérification manuelle',
       inscriptions: 14752,
@@ -310,6 +314,7 @@ export const MOTIFS: MotifsArret = {
       motif: null,
       libelle: 'Autres cas',
       commentaire: null,
+      piste: null,
       stage: null,
       stageLibelle: null,
       inscriptions: 1070,
@@ -319,17 +324,20 @@ export const MOTIFS: MotifsArret = {
   echecs: [
     {
       motif: 'BIOMETRIE_NON_CONCORDANTE',
-      libelle: 'Vérification biométrique de l’agent, du superviseur ou du parent non concordante',
+      libelle: 'Authentification biométrique échouée (type non précisé)',
       commentaire: 'Biometric data did not match',
+      piste:
+        'Contrôle de la personne qui valide le paquet (agent, superviseur ou parent pour un enfant) ; MOSIP ne dit pas laquelle.',
       stage: 'OSIValidatorStage',
       stageLibelle: 'Validation de l’agent, du superviseur et du parent',
       inscriptions: 8165,
       bloques: 0,
     },
     {
-      motif: 'PAQUET_PERDU',
-      libelle: 'Paquet perdu ou abîmé pendant le transfert',
-      commentaire: 'Packet not found in Landing Zone / Packet Upload Failed',
+      motif: 'PAQUET_INTROUVABLE',
+      libelle: 'Paquet introuvable à l’arrivée',
+      commentaire: 'Packet not found in Landing Zone',
+      piste: 'Synchronisé mais jamais déposé sur le serveur : le renvoyer depuis le poste.',
       stage: 'PacketUploaderStage',
       stageLibelle: 'Envoi du paquet',
       inscriptions: 1053,
@@ -339,8 +347,9 @@ export const MOTIFS: MotifsArret = {
   enCours: [
     {
       motif: 'FILE_VERIF_MANUELLE',
-      libelle: 'En attente de vérification manuelle (doublon possible)',
+      libelle: 'En file d’attente de vérification manuelle',
       commentaire: 'Manual verification Sent to queue',
+      piste: 'Doublon possible : un vérificateur doit trancher.',
       stage: 'BioDedupeStage',
       stageLibelle: 'Déduplication biométrique',
       inscriptions: 112618,
@@ -348,8 +357,9 @@ export const MOTIFS: MotifsArret = {
     },
     {
       motif: 'RECU_EN_ATTENTE',
-      libelle: 'Reçu, en attente de traitement',
+      libelle: 'Paquet reçu, en attente de traitement',
       commentaire: 'Packet is Uploaded to Landing Zone / Packet Store',
+      piste: "Normal s'il est récent.",
       stage: 'PacketReceiverStage',
       stageLibelle: 'Réception du paquet',
       inscriptions: 7476,
@@ -359,6 +369,7 @@ export const MOTIFS: MotifsArret = {
       motif: null,
       libelle: 'Autres cas',
       commentaire: null,
+      piste: null,
       stage: null,
       stageLibelle: null,
       inscriptions: 3545,

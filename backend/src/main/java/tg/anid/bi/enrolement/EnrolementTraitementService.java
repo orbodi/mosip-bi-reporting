@@ -99,9 +99,9 @@ public class EnrolementTraitementService {
                                                        String devenir) {
         return regrouper(motifs.stream().filter(m -> devenir.equals(m.devenir())).toList(),
                 EnrolementTraitementRepository.Motif::inscriptions,
-                m -> new MotifsArret.Ligne(m.motif(), m.motifLibelle(), m.motifCommentaire(), m.stage(),
-                        m.stageLibelle(), m.inscriptions(), m.bloques()),
-                reste -> new MotifsArret.Ligne(null, AUTRES_CAS, null, null, null,
+                m -> new MotifsArret.Ligne(m.motif(), m.motifLibelle(), m.motifCommentaire(), m.motifPiste(),
+                        m.stage(), m.stageLibelle(), m.inscriptions(), m.bloques()),
+                reste -> new MotifsArret.Ligne(null, AUTRES_CAS, null, null, null, null,
                         somme(reste, EnrolementTraitementRepository.Motif::inscriptions),
                         somme(reste, EnrolementTraitementRepository.Motif::bloques)));
     }

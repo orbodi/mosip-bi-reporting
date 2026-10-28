@@ -91,7 +91,7 @@ class EnrolementTraitementServiceTest {
     private static EnrolementTraitementRepository.Motif motif(String devenir, String stage, String motif,
                                                              long inscriptions, long bloques) {
         return new EnrolementTraitementRepository.Motif(devenir, stage, stage + " (fr)", 10, motif, motif + " (fr)",
-                motif + " (MOSIP)", inscriptions, bloques);
+                motif + " (MOSIP)", motif + " (à vérifier)", inscriptions, bloques);
     }
 
     @Test
@@ -114,15 +114,15 @@ class EnrolementTraitementServiceTest {
         assertThat(m.rejets()).extracting(MotifsArret.Ligne::motif)
                 .containsExactly("REFUS_SUPERVISEUR", "DOUBLON_ABIS", "DOUBLON_VERIFICATEUR");
         assertThat(m.rejets().getFirst()).extracting(MotifsArret.Ligne::libelle, MotifsArret.Ligne::commentaire,
-                        MotifsArret.Ligne::stage, MotifsArret.Ligne::stageLibelle)
-                .containsExactly("REFUS_SUPERVISEUR (fr)", "REFUS_SUPERVISEUR (MOSIP)", "PacketValidatorStage",
-                        "PacketValidatorStage (fr)");
+                        MotifsArret.Ligne::piste, MotifsArret.Ligne::stage, MotifsArret.Ligne::stageLibelle)
+                .containsExactly("REFUS_SUPERVISEUR (fr)", "REFUS_SUPERVISEUR (MOSIP)",
+                        "REFUS_SUPERVISEUR (à vérifier)", "PacketValidatorStage", "PacketValidatorStage (fr)");
         // En cours : deux petites lignes (3 et 2 sur 1 000) regroupées en « Autres cas », bloqués compris.
         assertThat(m.enCours()).extracting(MotifsArret.Ligne::libelle)
                 .containsExactly("FILE_VERIF_MANUELLE (fr)", "RECU_EN_ATTENTE (fr)", "Autres cas");
-        assertThat(m.enCours().getLast()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::stage,
-                        MotifsArret.Ligne::inscriptions, MotifsArret.Ligne::bloques)
-                .containsExactly(null, null, 5L, 3L);
+        assertThat(m.enCours().getLast()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::piste,
+                        MotifsArret.Ligne::stage, MotifsArret.Ligne::inscriptions, MotifsArret.Ligne::bloques)
+                .containsExactly(null, null, null, 5L, 3L);
         // Totaux = sommes des lignes (contrôle avec le bloc « Devenir »).
         assertThat(m.totalRejets()).isEqualTo(1000);
         assertThat(m.totalEchecs()).isEqualTo(100);

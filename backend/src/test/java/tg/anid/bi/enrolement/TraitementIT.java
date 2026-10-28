@@ -80,9 +80,10 @@ class TraitementIT {
         jdbc.sql("""
                 insert into bi.fait_arret_motif_jour (jour, centre_id, type_demande, devenir, stage, stage_libelle,
                                                       stage_ordre, motif, motif_libelle, motif_commentaire,
-                                                      inscriptions)
+                                                      motif_piste, inscriptions)
                 select v.jour, z.id, 'NEW', v.devenir, v.stage, v.stage_libelle, v.ordre, v.motif, v.libelle,
-                       v.commentaire, v.n
+                       v.commentaire, case when v.motif = 'REFUS_SUPERVISEUR' then 'La personne doit se réenrôler.' end,
+                       v.n
                 from (values (date '2026-01-05', '10011', 'rejete', 'PacketValidatorStage', 'Validation du paquet', 30,
                               'REFUS_SUPERVISEUR', 'Refusé par le superviseur du centre', 'Rejected by Supervisor', 7),
                              (date '2026-01-05', '10011', 'rejete', 'DemoDedupeStage', 'Déduplication démographique',
@@ -188,6 +189,8 @@ class TraitementIT {
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("REFUS_SUPERVISEUR", 9L),
                         org.assertj.core.groups.Tuple.tuple("DOUBLON_ABIS", 3L));
         assertThat(togo.rejets().getFirst().commentaire()).isEqualTo("Rejected by Supervisor");
+        assertThat(togo.rejets().getFirst().piste()).isEqualTo("La personne doit se réenrôler.");
+        assertThat(togo.enCours().getFirst().piste()).isNull();
         assertThat(togo.rejets().getFirst().stageLibelle()).isEqualTo("Validation du paquet");
         assertThat(togo.totalRejets()).isEqualTo(d.rejetees()).isEqualTo(12);
         assertThat(togo.totalEchecs()).isEqualTo(d.echouees()).isEqualTo(4);

@@ -38,7 +38,8 @@ public class EnrolementTraitementRepository {
 
     /** Paquets d'un devenir (rejete, echoue, en_cours) à une étape et un motif ; bloqués pour les en cours. */
     public record Motif(String devenir, String stage, String stageLibelle, int stageOrdre, String motif,
-                        String motifLibelle, String motifCommentaire, long inscriptions, long bloques) {
+                        String motifLibelle, String motifCommentaire, String motifPiste, long inscriptions,
+                        long bloques) {
     }
 
     /** Une classe d'histogramme de délai : borne basse en heures, paquets. */
@@ -96,11 +97,11 @@ public class EnrolementTraitementRepository {
     public List<Motif> parMotif(LocalDate du, LocalDate au, String zone) {
         return jdbc.sql(PERIMETRE + """
                         select devenir, stage, stage_libelle, stage_ordre, motif, motif_libelle, motif_commentaire,
-                               inscriptions, bloques
+                               motif_piste, inscriptions, bloques
                         from (
                             select f.devenir, f.stage, min(f.stage_libelle) as stage_libelle,
                                    min(f.stage_ordre) as stage_ordre, f.motif, min(f.motif_libelle) as motif_libelle,
-                                   min(f.motif_commentaire) as motif_commentaire,
+                                   min(f.motif_commentaire) as motif_commentaire, min(f.motif_piste) as motif_piste,
                                    sum(f.inscriptions) as inscriptions, 0 as bloques
                             from bi.fait_arret_motif_jour f
                             where (cast(:du as date) is null or f.jour >= cast(:du as date))
@@ -109,7 +110,8 @@ public class EnrolementTraitementRepository {
                             group by f.devenir, f.stage, f.motif
                             union all
                             select 'en_cours', s.stage, min(s.stage_libelle), min(s.stage_ordre), s.motif,
-                                   min(s.motif_libelle), min(s.motif_commentaire), sum(s.inscriptions),
+                                   min(s.motif_libelle), min(s.motif_commentaire), min(s.motif_piste),
+                                   sum(s.inscriptions),
                                    coalesce(sum(s.inscriptions) filter (where s.anciennete = 'plus_30j'), 0)
                             from bi.stock_en_cours_motif s
                             where cast(:zone as text) is null or s.centre_id in (select id from perimetre)
@@ -123,8 +125,8 @@ public class EnrolementTraitementRepository {
                 .param("zone", zone)
                 .query((rs, ligne) -> new Motif(rs.getString("devenir"), rs.getString("stage"),
                         rs.getString("stage_libelle"), rs.getInt("stage_ordre"), rs.getString("motif"),
-                        rs.getString("motif_libelle"), rs.getString("motif_commentaire"), rs.getLong("inscriptions"),
-                        rs.getLong("bloques")))
+                        rs.getString("motif_libelle"), rs.getString("motif_commentaire"), rs.getString("motif_piste"),
+                        rs.getLong("inscriptions"), rs.getLong("bloques")))
                 .list();
     }
 

@@ -41,11 +41,11 @@ describe('Où s’arrêtent les paquets', () => {
     const bloc = await blocAffiche();
     const rejets = within(await bloc.findByRole('list', { name: 'Rejetés par motif' }));
     // La liste existe avant la réponse (vide) : attendre les lignes de l'API.
-    await rejets.findByText('Refusé par le superviseur du centre');
+    await rejets.findByText('Rejeté par le superviseur du centre');
     expect(rejets.getAllByRole('listitem').map((l) => l.firstChild?.firstChild?.textContent)).toEqual([
-      'Refusé par le superviseur du centre',
-      'Doublon : empreintes, iris ou visage déjà enregistrés',
-      'Doublon confirmé par un vérificateur',
+      'Rejeté par le superviseur du centre',
+      'Doublon biométrique trouvé par l’ABIS',
+      'Doublon confirmé par le vérificateur',
       'Autres cas',
     ]);
     const premiere = rejets.getAllByRole('listitem')[0];
@@ -54,8 +54,14 @@ describe('Où s’arrêtent les paquets', () => {
     expect(within(premiere).getByText('Rejected by Supervisor')).toHaveAttribute('lang', 'en');
     expect(premiere).toHaveTextContent(texte(pct(50133 / 86496)));
     expect(premiere).toHaveClass('etape-arret--principale');
-    // « Autres cas » : ni étape ni message.
-    expect(rejets.getAllByRole('listitem')[3].querySelector('.etape-arret__source')).toBeEmptyDOMElement();
+    // Ce qu'il faut vérifier, sous le motif.
+    expect(premiere).toHaveTextContent(
+      'À vérifier : Le superviseur a refusé le paquet au poste ; MOSIP ne transmet pas sa raison.',
+    );
+    // « Autres cas » : ni étape, ni message, ni piste.
+    const autres = rejets.getAllByRole('listitem')[3];
+    expect(autres.querySelector('.etape-arret__source')).toBeEmptyDOMElement();
+    expect(within(autres).queryByText(/À vérifier/)).not.toBeInTheDocument();
   });
 
   it('en cours : bloqués depuis plus de 30 jours, en tête de colonne et par motif', async () => {
@@ -70,7 +76,7 @@ describe('Où s’arrêtent les paquets', () => {
         texte(`${nf(59264)} bloqués depuis plus de 30 jours`),
       ),
     );
-    const file = enCours.getByText('En attente de vérification manuelle (doublon possible)').closest('li')!;
+    const file = enCours.getByText('En file d’attente de vérification manuelle').closest('li')!;
     expect(within(file).getByText(/récents/)).toHaveTextContent(
       texte(`${nf(58834)} bloqués · ${nf(112618 - 58834)} récents`),
     );

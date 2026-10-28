@@ -7,12 +7,14 @@ export type CleArret = 'rejete' | 'echoue' | 'en-cours';
 export interface LigneArret {
   /** Clé React : étape et motif, « autres » pour le regroupement « Autres cas ». */
   cle: string;
-  /** Motif en français (« Refusé par le superviseur du centre »). */
+  /** Motif en français (« Rejeté par le superviseur du centre »). */
   libelle: string;
   /** Étape de traitement en français, null pour « Autres cas ». */
   etape: string | null;
   /** Message type de MOSIP pour ce motif (catalogue), null si aucun. */
   commentaire: string | null;
+  /** Ce qu'il faut vérifier pour ce motif (catalogue), null pour « Autres cas ». */
+  piste: string | null;
   valeur: number;
   /** Paquets en cours bloqués (colonne « En cours » seulement), sinon 0. */
   bloques: number;
@@ -77,6 +79,7 @@ export function colonnesArrets(motifs?: MotifsArret): { sansNiu: number; colonne
         libelle: l.libelle,
         etape: l.stageLibelle ?? null,
         commentaire: l.commentaire ?? null,
+        piste: l.piste ?? null,
         valeur: l.inscriptions,
         bloques: l.bloques,
         part: part(l.inscriptions, c.total),

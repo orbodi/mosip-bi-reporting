@@ -492,6 +492,8 @@ export interface components {
       libelle: string;
       /** @description Message type de MOSIP pour ce motif (catalogue), null si aucun */
       commentaire?: string | null;
+      /** @description Ce qu'il faut vérifier pour ce motif (catalogue), null pour « Autres cas » */
+      piste?: string | null;
       /** @description Étape de traitement de MOSIP (reg_stage_name), null pour « Autres cas » */
       stage?: string | null;
       stageLibelle?: string | null;

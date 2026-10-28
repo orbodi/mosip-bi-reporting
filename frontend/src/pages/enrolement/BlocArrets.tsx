@@ -74,6 +74,11 @@ function Colonne({ colonne, seuil }: { colonne: ColonneArret; seuil: number }) {
               <span className="etape-arret__pct chiffre">{pct(l.part)}</span>
             </div>
             <Piste ligne={l} colonne={colonne} />
+            {l.piste && (
+              <p className="etape-arret__a-verifier">
+                <span className="etape-arret__a-verifier-titre">À vérifier :</span> {l.piste}
+              </p>
+            )}
             {enCours && (
               <p className="etape-arret__detail">
                 {l.bloques > 0 && (
@@ -104,8 +109,9 @@ function Colonne({ colonne, seuil }: { colonne: ColonneArret; seuil: number }) {
 }
 
 /**
- * Bloc « Où s'arrêtent les paquets » (décision du 26/10/2026) : pour chaque paquet sans NIU, le motif donné par MOSIP
- * (status_comment, traduit par le catalogue des motifs) et l'étape de traitement, du plus fréquent au moins fréquent,
+ * Bloc « Où s'arrêtent les paquets » (décisions du 26 et du 28/10/2026) : pour chaque paquet sans NIU, le motif donné
+ * par MOSIP (status_comment, traduit fidèlement par le catalogue des motifs, avec ce qu'il faut vérifier) et l'étape de
+ * traitement, du plus fréquent au moins fréquent,
  * pour les rejetés, les échoués et les en cours dont bloqués (GET /enrolement/motifs). National. Les barres sont la
  * part de la colonne ; les nombres sont écrits à côté.
  */

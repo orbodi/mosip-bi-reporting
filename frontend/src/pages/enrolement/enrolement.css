@@ -604,6 +604,17 @@
   height: 100%;
   border-radius: var(--r-pilule);
 }
+/* « À vérifier : … » : ce que veut dire le motif et où chercher (catalogue des motifs) */
+.etape-arret__a-verifier {
+  margin: 2px 0 0;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+  line-height: 1.4;
+}
+.etape-arret__a-verifier-titre {
+  color: var(--encre);
+  font-weight: 600;
+}
 .etape-arret__detail {
   margin: 2px 0 0;
   color: var(--encre-2);

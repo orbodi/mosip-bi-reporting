@@ -37,13 +37,14 @@ public record MotifsArret(String perimetre, LocalDate du, LocalDate au, OffsetDa
      * @param motif         code du motif (REFUS_SUPERVISEUR…), null pour « Autres cas »
      * @param libelle       motif en français
      * @param commentaire   message type de MOSIP pour ce motif (catalogue), null si aucun
+     * @param piste         ce qu'il faut vérifier pour ce motif (catalogue), null pour « Autres cas »
      * @param stage         étape de traitement de MOSIP (PacketValidatorStage…), null pour « Autres cas »
      * @param stageLibelle  étape en français, null pour « Autres cas »
      * @param inscriptions  paquets
      * @param bloques       dont bloqués depuis plus de 30 jours (en cours seulement, 0 sinon)
      */
     @Schema(name = "LigneMotif")
-    public record Ligne(String motif, String libelle, String commentaire, String stage, String stageLibelle,
-                        long inscriptions, long bloques) {
+    public record Ligne(String motif, String libelle, String commentaire, String piste, String stage,
+                        String stageLibelle, long inscriptions, long bloques) {
     }
 }
