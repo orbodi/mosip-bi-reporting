@@ -18,11 +18,11 @@ describe('Page Enrôlement', () => {
       'Profil des pré-inscrits',
       'Devenir des inscriptions',
       'Inscriptions et NIU par semaine',
-      'Où s’arrêtent les paquets',
-      'Délais de traitement',
       'Territoire : vue nationale',
       'NIU générés par âge et par sexe',
       'Top des centres',
+      'Où s’arrêtent les paquets',
+      'Délais de traitement',
     ]);
   });
 
