@@ -23,8 +23,10 @@ export interface LigneArret {
   bloques: number;
   /** Part de la colonne. */
   part: number;
-  /** Motif le plus fréquent de la colonne (première ligne, hors « Autres cas »), mis en gras. */
+  /** Motif le plus fréquent de la colonne (première ligne, hors « Autres cas »). */
   principale: boolean;
+  /** Ligne « Autres cas » (petits motifs regroupés par l'API). */
+  autres: boolean;
 }
 
 export interface ColonneArret {
@@ -98,6 +100,7 @@ export function colonnesArrets(motifs?: MotifsArret): { sansNiu: number; colonne
         bloques: l.bloques,
         part: part(l.inscriptions, c.total),
         principale: i === 0 && !!l.motif && l.inscriptions > 0,
+        autres: !l.motif,
       })),
     })),
   };

@@ -305,6 +305,43 @@ export function Icone({
   );
 }
 
+/**
+ * Icônes de statut d'un paquet (rejeté, échoué, en cours), au trait, dessinées sur un même cercle : d'après Lucide
+ * (circle-x, circle-alert, clock ; licence ISC, https://lucide.dev). Couleur du texte parent (currentColor), décoratives.
+ */
+const STATUTS: Record<'rejete' | 'echoue' | 'en-cours', ReactElement> = {
+  rejete: <path d="m15 9-6 6M9 9l6 6" />,
+  echoue: <path d="M12 8v4M12 16h.01" />,
+  'en-cours': <path d="M12 6v6l4 2" />,
+};
+
+export function IconeStatut({
+  statut,
+  taille = 20,
+}: {
+  statut: 'rejete' | 'echoue' | 'en-cours';
+  taille?: number;
+}) {
+  return (
+    <svg
+      width={taille}
+      height={taille}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      className="icone-statut"
+    >
+      <circle cx="12" cy="12" r="10" />
+      {STATUTS[statut]}
+    </svg>
+  );
+}
+
 /** Triangle d'alerte (▲), avec un libellé pour les lecteurs d'écran. */
 export function Drapeau({ libelle }: { libelle?: string }) {
   return (

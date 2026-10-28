@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nf, pct } from '../../lib/format';
 import { afficher, simulerApi } from '../../test/apiSimulee';
@@ -6,87 +7,83 @@ import { afficher, simulerApi } from '../../test/apiSimulee';
 const texte = (t: string) => t.replace(/\s+/g, ' ');
 const blocAffiche = async () =>
   within(await screen.findByRole('region', { name: 'Où s’arrêtent les paquets' }));
+const noms = (liste: HTMLElement) =>
+  within(liste)
+    .getAllByRole('listitem')
+    .map((l) => l.querySelector('.motif-arret__nom')?.textContent);
 
 describe('Où s’arrêtent les paquets', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('compte les paquets sans NIU et les répartit en rejetés, échoués et en cours', async () => {
+  it('trois onglets avec leur nombre, Rejetés ouvert ; les paquets sans NIU en sous-titre', async () => {
     simulerApi();
     afficher('/enrolement');
 
     const bloc = await blocAffiche();
     // 86 496 rejetés + 9 218 échoués + 123 639 en cours, comme le bloc Devenir.
     await waitFor(() =>
-      expect(bloc.getByText(/paquets n’ont pas de NIU/)).toHaveTextContent(
-        texte(`${nf(219353)} paquets n’ont pas de NIU`),
+      expect(bloc.getByText(/paquets n’ont pas encore abouti à un NIU/)).toHaveTextContent(
+        texte(`${nf(219353)} paquets n’ont pas encore abouti à un NIU.`),
       ),
     );
     expect(bloc.getByText('Ensemble du Togo')).toBeInTheDocument();
-    expect(bloc.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
-      'Rejetés',
-      'Échoués',
-      'En cours',
+    const onglets = within(bloc.getByRole('tablist', { name: 'Devenir des paquets sans NIU' }));
+    expect(onglets.getAllByRole('tab').map((o) => texte(o.textContent ?? ''))).toEqual([
+      texte(`Rejetés${nf(86496)}`),
+      texte(`Échoués${nf(9218)}`),
+      texte(`En cours${nf(123639)}`),
     ]);
-    const rejets = within(bloc.getByRole('article', { name: 'Rejetés' }));
-    expect(rejets.getByText(texte(nf(86496)))).toBeInTheDocument();
-    expect(
-      rejets.getByText(texte(`paquets, ${pct(86496 / 219353)} des paquets sans NIU`)),
-    ).toBeInTheDocument();
+    expect(onglets.getByRole('tab', { name: /^Rejetés/, selected: true })).toBeInTheDocument();
   });
 
-  it('donne pour chaque ligne le motif, l’étape et le message de MOSIP, du plus fréquent au moins fréquent', async () => {
+  it('Rejetés : motif, paquets et part, étape et message de MOSIP, du plus fréquent au moins fréquent', async () => {
     simulerApi();
     afficher('/enrolement');
 
     const bloc = await blocAffiche();
-    const rejets = within(await bloc.findByRole('list', { name: 'Rejetés par motif' }));
+    const liste = await bloc.findByRole('list', { name: 'Rejetés par motif' });
     // La liste existe avant la réponse (vide) : attendre les lignes de l'API.
-    await rejets.findByText('Rejeté par le superviseur du centre');
-    expect(rejets.getAllByRole('listitem').map((l) => l.firstChild?.firstChild?.textContent)).toEqual([
+    await within(liste).findByText('Rejeté par le superviseur du centre');
+    expect(noms(liste)).toEqual([
       'Rejeté par le superviseur du centre',
       'Doublon biométrique trouvé par l’ABIS',
       'Doublon confirmé par le vérificateur',
       'Autres cas',
     ]);
-    const premiere = rejets.getAllByRole('listitem')[0];
-    expect(premiere).toHaveTextContent(texte(nf(50133)));
+    const [premiere, , troisieme, autres] = within(liste).getAllByRole('listitem');
+    expect(premiere).toHaveTextContent(texte(`${nf(50133)}${pct(50133 / 86496)}`));
     expect(premiere).toHaveTextContent('Validation du paquet · Rejected by Supervisor');
     expect(within(premiere).getByText('Rejected by Supervisor')).toHaveAttribute('lang', 'en');
-    expect(premiere).toHaveTextContent(texte(pct(50133 / 86496)));
-    expect(premiere).toHaveClass('etape-arret--principale');
-    // Ce qu'il faut vérifier, sous le motif.
-    expect(premiere).toHaveTextContent(
-      'À vérifier : Le superviseur a refusé le paquet au poste ; MOSIP ne transmet pas sa raison.',
-    );
-    // Un motif posé à plusieurs étapes : une seule ligne, l'étape principale et le nombre des autres.
-    expect(rejets.getAllByRole('listitem')[2]).toHaveTextContent(
+    // Un motif posé à plusieurs étapes : l'étape principale et le nombre des autres.
+    expect(troisieme).toHaveTextContent(
       'Vérification manuelle et 6 autres étapes · Match Found by Manual Verifier',
     );
-    // « Autres cas » : ce que la ligne regroupe, ni message ni piste.
-    const autres = rejets.getAllByRole('listitem')[3];
-    expect(autres.querySelector('.etape-arret__source')).toHaveTextContent('Motifs de moins de 1 % chacun');
-    expect(within(autres).queryByText(/À vérifier/)).not.toBeInTheDocument();
+    // « Autres cas » : ce que la ligne regroupe, sans message.
+    expect(autres.querySelector('.motif-arret__source')).toHaveTextContent('Motifs de moins de 1 % chacun');
+    expect(autres).toHaveClass('motif-arret--autres');
+    // Plus de ligne « À vérifier » (décision du 28/10/2026).
+    expect(bloc.queryByText(/À vérifier/)).not.toBeInTheDocument();
   });
 
-  it('en cours : bloqués depuis plus de 30 jours, en tête de colonne et par motif', async () => {
+  it('En cours, au clic : sans activité depuis plus de 30 jours, en tête et par motif', async () => {
     simulerApi();
     afficher('/enrolement');
+    const utilisateur = userEvent.setup();
 
     const bloc = await blocAffiche();
-    const enCours = within(await bloc.findByRole('article', { name: 'En cours' }));
-    // La ligne des bloqués est là avant la réponse, avec 0 : attendre le chiffre de l'API.
-    await waitFor(() =>
-      expect(enCours.getByText(/bloqués depuis plus de 30 jours/)).toHaveTextContent(
-        texte(`${nf(59264)} bloqués depuis plus de 30 jours`),
-      ),
+    await bloc.findByText('Rejeté par le superviseur du centre');
+    await utilisateur.click(bloc.getByRole('tab', { name: /^En cours/ }));
+
+    expect(bloc.getByRole('tab', { name: /^En cours/, selected: true })).toBeInTheDocument();
+    expect(bloc.getByText(/sans activité depuis plus de 30 jours/)).toHaveTextContent(
+      texte(`${nf(59264)} sans activité depuis plus de 30 jours`),
     );
-    const file = enCours.getByText('En file d’attente de vérification manuelle').closest('li')!;
-    expect(within(file).getByText(/récents/)).toHaveTextContent(
-      texte(`${nf(58834)} bloqués · ${nf(112618 - 58834)} récents`),
+    const liste = bloc.getByRole('list', { name: 'En cours par motif' });
+    const file = within(liste).getByText('En file d’attente de vérification manuelle').closest('li')!;
+    expect(file.querySelector('.motif-arret__detail')).toHaveTextContent(
+      texte(`${nf(58834)} sans activité depuis 30 jours · ${nf(112618 - 58834)} récents`),
     );
-    expect(enCours.getByRole('list', { name: 'Légende' })).toHaveTextContent(
-      'Bloqués : aucune activité depuis plus de 30 jours',
-    );
+    expect(bloc.queryByRole('list', { name: 'Rejetés par motif' })).not.toBeInTheDocument();
   });
 
   it('reste national', async () => {
@@ -99,16 +96,22 @@ describe('Où s’arrêtent les paquets', () => {
     expect(lus.every((u) => !u.searchParams.has('zone'))).toBe(true);
   });
 
-  it('sans réponse de l’API : trois colonnes à 0, sans ligne ni message', async () => {
+  it('sans réponse de l’API : trois onglets à 0, sans ligne ni message', async () => {
     simulerApi({ '/enrolement/motifs': undefined });
     afficher('/enrolement');
 
     const bloc = await blocAffiche();
     await waitFor(() => expect(bloc.queryByText('Chargement des chiffres…')).not.toBeInTheDocument());
-    expect(bloc.getAllByRole('article')).toHaveLength(3);
-    expect(bloc.getByText(/paquets n’ont pas de NIU/)).toHaveTextContent(/^0 paquets/);
-    expect(bloc.getAllByText('0').length).toBeGreaterThanOrEqual(4);
+    expect(bloc.getAllByRole('tab')).toHaveLength(3);
+    expect(bloc.getAllByRole('tab').map((o) => o.querySelector('.arrets__nombre')?.textContent)).toEqual([
+      '0',
+      '0',
+      '0',
+    ]);
+    expect(bloc.getByText(/paquets n’ont pas encore abouti/)).toHaveTextContent(/^0 paquets/);
+    expect(
+      within(bloc.getByRole('list', { name: 'Rejetés par motif' })).queryAllByRole('listitem'),
+    ).toHaveLength(0);
     expect(bloc.queryByRole('alert')).not.toBeInTheDocument();
-    expect(bloc.queryAllByRole('listitem').filter((l) => l.closest('.arret__etapes'))).toHaveLength(0);
   });
 });

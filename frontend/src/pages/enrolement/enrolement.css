@@ -461,184 +461,210 @@
   color: var(--statut-bloque);
 }
 
-/* Bloc « Où s'arrêtent les paquets » : une colonne teintée par statut, barres = part de la colonne. */
-.arrets {
+/* Bloc « Où s'arrêtent les paquets » : trois onglets (contrôle segmenté) puis les motifs de l'onglet choisi. */
+.arrets__onglets {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--e-4);
-  align-items: stretch;
+  gap: 2px;
+  margin-top: var(--e-5);
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--fond);
 }
-@media (max-width: 1000px) {
-  .arrets {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-.arret {
+.arrets__onglet {
   --statut: var(--trait);
-  --titre: var(--encre);
-  --teinte: color-mix(in srgb, var(--statut) 6%, var(--surface));
-  --piste: color-mix(in srgb, var(--statut) 16%, var(--surface));
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--trait);
-  border-radius: var(--r-l);
-  background: var(--surface);
-}
-.arret--rejete {
-  --statut: var(--statut-rejete);
-  --titre: var(--rouge-fonce);
-}
-.arret--echoue {
-  --statut: var(--statut-echoue);
-  --titre: color-mix(in srgb, var(--statut-echoue) 55%, var(--encre));
-}
-.arret--en-cours {
-  --statut: var(--statut-en-cours);
-  --titre: var(--statut-bloque);
-}
-.arret__tete {
-  padding: var(--e-4) var(--e-5);
-  border-bottom: 1px solid var(--piste);
-  background: var(--teinte);
-}
-.arret__titre {
   display: flex;
   align-items: center;
-  gap: var(--e-2);
-  margin: 0;
-  color: var(--titre);
-  font-size: var(--t-m);
-  font-weight: 600;
+  gap: var(--e-3);
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--r-m);
+  cursor: pointer;
+  outline: none;
+  transition: background-color 0.2s;
 }
-.arret__total {
+.arrets__onglet--rejete {
+  --statut: var(--statut-rejete);
+}
+.arrets__onglet--echoue {
+  --statut: var(--statut-echoue);
+}
+.arrets__onglet--en-cours {
+  --statut: var(--statut-en-cours);
+}
+.arrets__onglet[data-hovered]:not([data-selected]) {
+  background: var(--bleu-clair);
+}
+.arrets__onglet[data-hovered]:not([data-selected]) .arrets__titre,
+.arrets__onglet[data-hovered]:not([data-selected]) .arrets__nombre {
+  color: var(--bleu);
+}
+.arrets__onglet[data-selected] {
+  background: var(--surface);
+  box-shadow: var(--ombre-1);
+}
+.arrets__onglet[data-focus-visible] {
+  outline: 2px solid var(--bleu);
+  outline-offset: 2px;
+}
+/* Tuile teintée de la couleur du statut ; icône un peu plus foncée (au moins 3:1 sur la tuile). */
+.arrets__tuile {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--e-2);
-  margin: var(--e-1) 0 0;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--statut) 10%, var(--surface));
+  color: color-mix(in srgb, var(--statut) 85%, var(--encre));
 }
-.arret__nombre {
-  font-size: var(--t-kpi);
-  font-weight: 700;
-  line-height: 1.25;
+.arrets__texte {
+  display: grid;
+  min-width: 0;
 }
-.arret__part {
+.arrets__titre {
   color: var(--encre-2);
   font-size: var(--t-s);
+  font-weight: 500;
 }
-.arret__bloques {
+.arrets__onglet[data-selected] .arrets__titre {
+  color: var(--encre);
+}
+.arrets__nombre {
+  color: var(--encre);
+  font-size: var(--t-xl);
+  font-weight: 600;
+  line-height: 1.25;
+}
+@media (max-width: 700px) {
+  .arrets__onglet {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--e-2);
+    padding: var(--e-2) var(--e-3);
+  }
+  .arrets__tuile {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-m);
+  }
+  .arrets__nombre {
+    font-size: var(--t-l);
+  }
+}
+.arrets__panneau {
+  margin-top: var(--e-5);
+  outline: none;
+}
+.arrets__panneau[data-focus-visible] {
+  outline: 2px solid var(--bleu);
+  outline-offset: 4px;
+}
+.arrets__bloques {
   display: flex;
   align-items: center;
   gap: var(--e-2);
-  margin: var(--e-2) 0 0;
-  color: var(--titre);
+  margin: 0 0 var(--e-3);
+  color: var(--statut-bloque);
   font-size: var(--t-s);
 }
-.arret__bloques i,
-.arret__legende i {
+.arrets__bloques strong {
+  font-weight: 600;
+}
+.arrets__bloques i {
   flex-shrink: 0;
   width: 10px;
   height: 10px;
   border-radius: 2px;
 }
-.arret__etapes {
-  display: grid;
-  gap: var(--e-4);
+.arrets__motifs {
   margin: 0;
-  padding: var(--e-4) var(--e-5) var(--e-5);
+  padding: 0;
   list-style: none;
 }
-.etape-arret {
+/* Une ligne par motif : nom, paquets, part alignés en colonnes ; barre et source sur toute la largeur. */
+.motif-arret {
   display: grid;
-  gap: 2px;
-}
-.etape-arret__ligne {
-  display: flex;
+  grid-template-columns: minmax(0, 1fr) 96px 64px;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--e-3);
+  gap: 2px var(--e-4);
+  padding: 14px 0;
+  border-top: 1px solid var(--trait);
 }
-.etape-arret__nom {
-  font-size: var(--t-s);
-  font-weight: 500;
+.motif-arret--entete {
+  padding: 0 0 6px;
+  border-top: 0;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
 }
-.etape-arret__valeur {
+.motif-arret__nom {
   font-size: var(--t-m);
   font-weight: 600;
 }
-.etape-arret--principale .etape-arret__nom,
-.etape-arret--principale .etape-arret__valeur {
-  font-weight: 700;
+.motif-arret__valeur {
+  font-size: var(--t-m);
+  font-weight: 600;
+  text-align: right;
 }
-.etape-arret__ligne--2 {
-  align-items: baseline;
-}
-/* Étape en français · message type de MOSIP (en anglais, en italique) */
-.etape-arret__source {
-  min-width: 0;
+.motif-arret__part {
   color: var(--encre-2);
+  font-size: var(--t-s);
+  text-align: right;
+}
+.motif-arret--entete .motif-arret__valeur,
+.motif-arret--entete .motif-arret__part {
   font-size: var(--t-xs);
-  overflow-wrap: anywhere;
+  font-weight: 400;
 }
-.etape-arret__commentaire {
-  font-style: italic;
-}
-.etape-arret__pct {
+.motif-arret--autres .motif-arret__nom {
   color: var(--encre-2);
-  font-size: var(--t-xs);
-  white-space: nowrap;
+  font-weight: 500;
 }
-.etape-arret__piste {
+.motif-arret__piste {
   display: flex;
+  grid-column: 1 / -1;
   gap: 2px;
   height: 6px;
-  margin-top: var(--e-1);
+  margin-top: 6px;
   border-radius: var(--r-pilule);
-  background: var(--piste);
+  background: var(--fond);
   overflow: hidden;
 }
-.etape-arret__piste > span {
+.motif-arret__piste > span {
   display: block;
   height: 100%;
   border-radius: var(--r-pilule);
 }
-/* « À vérifier : … » : ce que veut dire le motif et où chercher (catalogue des motifs) */
-.etape-arret__a-verifier {
-  margin: 2px 0 0;
+.motif-arret__barre--autres {
+  background: color-mix(in srgb, var(--encre-2) 35%, var(--surface));
+}
+/* Étape en français · message de MOSIP (en anglais, en italique) */
+.motif-arret__source,
+.motif-arret__detail {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
   color: var(--encre-2);
-  font-size: var(--t-xs);
-  line-height: 1.4;
+  font-size: var(--t-s);
+  overflow-wrap: anywhere;
 }
-.etape-arret__a-verifier-titre {
-  color: var(--encre);
-  font-weight: 600;
-}
-.etape-arret__detail {
-  margin: 2px 0 0;
-  color: var(--encre-2);
+.motif-arret__detail {
+  margin-top: 2px;
   font-size: var(--t-xs);
 }
-.etape-arret__detail strong {
+.motif-arret__commentaire {
+  font-style: italic;
+}
+.motif-arret__detail strong {
   color: var(--statut-bloque);
   font-weight: 600;
 }
-.arret__legende {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--e-1) var(--e-4);
-  margin: auto var(--e-5) 0;
-  padding: var(--e-3) 0 var(--e-4);
-  border-top: 1px dashed var(--piste);
-  list-style: none;
-  color: var(--encre-2);
-  font-size: var(--t-xs);
-}
-.arret__legende li {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-2);
+@media (max-width: 700px) {
+  .motif-arret {
+    grid-template-columns: minmax(0, 1fr) 64px 48px;
+    gap: 2px var(--e-3);
+  }
 }
 
 /* Bloc « Délais de traitement » */
