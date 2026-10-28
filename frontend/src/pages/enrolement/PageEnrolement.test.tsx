@@ -19,7 +19,7 @@ describe('Page Enrôlement', () => {
       'Devenir des inscriptions',
       'Inscriptions et NIU par semaine',
       'Territoire : vue nationale',
-      'NIU générés par âge et par sexe',
+      'NIU générés par âge, sexe et nationalité',
       'Top des centres',
       'Où s’arrêtent les paquets',
       'Délais de traitement',
@@ -98,8 +98,14 @@ describe('Page Enrôlement', () => {
     });
     afficher('/enrolement');
 
-    const bloc = within(await screen.findByRole('region', { name: 'NIU générés par âge et par sexe' }));
+    const bloc = within(
+      await screen.findByRole('region', { name: 'NIU générés par âge, sexe et nationalité' }),
+    );
     expect(bloc.queryByRole('note')).not.toBeInTheDocument();
+    // Nationalités : vides tant que l'API d'enrichissement n'est pas branchée (lot 6).
+    expect(
+      within(bloc.getByRole('list', { name: 'NIU générés par nationalité' })).queryAllByRole('listitem'),
+    ).toHaveLength(0);
     const pyramide = within(
       bloc.getByRole('table', { name: 'Répartition des NIU par tranche d’âge et par sexe' }),
     );
@@ -107,7 +113,7 @@ describe('Page Enrôlement', () => {
     expect(pyramide.getAllByRole('cell').every((c) => c.textContent === '0')).toBe(true);
     expect(bloc.getByText(/^Femmes :/).textContent).toMatch(/^Femmes : 0 \(0,0\s%\)$/);
     // Seules les puces de la légende sont colorées : aucune barre n'est dessinée.
-    const section = screen.getByRole('region', { name: 'NIU générés par âge et par sexe' });
+    const section = screen.getByRole('region', { name: 'NIU générés par âge, sexe et nationalité' });
     expect(section.querySelectorAll('.pyramide__barre--femmes, .pyramide__barre--hommes')).toHaveLength(2);
   });
 

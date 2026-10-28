@@ -13,7 +13,8 @@ import { BlocTopCentres } from './BlocTopCentres';
 
 /**
  * Page Enrôlement, dans l'ordre de la maquette (maquette/pages/Enrolement.dc.html), avec les blocs du lot 5
- * (« Où s'arrêtent les paquets », « Délais de traitement ») après le Top des centres (décision du 28/10/2026).
+ * (« Où s'arrêtent les paquets », « Délais de traitement ») après le Top des centres ; âge, sexe et nationalité des
+ * NIU puis Top des centres, chacun sur toute la largeur (décisions du 28/10/2026).
  */
 export function PageEnrolement({ page }: { page: DefinitionPage }) {
   return (

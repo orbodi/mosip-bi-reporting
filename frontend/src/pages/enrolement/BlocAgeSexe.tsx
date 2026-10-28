@@ -1,24 +1,42 @@
 import { useAgeSexe } from '../../api/enrolement';
+import { BarresHorizontales } from '../../composants/blocs/BarresHorizontales';
+import { Panneau } from '../../composants/blocs/Panneau';
 import { Pyramide } from '../../composants/blocs/Pyramide';
 import { lignesPyramide } from '../../lib/blocsVides';
 import { usePlageApi } from '../../lib/usePlagePeriode';
 
 /**
- * Bloc « NIU générés par âge et par sexe » : pyramide de la maquette, alimentée par le profil anonymisé de MOSIP
- * (GET /api/v1/enrolement/age-sexe, décision du 20/10/2026). National. Sans données, les
- * huit tranches restent à 0, barres vides : rien n'est estimé.
+ * Bloc « NIU générés par âge, sexe et nationalité », mis en page comme le « Profil des pré-inscrits » (décision du
+ * 28/10/2026) : nationalités à gauche, pyramide âge et sexe à droite (GET /api/v1/enrolement/age-sexe). National.
+ * Source à venir : API d'enrichissement démographique, comme pour les pré-inscriptions (lot 6). D'ici là, les huit
+ * tranches restent à 0, barres vides, et la liste des nationalités est vide : rien n'est estimé.
  */
 export function BlocAgeSexe() {
   const { plage, prete } = usePlageApi('enrolement');
   const { data } = useAgeSexe(plage, undefined, prete);
 
   return (
-    <section className="panneau bloc-age-sexe" aria-labelledby="titre-age-sexe">
-      <h2 id="titre-age-sexe" className="titre-bloc">
-        NIU générés par âge et par sexe
-      </h2>
-      <p className="texte-2 bloc__sous-titre">Ensemble du Togo, nombre de NIU générés par tranche d’âge</p>
-      <Pyramide lignes={lignesPyramide(data)} libelle="Répartition des NIU par tranche d’âge et par sexe" />
-    </section>
+    <Panneau
+      id="titre-age-sexe"
+      titre="NIU générés par âge, sexe et nationalité"
+      sousTitre="Ensemble du Togo, NIU générés par tranche d’âge, sexe et nationalité"
+      className="bloc-pleine-largeur bloc-age-sexe"
+      sansMarge
+    >
+      <div className="duo">
+        <div className="duo__principal">
+          <h3 className="h3-m">Nationalités</h3>
+          {/* Lot 6 : nationalités des NIU depuis l'API d'enrichissement (bi.fait_niu_nationalite_jour). */}
+          <BarresHorizontales elements={[]} libelle="NIU générés par nationalité" />
+        </div>
+        <div className="duo__cartes profil-preinscrits__pyramide">
+          <h3 className="h3-m">Âge et sexe</h3>
+          <Pyramide
+            lignes={lignesPyramide(data)}
+            libelle="Répartition des NIU par tranche d’âge et par sexe"
+          />
+        </div>
+      </div>
+    </Panneau>
   );
 }

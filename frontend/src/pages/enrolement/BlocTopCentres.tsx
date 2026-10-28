@@ -101,7 +101,7 @@ export function BlocTopCentres() {
   const [onglet, setOnglet] = useState<ClassementCentres>('inscriptions');
 
   return (
-    <section className="panneau bloc-top-centres" aria-labelledby="titre-top-centres">
+    <section className="panneau bloc-pleine-largeur bloc-top-centres" aria-labelledby="titre-top-centres">
       <h2 id="titre-top-centres" className="titre-bloc">
         Top des centres
       </h2>
