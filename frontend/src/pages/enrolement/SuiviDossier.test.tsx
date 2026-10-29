@@ -1,21 +1,39 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RID_CONNU, afficher, simulerApi } from '../../test/apiSimulee';
+import { SuiviDossierBouton } from './SuiviDossier';
 
 const texte = (t: string) => t.replace(/\s+/g, ' ');
 const appelsSuivi = (appels: URL[]) => appels.filter((u) => u.pathname.endsWith('/enrolement/suivi'));
 
+/**
+ * Le bouton et sa fenêtre seuls, sans la page Enrôlement et ses graphiques : la fenêtre ne dépend d'aucun bloc, et la
+ * page complète rendait ces tests lents sur le serveur (délai dépassé le 29/10/2026).
+ */
 async function ouvrir() {
   const utilisateur = userEvent.setup();
-  afficher('/enrolement');
-  await utilisateur.click(await screen.findByRole('button', { name: 'Suivre un dossier' }));
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <SuiviDossierBouton />
+    </QueryClientProvider>,
+  );
+  await utilisateur.click(screen.getByRole('button', { name: 'Suivre un dossier' }));
   const fenetre = within(await screen.findByRole('dialog', { name: 'Suivre un dossier' }));
   return { utilisateur, fenetre };
 }
 
 describe('Suivre un dossier', () => {
   afterEach(() => vi.unstubAllGlobals());
+
+  it('le bouton est dans le bandeau de la page Enrôlement', async () => {
+    simulerApi();
+    afficher('/enrolement');
+
+    const bandeau = within(await screen.findByRole('region', { name: 'Enrôlement' }));
+    expect(bandeau.getByRole('button', { name: 'Suivre un dossier' })).toBeInTheDocument();
+  });
 
   it('un RID mal formé est refusé sans appeler l’API', async () => {
     const appels = simulerApi();
