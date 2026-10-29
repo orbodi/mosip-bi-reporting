@@ -7,7 +7,7 @@ import { Graphique } from '../../composants/graphique/Graphique';
 import type { EChartsCoreOption } from '../../composants/graphique/echarts';
 import { estConnu } from '../../lib/blocsVides';
 import { dateFr, nf } from '../../lib/format';
-import { jeton } from '../../lib/jetons';
+import { eclaircir, jeton } from '../../lib/jetons';
 import {
   NOMBRE_PAGES,
   aujourdhuiTogo,
@@ -20,7 +20,7 @@ import {
 
 type Vue = 'graphique' | 'tableau';
 
-/** Deux barres par jour (inscriptions, NIU générés), valeur au-dessus ; le jour en cours plus clair. */
+/** Deux barres par jour (inscriptions, NIU générés), valeur au-dessus ; le jour en cours plus clair, en pointillé. */
 function option(jours: JourInscriptions[], aujourdhui: string): EChartsCoreOption {
   const couleurs = {
     inscriptions: jeton('--serie-1'),
@@ -37,7 +37,17 @@ function option(jours: JourInscriptions[], aujourdhui: string): EChartsCoreOptio
     barGap: '12%',
     data: jours.map((j) => ({
       value: estConnu(valeur(j)) ? valeur(j) : null,
-      itemStyle: { color: couleur, opacity: j.jour === aujourdhui ? 0.55 : 1, borderRadius: [3, 3, 0, 0] },
+      // Jour en cours : barre plus claire au contour pointillé ; son étiquette garde la couleur du texte.
+      itemStyle:
+        j.jour === aujourdhui
+          ? {
+              color: eclaircir(couleur, 0.6),
+              borderColor: couleur,
+              borderWidth: 1.5,
+              borderType: 'dashed',
+              borderRadius: [3, 3, 0, 0],
+            }
+          : { color: couleur, borderRadius: [3, 3, 0, 0] },
     })),
     label: {
       show: true,
