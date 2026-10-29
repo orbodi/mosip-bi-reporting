@@ -69,8 +69,8 @@ describe('Suivre un dossier', () => {
     expect(fenetre.getByText('Nouvelle inscription')).toBeInTheDocument();
     expect(fenetre.getByText('EPP Doumassesse I G/B')).toBeInTheDocument();
     expect(fenetre.getByText('Golfe, Grand Lomé')).toBeInTheDocument();
-    // L'étape où il s'est arrêté, le motif de MOSIP et son message type (en anglais).
-    expect(fenetre.getByText('Arrêté à l’étape')).toBeInTheDocument();
+    // L'étape en cours (le dossier n'est ni rejeté ni échoué), le motif de MOSIP et son message type (en anglais).
+    expect(fenetre.getByText('Étape en cours')).toBeInTheDocument();
     expect(fenetre.getByText('En file d’attente de vérification manuelle')).toBeInTheDocument();
     expect(fenetre.getByText('Manual verification Sent to queue')).toHaveAttribute('lang', 'en');
     const jalons = within(fenetre.getByRole('list', { name: 'Jalons du dossier' })).getAllByRole('listitem');

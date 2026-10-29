@@ -16,6 +16,7 @@ import { miseAJourFr } from '../../lib/format';
 import {
   MESSAGE_FORMAT,
   etatDossier,
+  intituleEtape,
   jalonsDossier,
   messageErreur,
   nettoyerRid,
@@ -65,7 +66,7 @@ function Resultat({ dossier, nouvelle }: { dossier: SuiviDossier; nouvelle: () =
         </div>
         {dossier.etape && (
           <div>
-            <dt>{dossier.devenir === 'niu' ? 'Dernière étape' : 'Arrêté à l’étape'}</dt>
+            <dt>{intituleEtape(dossier.devenir)}</dt>
             <dd>
               <strong>{dossier.etape.libelle}</strong>
               {detailEtape && <span>{detailEtape}</span>}

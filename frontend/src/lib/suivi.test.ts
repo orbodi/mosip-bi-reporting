@@ -4,6 +4,7 @@ import {
   MESSAGE_FORMAT,
   MESSAGE_INTROUVABLE,
   etatDossier,
+  intituleEtape,
   jalonsDossier,
   messageErreur,
   nettoyerRid,
@@ -61,6 +62,14 @@ describe('Suivi d’un dossier', () => {
     expect(etatDossier({ ...EN_COURS, devenir: 'non_recu', bloque: false }).libelle).toBe(
       'Synchronisé, pas encore reçu',
     );
+  });
+
+  it('« Arrêté à l’étape » seulement pour un dossier rejeté ou échoué', () => {
+    expect(intituleEtape('rejete')).toBe('Arrêté à l’étape');
+    expect(intituleEtape('echoue')).toBe('Arrêté à l’étape');
+    expect(intituleEtape('en_cours')).toBe('Étape en cours');
+    expect(intituleEtape('non_classe')).toBe('Étape en cours');
+    expect(intituleEtape('niu')).toBe('Dernière étape');
   });
 
   it('types de demande et statuts en français, codes inconnus gardés', () => {

@@ -54,6 +54,16 @@ export function etatDossier(d: SuiviDossier, maintenant = new Date()): { libelle
   return base;
 }
 
+/**
+ * Intitulé de l'étape : « Arrêté à l'étape » seulement pour un dossier rejeté ou échoué (le traitement s'arrête là),
+ * « Dernière étape » pour un NIU, « Étape en cours » sinon (un dossier en cours avance, même lentement).
+ */
+export function intituleEtape(devenir: string): string {
+  if (devenir === 'rejete' || devenir === 'echoue') return 'Arrêté à l’étape';
+  if (devenir === 'niu') return 'Dernière étape';
+  return 'Étape en cours';
+}
+
 const TYPES: Record<string, string> = {
   NEW: 'Nouvelle inscription',
   UPDATE: 'Mise à jour',
