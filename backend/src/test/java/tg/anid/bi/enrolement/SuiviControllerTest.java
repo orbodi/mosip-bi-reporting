@@ -37,7 +37,7 @@ class SuiviControllerTest {
     void leRidVaDansLeCorpsEtNEstJamaisRenvoye() throws Exception {
         when(service.suivre(eq(RID))).thenReturn(new SuiviDossier("NEW", "niu", false,
                 new SuiviDossier.Centre("EPP Doumassesse I G/B", "Golfe", "Grand Lomé"),
-                new SuiviDossier.Etape("UIN_GENERATOR", "Génération du NIU", "SUCCESS"),
+                new SuiviDossier.Etape("UIN_GENERATOR", "Génération du NIU", "SUCCESS"), null,
                 OffsetDateTime.parse("2026-10-21T18:41:00Z"),
                 new SuiviDossier.Jalons(OffsetDateTime.parse("2026-10-21T09:30:15Z"), null, false,
                         OffsetDateTime.parse("2026-10-21T10:16:00Z"), OffsetDateTime.parse("2026-10-21T18:40:00Z")),

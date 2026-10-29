@@ -10,6 +10,7 @@ import { BlocPreinscription } from './BlocPreinscription';
 import { BlocProfilPreinscription } from './BlocProfilPreinscription';
 import { BlocTerritoire } from './BlocTerritoire';
 import { BlocTopCentres } from './BlocTopCentres';
+import { SuiviDossierBouton } from './SuiviDossier';
 
 /**
  * Page Enrôlement, dans l'ordre de la maquette (maquette/pages/Enrolement.dc.html), avec les blocs du lot 5
@@ -23,7 +24,12 @@ export function PageEnrolement({ page }: { page: DefinitionPage }) {
         titre={page.titre}
         source={page.source}
         sourcesMiseAJour={page.sourcesMiseAJour}
-        filtres={<FiltresPage />}
+        filtres={
+          <>
+            <FiltresPage />
+            <SuiviDossierBouton />
+          </>
+        }
       />
       <div className="contenu grille-page">
         <BlocPreinscription />

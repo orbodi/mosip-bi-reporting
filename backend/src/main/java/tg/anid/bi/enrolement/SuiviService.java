@@ -77,8 +77,11 @@ public class SuiviService {
         SuiviDossier.Etape etape = l.etape() == null ? null
                 : new SuiviDossier.Etape(l.etape(), l.etapeLibelle() == null ? l.etape() : l.etapeLibelle(),
                         l.etapeStatut());
+        SuiviDossier.Motif motif = l.motif() == null ? null
+                : new SuiviDossier.Motif(l.motif(), l.motifLibelle() == null ? l.motif() : l.motifLibelle(),
+                        l.motifCommentaire());
         return new SuiviDossier(l.typeDemande(), l.devenir(), bloque,
-                new SuiviDossier.Centre(l.centreNom(), prefecture, region), etape, l.derniereTransactionLe(),
+                new SuiviDossier.Centre(l.centreNom(), prefecture, region), etape, motif, l.derniereTransactionLe(),
                 new SuiviDossier.Jalons(l.enroleLe(), l.synchroniseLe(), l.refusPoste(), l.recuLe(), l.niuLe()),
                 l.majLe());
     }

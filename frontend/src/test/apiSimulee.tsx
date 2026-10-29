@@ -12,6 +12,7 @@ import type {
   Preinscriptions,
   ProfilPreinscriptions,
   Region,
+  SuiviDossier,
   SynchronisationNonRecue,
   Territoire,
   TopCentres,
@@ -226,6 +227,32 @@ export const JOURS: InscriptionsParJour = {
       niuGeneres: dernier ? 1388 : 2500 + 10 * i,
     };
   }),
+};
+
+/** RID d'essai du suivi d'un dossier (fictif) : seul celui-ci est « connu » de l'API simulée. */
+export const RID_CONNU = '20101100230041220261021093015';
+
+/** Dossier en cours, arrêté en vérification manuelle depuis le 18/09/2026 (bloqué). */
+export const SUIVI: SuiviDossier = {
+  typeDemande: 'NEW',
+  devenir: 'en_cours',
+  bloque: true,
+  centre: { nom: 'EPP Doumassesse I G/B', prefecture: 'Golfe', region: 'Grand Lomé' },
+  etape: { code: 'MANUAL_VERIFICATION', libelle: 'Vérification manuelle', statut: 'IN_PROGRESS' },
+  motif: {
+    code: 'FILE_VERIF_MANUELLE',
+    libelle: 'En file d’attente de vérification manuelle',
+    commentaire: 'Manual verification Sent to queue',
+  },
+  derniereActiviteLe: '2026-09-18T09:00:00Z',
+  jalons: {
+    enroleLe: '2026-09-02T10:14:00Z',
+    synchroniseLe: '2026-09-02T17:40:00Z',
+    refusPoste: false,
+    recuLe: '2026-09-03T08:05:00Z',
+    niuLe: null,
+  },
+  majLe: '2026-10-29T07:30:00Z',
 };
 
 export const CENTRES: Record<string, TopCentres> = {
@@ -480,7 +507,8 @@ export const AGE_SEXE: AgeSexe = {
   ],
 };
 
-type Reponse = unknown | ((url: URL) => unknown);
+/** Valeur renvoyée, ou calculée depuis l'adresse et la requête (corps d'un POST) ; undefined répond 404. */
+type Reponse = unknown | ((url: URL, init?: RequestInit) => unknown);
 
 const PAR_DEFAUT: Record<string, Reponse> = {
   '/meta': META,
@@ -497,6 +525,8 @@ const PAR_DEFAUT: Record<string, Reponse> = {
   },
   '/enrolement/semaines': SEMAINES,
   '/enrolement/jours': JOURS,
+  '/enrolement/suivi': (_url: URL, init?: RequestInit) =>
+    JSON.parse(String(init?.body ?? '{}')).rid === RID_CONNU ? SUIVI : undefined,
   '/enrolement/motifs': MOTIFS,
   '/enrolement/delais': DELAIS,
   '/enrolement/synchronisation': SYNCHRONISATION,
@@ -528,11 +558,12 @@ export function simulerApi(reponses: Record<string, Reponse> = {}): URL[] {
   const toutes = { ...PAR_DEFAUT, ...reponses };
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: URL) => {
+    vi.fn(async (url: URL, init?: RequestInit) => {
       appels.push(url);
       const reponse = toutes[url.pathname.replace(/^.*\/api\/v1/, '')];
       if (reponse === undefined) return new Response('', { status: 404 });
-      const corps = typeof reponse === 'function' ? reponse(url) : reponse;
+      const corps = typeof reponse === 'function' ? reponse(url, init) : reponse;
+      if (corps === undefined) return new Response('', { status: 404 });
       return new Response(JSON.stringify(corps), { headers: { 'Content-Type': 'application/json' } });
     }),
   );

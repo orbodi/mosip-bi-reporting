@@ -1,13 +1,15 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import type { Plage } from '../lib/periode';
 import {
   RAFRAICHISSEMENT_MS,
+  envoyerApi,
   lireApi,
   type AgeSexe,
   type DelaisTraitement,
   type DevenirInscriptions,
   type Preinscriptions,
   type ProfilPreinscriptions,
+  type SuiviDossier,
   type InscriptionsParJour,
   type InscriptionsParSemaine,
   type MotifsArret,
@@ -113,4 +115,16 @@ export function useDelais(plage: Plage | undefined, active = true) {
 /** Paquets synchronisés pas encore reçus ; stock, national (GET /api/v1/enrolement/synchronisation). */
 export function useSynchronisation() {
   return useBlocEnrolement<SynchronisationNonRecue>('synchronisation', undefined, true);
+}
+
+/**
+ * Suivi d'un dossier (POST /api/v1/enrolement/suivi) : une recherche par appel, jamais mise en cache ni relancée
+ * (chaque recherche est journalisée côté API). Le RID n'est gardé que le temps de l'appel.
+ */
+export function useSuiviDossier() {
+  return useMutation({
+    mutationFn: (rid: string) => envoyerApi<SuiviDossier>('/enrolement/suivi', { rid }),
+    retry: false,
+    gcTime: 0,
+  });
 }

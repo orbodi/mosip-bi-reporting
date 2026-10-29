@@ -28,6 +28,7 @@ import tg.anid.bi.commun.RessourceIntrouvable;
 class SuiviIT {
 
     private static final String RID = "10011100230041220261021093015";
+    private static final String RID_REJETE = "10011100230041220261021093099";
 
     @Autowired
     SuiviService service;
@@ -38,7 +39,11 @@ class SuiviIT {
     @BeforeEach
     void preparer() {
         jdbc.sql("create extension if not exists pgcrypto").update();
-        jdbc.sql("truncate bi.suivi_dossier, bi.journal_suivi").update();
+        jdbc.sql("truncate bi.suivi_dossier, bi.journal_suivi, bi.ref_motif").update();
+        jdbc.sql("""
+                insert into bi.ref_motif (motif, libelle, commentaire, piste)
+                values ('REFUS_SUPERVISEUR', 'Rejeté par le superviseur du centre', 'Rejected by Supervisor', null)
+                """).update();
         // Empreinte calculée par PostgreSQL (pgcrypto), exactement comme scripts/publier-indicateurs.sh.
         jdbc.sql("""
                 insert into bi.suivi_dossier (empreinte, centre_id, type_demande, enrole_le, synchronise_le,
@@ -50,6 +55,27 @@ class SuiviIT {
                        timestamptz '2026-10-21 18:41Z', now()
                 from bi.zone z where z.code = '10011'
                 """).param("rid", RID).update();
+    }
+
+    @Test
+    void unDossierRejeteDonneSonMotifAvecLeLibelleDuCatalogue() {
+        jdbc.sql("""
+                insert into bi.suivi_dossier (empreinte, centre_id, type_demande, enrole_le, refus_poste, recu_le,
+                                              devenir, etape, etape_libelle, etape_statut, derniere_transaction_le,
+                                              motif, maj_le)
+                select hmac(:rid, 'cle-de-test', 'sha256'), z.id, 'NEW', timestamptz '2026-10-21 09:30:15Z', false,
+                       timestamptz '2026-10-21 10:16Z', 'rejete', 'VALIDATE_PACKET', 'Validation du paquet',
+                       'REJECTED', timestamptz '2026-10-21 11:00Z', 'REFUS_SUPERVISEUR', now()
+                from bi.zone z where z.code = '10011'
+                """).param("rid", RID_REJETE).update();
+
+        SuiviDossier d = service.suivre(RID_REJETE);
+
+        assertThat(d.devenir()).isEqualTo("rejete");
+        assertThat(d.motif()).isEqualTo(new SuiviDossier.Motif("REFUS_SUPERVISEUR",
+                "Rejeté par le superviseur du centre", "Rejected by Supervisor"));
+        // Le dossier avec NIU n'a pas de motif.
+        assertThat(service.suivre(RID).motif()).isNull();
     }
 
     @Test

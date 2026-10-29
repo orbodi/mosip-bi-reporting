@@ -12,12 +12,14 @@ import java.time.OffsetDateTime;
  * @param bloque               vrai pour un dossier en cours dont la dernière transaction date de plus de 30 jours
  * @param centre               centre d'enrôlement, avec sa préfecture et sa région
  * @param etape                dernière étape du traitement, null tant que MOSIP n'a pas reçu le paquet
+ * @param motif                motif donné par MOSIP (catalogue des motifs), null pour un dossier sans motif (NIU
+ *                             généré, pas encore reçu) ; jamais le texte de MOSIP du dossier, seulement son message type
  * @param derniereActiviteLe   heure de la dernière transaction MOSIP, null si inconnue
  * @param jalons               dates de l'enrôlement au NIU
  * @param majLe                heure du calcul de ces informations (passage du pipeline)
  */
 public record SuiviDossier(String typeDemande, String devenir, boolean bloque, Centre centre, Etape etape,
-                           OffsetDateTime derniereActiviteLe, Jalons jalons, OffsetDateTime majLe) {
+                           Motif motif, OffsetDateTime derniereActiviteLe, Jalons jalons, OffsetDateTime majLe) {
 
     /**
      * @param nom        nom du centre
@@ -34,6 +36,15 @@ public record SuiviDossier(String typeDemande, String devenir, boolean bloque, C
      */
     @Schema(name = "EtapeSuivi")
     public record Etape(String code, String libelle, String statut) {
+    }
+
+    /**
+     * @param code        code du motif (REFUS_SUPERVISEUR…)
+     * @param libelle     motif en français (le code tant que le catalogue n'est pas publié)
+     * @param commentaire message type de MOSIP pour ce motif (en anglais), null si aucun
+     */
+    @Schema(name = "MotifSuivi")
+    public record Motif(String code, String libelle, String commentaire) {
     }
 
     /**

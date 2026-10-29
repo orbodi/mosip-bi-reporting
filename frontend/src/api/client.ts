@@ -6,6 +6,7 @@ export type DevenirInscriptions = components['schemas']['DevenirInscriptions'];
 export type Region = components['schemas']['Region'];
 export type InscriptionsParSemaine = components['schemas']['InscriptionsParSemaine'];
 export type InscriptionsParJour = components['schemas']['InscriptionsParJour'];
+export type SuiviDossier = components['schemas']['SuiviDossier'];
 export type JourInscriptions = components['schemas']['JourInscriptions'];
 export type Semaine = components['schemas']['Semaine'];
 export type Territoire = components['schemas']['Territoire'];
@@ -52,6 +53,27 @@ export class ErreurApi extends Error {
     super(message);
     this.name = 'ErreurApi';
   }
+}
+
+/**
+ * POST JSON sur /api/v1{chemin} (suivi d'un dossier : le RID voyage dans le corps, jamais dans l'adresse). L'erreur ne
+ * reprend que le statut : ni le corps envoyé, ni la réponse.
+ */
+export async function envoyerApi<T>(chemin: string, corps: unknown): Promise<T> {
+  const jeton = fournisseurJeton();
+  const reponse = await fetch(new URL(`${BASE}/api/v1${chemin}`, window.location.origin), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}),
+    },
+    body: JSON.stringify(corps),
+  });
+  if (!reponse.ok) {
+    throw new ErreurApi(reponse.status, `Appel ${chemin} : statut ${reponse.status}`);
+  }
+  return (await reponse.json()) as T;
 }
 
 /** GET sur /api/v1{chemin} ; les paramètres vides sont omis. */

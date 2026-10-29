@@ -6,7 +6,10 @@ import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/** Lecture de bi.suivi_dossier par empreinte, écriture du journal des recherches (migration V8). */
+/**
+ * Lecture de bi.suivi_dossier par empreinte, avec le libellé de son motif (bi.ref_motif, migration V11), écriture du
+ * journal des recherches (migration V8).
+ */
 @Repository
 public class SuiviRepository {
 
@@ -16,11 +19,12 @@ public class SuiviRepository {
         this.jdbc = jdbc;
     }
 
-    /** Une ligne de bi.suivi_dossier, avec le code et le nom de son centre. */
+    /** Une ligne de bi.suivi_dossier, avec le code et le nom de son centre et les libellés de son motif. */
     public record Ligne(String centreCode, String centreNom, String typeDemande, OffsetDateTime enroleLe,
                         OffsetDateTime synchroniseLe, boolean refusPoste, OffsetDateTime recuLe,
                         OffsetDateTime niuLe, String devenir, String etape, String etapeLibelle, String etapeStatut,
-                        OffsetDateTime derniereTransactionLe, OffsetDateTime majLe) {
+                        OffsetDateTime derniereTransactionLe, String motif, String motifLibelle,
+                        String motifCommentaire, OffsetDateTime majLe) {
     }
 
     /** Le dossier dont l'empreinte du RID est {@code empreinte}, s'il existe. */
@@ -28,9 +32,11 @@ public class SuiviRepository {
         return jdbc.sql("""
                         select z.code as centre_code, z.nom as centre_nom, s.type_demande, s.enrole_le,
                                s.synchronise_le, s.refus_poste, s.recu_le, s.niu_le, s.devenir, s.etape,
-                               s.etape_libelle, s.etape_statut, s.derniere_transaction_le, s.maj_le
+                               s.etape_libelle, s.etape_statut, s.derniere_transaction_le, s.motif,
+                               m.libelle as motif_libelle, m.commentaire as motif_commentaire, s.maj_le
                         from bi.suivi_dossier s
                         join bi.zone z on z.id = s.centre_id
+                        left join bi.ref_motif m on m.motif = s.motif
                         where s.empreinte = :empreinte
                         """)
                 .param("empreinte", empreinte)
@@ -48,6 +54,9 @@ public class SuiviRepository {
                         rs.getString("etape_libelle"),
                         rs.getString("etape_statut"),
                         rs.getObject("derniere_transaction_le", OffsetDateTime.class),
+                        rs.getString("motif"),
+                        rs.getString("motif_libelle"),
+                        rs.getString("motif_commentaire"),
                         rs.getObject("maj_le", OffsetDateTime.class)))
                 .optional();
     }

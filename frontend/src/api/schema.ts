@@ -75,6 +75,22 @@ export interface paths {
       };
     };
   };
+  '/api/v1/enrolement/suivi': {
+    post: {
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['DemandeSuivi'];
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['SuiviDossier'];
+          };
+        };
+      };
+    };
+  };
   '/api/v1/enrolement/territoire': {
     get: {
       parameters: {
@@ -295,6 +311,50 @@ export interface components {
     Region: {
       code: string;
       nom: string;
+    };
+    DemandeSuivi: {
+      /** @description Numéro d'inscription, 29 chiffres */
+      rid?: string;
+    };
+    SuiviDossier: {
+      typeDemande: string;
+      /** @description niu, en_cours, echoue, rejete, non_classe ou non_recu */
+      devenir: string;
+      bloque: boolean;
+      centre: components['schemas']['Centre'];
+      etape?: components['schemas']['EtapeSuivi'] | null;
+      motif?: components['schemas']['MotifSuivi'] | null;
+      /** Format: date-time */
+      derniereActiviteLe?: string | null;
+      jalons: components['schemas']['Jalons'];
+      /** Format: date-time */
+      majLe: string;
+    };
+    Centre: {
+      nom: string;
+      prefecture?: string | null;
+      region?: string | null;
+    };
+    EtapeSuivi: {
+      code: string;
+      libelle: string;
+      statut?: string | null;
+    };
+    MotifSuivi: {
+      code: string;
+      libelle: string;
+      commentaire?: string | null;
+    };
+    Jalons: {
+      /** Format: date-time */
+      enroleLe?: string | null;
+      /** Format: date-time */
+      synchroniseLe?: string | null;
+      refusPoste: boolean;
+      /** Format: date-time */
+      recuLe?: string | null;
+      /** Format: date-time */
+      niuLe?: string | null;
     };
     InscriptionsParJour: {
       perimetre: string;

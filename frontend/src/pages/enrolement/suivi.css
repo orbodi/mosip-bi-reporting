@@ -1,0 +1,327 @@
+/* Suivi d'un dossier : bouton du bandeau et fenêtre modale. Jetons de styles/jetons.css uniquement. */
+.bouton-suivi {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: 40px;
+  margin-left: auto;
+  padding: 0 var(--e-4);
+  border: 0;
+  border-radius: var(--r-m);
+  background: var(--surface);
+  color: var(--bleu);
+  font: inherit;
+  font-size: var(--t-s);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+.bouton-suivi[data-hovered] {
+  background: var(--bleu-clair);
+}
+.bouton-suivi[data-focus-visible] {
+  outline: 2px solid var(--or);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .bouton-suivi {
+    min-height: 44px;
+    margin-left: 0;
+  }
+}
+
+.suivi__voile {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--e-4);
+  background: rgb(7 27 53 / 0.45);
+}
+.suivi__fenetre {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 2 * var(--e-4));
+  overflow: auto;
+  border-radius: var(--r-l);
+  background: var(--surface);
+  box-shadow: var(--ombre-3);
+}
+.suivi__dialogue {
+  outline: none;
+}
+.suivi__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding: var(--e-4) var(--e-5);
+  border-bottom: 1px solid var(--trait);
+}
+.suivi__titre {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-weight: 700;
+}
+.suivi__fermer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -8px -10px -8px 0;
+  border: 0;
+  border-radius: var(--r-m);
+  background: transparent;
+  color: var(--encre-2);
+  cursor: pointer;
+  outline: none;
+}
+.suivi__fermer[data-hovered] {
+  background: var(--fond);
+}
+.suivi__fermer[data-focus-visible] {
+  outline: 2px solid var(--bleu);
+}
+.suivi__corps {
+  padding: var(--e-5);
+}
+
+/* Saisie */
+.suivi__label {
+  font-size: var(--t-s);
+  font-weight: 600;
+}
+.suivi__champ {
+  display: flex;
+  gap: var(--e-2);
+  margin-top: var(--e-2);
+}
+.suivi__champ input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--e-3);
+  border: 1px solid var(--bord-champ);
+  border-radius: var(--r-s);
+  color: var(--encre);
+  font: inherit;
+  font-size: var(--t-l);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+.suivi__champ input[data-focused] {
+  border-color: var(--bleu);
+  outline: 2px solid var(--bleu-clair);
+}
+.suivi__bouton {
+  min-height: 44px;
+  padding: 0 var(--e-4);
+  border: 0;
+  border-radius: var(--r-m);
+  background: var(--bleu);
+  color: var(--sur-bleu);
+  font: inherit;
+  font-size: var(--t-s);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+.suivi__bouton[data-hovered] {
+  background: var(--bleu-pastille);
+}
+.suivi__bouton[data-focus-visible] {
+  outline: 2px solid var(--or);
+  outline-offset: 2px;
+}
+.suivi__bouton[data-disabled] {
+  opacity: 0.7;
+  cursor: default;
+}
+.suivi__bouton--clair {
+  min-height: 36px;
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  color: var(--bleu);
+}
+.suivi__bouton--clair[data-hovered] {
+  background: var(--bleu-clair);
+}
+.suivi__aide {
+  display: block;
+  margin-top: var(--e-2);
+  font-size: var(--t-xs);
+}
+/* Erreur en rouge adouci (décision du 26/10/2026) */
+.suivi__erreur {
+  margin: var(--e-3) 0 0;
+  padding: var(--e-3);
+  border-radius: var(--r-m);
+  background: color-mix(in srgb, var(--danger) 9%, var(--surface));
+  color: var(--rouge-fonce);
+  font-size: var(--t-s);
+}
+
+/* Résultat */
+.suivi__haut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-3);
+}
+.suivi__etat {
+  --ton: var(--statut-non-classe);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--ton) 12%, var(--surface));
+  color: color-mix(in srgb, var(--ton) 70%, var(--encre));
+  font-size: var(--t-s);
+  font-weight: 600;
+}
+.suivi__etat i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ton);
+}
+.suivi__etat--niu {
+  --ton: var(--statut-niu);
+}
+.suivi__etat--en-cours,
+.suivi__etat--bloque {
+  --ton: var(--statut-en-cours);
+}
+.suivi__etat--bloque i {
+  background: repeating-linear-gradient(135deg, var(--statut-bloque) 0 2px, var(--statut-en-cours) 2px 4px);
+}
+.suivi__etat--echoue {
+  --ton: var(--statut-echoue);
+}
+.suivi__etat--rejete {
+  --ton: var(--statut-rejete);
+}
+.suivi__infos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e-3) var(--e-4);
+  margin: var(--e-4) 0 0;
+}
+.suivi__infos dt {
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.suivi__infos dd {
+  display: grid;
+  margin: 2px 0 0;
+}
+.suivi__infos strong {
+  font-size: var(--t-m);
+  font-weight: 600;
+}
+.suivi__infos dd span {
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+@media (max-width: 480px) {
+  .suivi__infos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.suivi__message {
+  margin: var(--e-3) 0 0;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+.suivi__message-texte {
+  font-style: italic;
+}
+
+/* Jalons : une frise verticale, du poste au NIU */
+.suivi__jalons {
+  margin: var(--e-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.jalon {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 0 var(--e-2);
+  padding-bottom: 14px;
+}
+.jalon:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  bottom: 0;
+  left: 10px;
+  width: 2px;
+  background: var(--trait);
+}
+.jalon__point {
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  margin: 4px 0 0 4px;
+  border-radius: 50%;
+  background: var(--bleu);
+}
+.jalon__libelle {
+  font-size: var(--t-m);
+  font-weight: 500;
+}
+.jalon__quand {
+  max-width: 24ch;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+  text-align: right;
+}
+/* Écran étroit : la date passe sous le nom de l'étape. */
+@media (max-width: 480px) {
+  .jalon {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+  .jalon__quand {
+    grid-column: 2;
+    max-width: none;
+    text-align: left;
+  }
+}
+.jalon--actuel .jalon__point {
+  border: 3px solid var(--statut-en-cours);
+  background: var(--surface);
+}
+.jalon--actuel .jalon__libelle,
+.jalon--arret .jalon__libelle {
+  font-weight: 700;
+}
+.jalon--arret .jalon__point,
+.jalon--refus .jalon__point {
+  background: var(--danger);
+}
+.jalon--refus .jalon__libelle {
+  color: var(--rouge-fonce);
+}
+.jalon--a-venir .jalon__point {
+  border: 2px solid var(--bord-champ);
+  background: var(--surface);
+}
+.jalon--a-venir .jalon__libelle {
+  color: var(--encre-2);
+}
+.suivi__pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-3);
+  padding-top: var(--e-3);
+  border-top: 1px solid var(--trait);
+  font-size: var(--t-xs);
+}

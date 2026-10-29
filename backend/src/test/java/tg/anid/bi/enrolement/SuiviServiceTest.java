@@ -35,7 +35,8 @@ class SuiviServiceTest {
         return new SuiviRepository.Ligne("10011", "EPP Worgou G/A", "NEW",
                 OffsetDateTime.parse("2026-07-04T11:18:42Z"), OffsetDateTime.parse("2026-07-04T11:52:00Z"), false,
                 OffsetDateTime.parse("2026-07-04T12:03:00Z"), null, devenir, "MANUAL_VERIFICATION",
-                "Vérification manuelle", "IN_PROGRESS", derniereTransaction,
+                "Vérification manuelle", "IN_PROGRESS", derniereTransaction, "FILE_VERIF_MANUELLE",
+                "En file d’attente de vérification manuelle", "Manual verification Sent to queue",
                 OffsetDateTime.parse("2026-10-26T09:55:00Z"));
     }
 
@@ -59,6 +60,8 @@ class SuiviServiceTest {
         assertThat(d.bloque()).isTrue();
         assertThat(d.centre()).isEqualTo(new SuiviDossier.Centre("EPP Worgou G/A", "Tône", "Savanes"));
         assertThat(d.etape().libelle()).isEqualTo("Vérification manuelle");
+        assertThat(d.motif()).isEqualTo(new SuiviDossier.Motif("FILE_VERIF_MANUELLE",
+                "En file d’attente de vérification manuelle", "Manual verification Sent to queue"));
         assertThat(d.jalons().niuLe()).isNull();
         verify(repository).journaliser("anonyme", "trouve");
     }
@@ -69,6 +72,22 @@ class SuiviServiceTest {
                 ligne("en_cours", OffsetDateTime.parse("2026-10-20T08:00:00Z"))));
 
         assertThat(service.suivre(RID).bloque()).isFalse();
+    }
+
+    @Test
+    void sansMotifPasDeMotifEtUnMotifHorsCatalogueGardeSonCode() {
+        SuiviRepository.Ligne l = ligne("en_cours", OffsetDateTime.parse("2026-10-20T08:00:00Z"));
+        when(repository.parEmpreinte(any())).thenReturn(Optional.of(new SuiviRepository.Ligne(l.centreCode(),
+                l.centreNom(), l.typeDemande(), l.enroleLe(), l.synchroniseLe(), l.refusPoste(), l.recuLe(),
+                l.niuLe(), "niu", l.etape(), l.etapeLibelle(), l.etapeStatut(), l.derniereTransactionLe(), null, null,
+                null, l.majLe())));
+        assertThat(service.suivre(RID).motif()).isNull();
+
+        when(repository.parEmpreinte(any())).thenReturn(Optional.of(new SuiviRepository.Ligne(l.centreCode(),
+                l.centreNom(), l.typeDemande(), l.enroleLe(), l.synchroniseLe(), l.refusPoste(), l.recuLe(),
+                l.niuLe(), "echoue", l.etape(), l.etapeLibelle(), l.etapeStatut(), l.derniereTransactionLe(),
+                "NOUVEAU_MOTIF", null, null, l.majLe())));
+        assertThat(service.suivre(RID).motif()).isEqualTo(new SuiviDossier.Motif("NOUVEAU_MOTIF", "NOUVEAU_MOTIF", null));
     }
 
     @Test
