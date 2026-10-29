@@ -19,6 +19,7 @@ export type AgeSexe = components['schemas']['AgeSexe'];
 export type TrancheAgeSexe = components['schemas']['Tranche'];
 export type ProfilPreinscriptions = components['schemas']['ProfilPreinscriptions'];
 export type NationalitePreinscription = components['schemas']['Nationalite'];
+export type NationaliteNiu = components['schemas']['NationaliteNiu'];
 export type ArretsParEtape = components['schemas']['ArretsParEtape'];
 export type MotifsArret = components['schemas']['MotifsArret'];
 export type LigneMotif = components['schemas']['LigneMotif'];

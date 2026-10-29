@@ -222,13 +222,16 @@ class EnrolementControllerTest {
     @Test
     void renvoieLaPyramideParRegion() throws Exception {
         when(service.ageSexe(isNull(), isNull(), eq("SAV"))).thenReturn(new AgeSexe("Savanes", null, null, true,
-                List.of(new AgeSexe.Tranche("0-5", 11L, 12L), new AgeSexe.Tranche("6-14", 43L, 46L)), 0L));
+                List.of(new AgeSexe.Tranche("0-5", 11L, 12L), new AgeSexe.Tranche("6-14", 43L, 46L)), 0L,
+                List.of(new AgeSexe.Nationalite("Togo", 200), new AgeSexe.Nationalite("Non renseignée", 12))));
 
         mvc.perform(get("/api/v1/enrolement/age-sexe").param("zone", "SAV"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.perimetre").value("Savanes"))
                 .andExpect(jsonPath("$.tranches[0].tranche").value("0-5"))
                 .andExpect(jsonPath("$.tranches[1].hommes").value(46))
-                .andExpect(jsonPath("$.nonRenseignes").value(0));
+                .andExpect(jsonPath("$.nonRenseignes").value(0))
+                .andExpect(jsonPath("$.nationalites[0].nom").value("Togo"))
+                .andExpect(jsonPath("$.nationalites[1].niuGeneres").value(12));
     }
 }

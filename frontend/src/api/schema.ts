@@ -493,6 +493,12 @@ export interface components {
       tranches: components['schemas']['Tranche'][];
       /** Format: int64 */
       nonRenseignes?: number | null;
+      nationalites: components['schemas']['NationaliteNiu'][];
+    };
+    NationaliteNiu: {
+      nom: string;
+      /** Format: int64 */
+      niuGeneres: number;
     };
     ProfilPreinscriptions: {
       perimetre: string;

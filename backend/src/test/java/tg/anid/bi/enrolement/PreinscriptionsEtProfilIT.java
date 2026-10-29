@@ -39,7 +39,7 @@ class PreinscriptionsEtProfilIT {
     void preparer() {
         jdbc.sql("""
                 truncate bi.fait_preinscription_jour, bi.fait_niu_profil_jour, bi.fait_preinscription_profil_jour,
-                         bi.fait_preinscription_zone_jour
+                         bi.fait_preinscription_zone_jour, bi.fait_niu_nationalite_jour
                 """).update();
         jdbc.sql("""
                 insert into bi.fait_preinscription_jour (jour, statut, demandes, consommees)
@@ -58,6 +58,18 @@ class PreinscriptionsEtProfilIT {
                              (date '2026-01-06', 'KAR', 'I', '19-25', 2),
                              (date '2026-01-06', 'HORS_REFERENTIEL', 'H', '60+', 1))
                      as v (jour, code, sexe, tranche, niu)
+                join bi.zone z on z.code = v.code
+                """).update();
+        // Mêmes NIU, par nationalité (lot 6) : 62 au total, comme la pyramide
+        jdbc.sql("""
+                insert into bi.fait_niu_nationalite_jour (jour, zone_id, nationalite, niu_generes)
+                select v.jour, z.id, v.nationalite, v.niu
+                from (values (date '2026-01-05', 'SAV', 'Togo', 50),
+                             (date '2026-01-05', 'SAV', 'Burkina Faso', 5),
+                             (date '2026-01-06', 'KAR', 'Togo', 4),
+                             (date '2026-01-06', 'KAR', 'Non renseignée', 2),
+                             (date '2026-01-06', 'HORS_REFERENTIEL', 'Togo', 1))
+                     as v (jour, code, nationalite, niu)
                 join bi.zone z on z.code = v.code
                 """).update();
     }
@@ -168,11 +180,17 @@ class PreinscriptionsEtProfilIT {
         assertThat(togo.nonRenseignes()).isEqualTo(2);
         long total = togo.tranches().stream().mapToLong(t -> t.femmes() + t.hommes()).sum();
         assertThat(total + togo.nonRenseignes()).isEqualTo(62);
+        // Contrôle : la somme des nationalités égale celle de la pyramide
+        assertThat(togo.nationalites()).extracting(AgeSexe.Nationalite::nom)
+                .containsExactly("Togo", "Burkina Faso", "Non renseignée");
+        assertThat(togo.nationalites().stream().mapToLong(AgeSexe.Nationalite::niuGeneres).sum()).isEqualTo(62);
 
         AgeSexe savanes = service.ageSexe(null, null, "SAV");
         assertThat(savanes.perimetre()).isEqualTo("Savanes");
         assertThat(savanes.tranches().get(4).hommes()).isEqualTo(25);
         assertThat(savanes.tranches().getFirst().femmes()).isZero();
+        assertThat(savanes.nationalites()).extracting(AgeSexe.Nationalite::nom).containsExactly("Togo", "Burkina Faso");
+        assertThat(savanes.nationalites().getFirst().niuGeneres()).isEqualTo(50);
 
         assertThatThrownBy(() -> service.ageSexe(null, null, "SAV-02")).isInstanceOf(RequeteInvalide.class);
     }

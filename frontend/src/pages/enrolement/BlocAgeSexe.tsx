@@ -7,13 +7,19 @@ import { usePlageApi } from '../../lib/usePlagePeriode';
 
 /**
  * Bloc « NIU générés par âge, sexe et nationalité », mis en page comme le « Profil des pré-inscrits » (décision du
- * 28/10/2026) : nationalités à gauche, pyramide âge et sexe à droite (GET /api/v1/enrolement/age-sexe). National.
- * Source à venir : API d'enrichissement démographique, comme pour les pré-inscriptions (lot 6). D'ici là, les huit
- * tranches restent à 0, barres vides, et la liste des nationalités est vide : rien n'est estimé.
+ * 28/10/2026) : nationalités à gauche (les cinq premières, puis « Autres » et « Non renseignée »), pyramide âge et sexe
+ * à droite (GET /api/v1/enrolement/age-sexe). National. Source : enrichissement des NIU par l'ID Repository de MOSIP
+ * (lot 6), au jour de génération du NIU. Sans données, les huit tranches restent à 0, barres vides, et la liste des
+ * nationalités est vide : rien n'est estimé.
  */
 export function BlocAgeSexe() {
   const { plage, prete } = usePlageApi('enrolement');
   const { data } = useAgeSexe(plage, undefined, prete);
+  const nationalites = (data?.nationalites ?? []).map((n) => ({
+    libelle: n.nom,
+    valeur: n.niuGeneres,
+    couleur: 'bleu' as const,
+  }));
 
   return (
     <Panneau
@@ -26,8 +32,7 @@ export function BlocAgeSexe() {
       <div className="duo">
         <div className="duo__principal">
           <h3 className="h3-m">Nationalités</h3>
-          {/* Lot 6 : nationalités des NIU depuis l'API d'enrichissement (bi.fait_niu_nationalite_jour). */}
-          <BarresHorizontales elements={[]} libelle="NIU générés par nationalité" />
+          <BarresHorizontales elements={nationalites} libelle="NIU générés par nationalité" />
         </div>
         <div className="duo__cartes profil-preinscrits__pyramide">
           <h3 className="h3-m">Âge et sexe</h3>

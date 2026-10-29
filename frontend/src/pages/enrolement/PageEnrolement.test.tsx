@@ -87,6 +87,26 @@ describe('Page Enrôlement', () => {
     expect(pre.queryByRole('note')).not.toBeInTheDocument();
   });
 
+  it('NIU par nationalité : les cinq premières puis « Autres », du plus au moins nombreux', async () => {
+    simulerApi();
+    afficher('/enrolement');
+
+    const bloc = within(
+      await screen.findByRole('region', { name: 'NIU générés par âge, sexe et nationalité' }),
+    );
+    const liste = within(bloc.getByRole('list', { name: 'NIU générés par nationalité' }));
+    expect(await liste.findByText('Togo')).toBeInTheDocument();
+    expect(liste.getAllByRole('listitem').map((l) => l.firstChild?.textContent)).toEqual([
+      'Togo',
+      'BENIN',
+      'GHANA',
+      'NIGER',
+      'BURKINA FASO',
+      'Autres',
+    ]);
+    expect(liste.getByText(texte('3 011 220'))).toBeInTheDocument();
+  });
+
   it('âge et sexe sans données : huit tranches à 0, barres vides, sans note', async () => {
     simulerApi({
       '/enrolement/age-sexe': {
@@ -94,6 +114,7 @@ describe('Page Enrôlement', () => {
         disponible: false,
         nonRenseignes: null,
         tranches: AGE_SEXE.tranches.map((t) => ({ tranche: t.tranche, femmes: null, hommes: null })),
+        nationalites: [],
       },
     });
     afficher('/enrolement');
@@ -102,7 +123,7 @@ describe('Page Enrôlement', () => {
       await screen.findByRole('region', { name: 'NIU générés par âge, sexe et nationalité' }),
     );
     expect(bloc.queryByRole('note')).not.toBeInTheDocument();
-    // Nationalités : vides tant que l'API d'enrichissement n'est pas branchée (lot 6).
+    // Nationalités : vides tant que l'enrichissement des NIU (lot 6) n'a rien publié.
     expect(
       within(bloc.getByRole('list', { name: 'NIU générés par nationalité' })).queryAllByRole('listitem'),
     ).toHaveLength(0);

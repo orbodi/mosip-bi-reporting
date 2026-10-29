@@ -13,7 +13,8 @@ import org.springframework.stereotype.Repository;
 /**
  * Lecture des agrégats d'enrôlement : bi.fait_enrolement_jour (pipeline temps réel, lecture cohorte),
  * bi.fait_niu_jour (NIU au jour de génération, lecture flux), bi.fait_preinscription_jour (pré-inscriptions) et
- * bi.fait_niu_profil_jour (NIU par sexe et tranche d'âge, profil anonymisé MOSIP).
+ * bi.fait_niu_profil_jour et bi.fait_niu_nationalite_jour (NIU par sexe, tranche d'âge et nationalité, enrichissement par
+ * l'ID Repository).
  */
 @Repository
 public class EnrolementRepository {
@@ -52,6 +53,10 @@ public class EnrolementRepository {
 
     /** NIU générés d'un sexe (F, H ou I) et d'une tranche d'âge (ou « inconnu »). */
     public record CaseProfil(String sexe, String trancheAge, long niuGeneres) {
+    }
+
+    /** NIU générés d'une nationalité (libellé, ou « Non renseignée »). */
+    public record CaseNationalite(String nationalite, long niuGeneres) {
     }
 
     /** Pré-inscriptions d'un sexe (F, H ou I), d'une tranche d'âge (ou « inconnu ») et d'une nationalité. */
@@ -537,6 +542,24 @@ public class EnrolementRepository {
         return jdbc.sql("select exists (select 1 from bi.fait_niu_profil_jour)")
                 .query(Boolean.class)
                 .single();
+    }
+
+    /** NIU générés sur la période et dans la région (tout le Togo si null), par nationalité. */
+    public List<CaseNationalite> niuParNationalite(LocalDate du, LocalDate au, String region) {
+        return jdbc.sql("""
+                        select f.nationalite, sum(f.niu_generes) as niu_generes
+                        from bi.fait_niu_nationalite_jour f
+                        where (cast(:du as date) is null or f.jour >= cast(:du as date))
+                          and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                          and (cast(:region as text) is null
+                               or f.zone_id = (select z.id from bi.zone z where z.code = cast(:region as text)))
+                        group by f.nationalite
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .param("region", region)
+                .query((rs, ligne) -> new CaseNationalite(rs.getString("nationalite"), rs.getLong("niu_generes")))
+                .list();
     }
 
     /** NIU générés sur la période et dans la région (tout le Togo si null), par sexe et tranche d'âge. */

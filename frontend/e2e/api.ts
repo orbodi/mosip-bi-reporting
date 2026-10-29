@@ -395,6 +395,12 @@ export async function simulerEnrolement(page: Page) {
           femmes: Math.round(femmes * part),
           hommes: Math.round(hommes * part),
         })),
+        nationalites: [
+          { nom: 'Togo', niuGeneres: Math.round(3011220 * part) },
+          { nom: 'BENIN', niuGeneres: Math.round(21460 * part) },
+          { nom: 'GHANA', niuGeneres: Math.round(12730 * part) },
+          { nom: 'Autres', niuGeneres: Math.round(13476 * part) },
+        ],
       },
     });
   });

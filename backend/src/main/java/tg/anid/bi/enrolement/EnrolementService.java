@@ -4,12 +4,12 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -170,8 +170,9 @@ public class EnrolementService {
     }
 
     /**
-     * NIU générés par sexe et tranche d'âge sur la période, dans la région demandée (tout le Togo par défaut). Le
-     * profil anonymisé ne situe un NIU qu'à la région : une préfecture ou un centre est refusé.
+     * NIU générés par sexe et tranche d'âge, et par nationalité, sur la période, dans la région demandée (tout le Togo
+     * par défaut). Le profil des NIU n'est publié qu'à la région (celle du centre) : une préfecture ou un centre est
+     * refusé.
      */
     public AgeSexe ageSexe(LocalDate du, LocalDate au, String zoneDemandee) {
         verifierOrdre(du, au);
@@ -184,7 +185,7 @@ public class EnrolementService {
             List<AgeSexe.Tranche> vides = TRANCHES_AGE.stream()
                     .map(t -> new AgeSexe.Tranche(t, null, null))
                     .toList();
-            return new AgeSexe(perimetre, du, au, false, vides, null);
+            return new AgeSexe(perimetre, du, au, false, vides, null, List.of());
         }
         List<EnrolementRepository.CaseProfil> cases = repository.niuParSexeEtAge(du, au, zone);
         List<AgeSexe.Tranche> tranches = TRANCHES_AGE.stream()
@@ -194,7 +195,11 @@ public class EnrolementService {
                 .filter(c -> (!"F".equals(c.sexe()) && !"H".equals(c.sexe())) || !TRANCHES_AGE.contains(c.trancheAge()))
                 .mapToLong(EnrolementRepository.CaseProfil::niuGeneres)
                 .sum();
-        return new AgeSexe(perimetre, du, au, true, tranches, nonRenseignes);
+        Map<String, Long> parNationalite = repository.niuParNationalite(du, au, zone).stream()
+                .collect(Collectors.groupingBy(EnrolementRepository.CaseNationalite::nationalite, TreeMap::new,
+                        Collectors.summingLong(EnrolementRepository.CaseNationalite::niuGeneres)));
+        return new AgeSexe(perimetre, du, au, true, tranches, nonRenseignes,
+                premieresNationalites(parNationalite, AgeSexe.Nationalite::new));
     }
 
     /**
@@ -226,20 +231,29 @@ public class EnrolementService {
         Map<String, Long> parNationalite = cases.stream().collect(Collectors.groupingBy(
                 EnrolementRepository.CasePreinscription::nationalite, TreeMap::new,
                 Collectors.summingLong(EnrolementRepository.CasePreinscription::demandes)));
+        return premieresNationalites(parNationalite, ProfilPreinscriptions.Nationalite::new);
+    }
+
+    /**
+     * Les {@value #TAILLE_TOP} nationalités les plus nombreuses (à égalité, par ordre alphabétique), puis « Autres »
+     * (le reste) et « Non renseignée », chacune seulement si elle n'est pas nulle.
+     */
+    static <T> List<T> premieresNationalites(Map<String, Long> parNationalite, BiFunction<String, Long, T> creer) {
         long nonRenseignee = parNationalite.getOrDefault(NATIONALITE_NON_RENSEIGNEE, 0L);
-        List<ProfilPreinscriptions.Nationalite> connues = parNationalite.entrySet().stream()
+        List<Map.Entry<String, Long>> connues = parNationalite.entrySet().stream()
                 .filter(e -> !NATIONALITE_NON_RENSEIGNEE.equals(e.getKey()) && e.getValue() > 0)
-                .map(e -> new ProfilPreinscriptions.Nationalite(e.getKey(), e.getValue()))
-                .sorted(Comparator.comparingLong(ProfilPreinscriptions.Nationalite::demandes).reversed()
-                        .thenComparing(ProfilPreinscriptions.Nationalite::nom))
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed()
+                        .thenComparing(Map.Entry.comparingByKey()))
                 .toList();
-        List<ProfilPreinscriptions.Nationalite> resultat = new ArrayList<>(connues.stream().limit(TAILLE_TOP).toList());
-        long autres = connues.stream().skip(TAILLE_TOP).mapToLong(ProfilPreinscriptions.Nationalite::demandes).sum();
+        List<T> resultat = new ArrayList<>(connues.stream().limit(TAILLE_TOP)
+                .map(e -> creer.apply(e.getKey(), e.getValue()))
+                .toList());
+        long autres = connues.stream().skip(TAILLE_TOP).mapToLong(Map.Entry::getValue).sum();
         if (autres > 0) {
-            resultat.add(new ProfilPreinscriptions.Nationalite(NATIONALITE_AUTRES, autres));
+            resultat.add(creer.apply(NATIONALITE_AUTRES, autres));
         }
         if (nonRenseignee > 0) {
-            resultat.add(new ProfilPreinscriptions.Nationalite(NATIONALITE_NON_RENSEIGNEE, nonRenseignee));
+            resultat.add(creer.apply(NATIONALITE_NON_RENSEIGNEE, nonRenseignee));
         }
         return List.copyOf(resultat);
     }

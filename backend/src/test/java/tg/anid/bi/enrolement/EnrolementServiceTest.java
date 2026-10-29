@@ -272,6 +272,33 @@ class EnrolementServiceTest {
     }
 
     @Test
+    void lesNationalitesDesNiuSontLesCinqPremieresPuisAutresEtNonRenseignee() {
+        when(repository.nomZone("KAR")).thenReturn(Optional.of("Kara"));
+        when(repository.estRegion("KAR")).thenReturn(true);
+        when(repository.profilsDisponibles()).thenReturn(true);
+        when(repository.niuParSexeEtAge(null, null, "KAR")).thenReturn(List.of(
+                new EnrolementRepository.CaseProfil("F", "26-35", 400),
+                new EnrolementRepository.CaseProfil("I", "inconnu", 63)));
+        when(repository.niuParNationalite(null, null, "KAR")).thenReturn(List.of(
+                new EnrolementRepository.CaseNationalite("Togo", 380),
+                new EnrolementRepository.CaseNationalite("Non renseignée", 63),
+                new EnrolementRepository.CaseNationalite("BENIN", 7),
+                new EnrolementRepository.CaseNationalite("Ghana", 5),
+                new EnrolementRepository.CaseNationalite("Niger", 4),
+                new EnrolementRepository.CaseNationalite("Mali", 2),
+                new EnrolementRepository.CaseNationalite("Burkina Faso", 2)));
+
+        AgeSexe a = service.ageSexe(null, null, "KAR");
+
+        assertThat(a.nationalites()).extracting(AgeSexe.Nationalite::nom)
+                .containsExactly("Togo", "BENIN", "Ghana", "Niger", "Burkina Faso", "Autres", "Non renseignée");
+        assertThat(a.nationalites().get(5).niuGeneres()).isEqualTo(2);
+        long nationalites = a.nationalites().stream().mapToLong(AgeSexe.Nationalite::niuGeneres).sum();
+        long tranches = a.tranches().stream().mapToLong(t -> t.femmes() + t.hommes()).sum();
+        assertThat(nationalites).isEqualTo(tranches + a.nonRenseignes()).isEqualTo(463);
+    }
+
+    @Test
     void sansProfilsLaPyramideGardeSesTranchesSansChiffres() {
         when(repository.profilsDisponibles()).thenReturn(false);
 
@@ -280,6 +307,7 @@ class EnrolementServiceTest {
         assertThat(a.disponible()).isFalse();
         assertThat(a.tranches()).hasSize(8).allSatisfy(t -> assertThat(t.femmes()).isNull());
         assertThat(a.nonRenseignes()).isNull();
+        assertThat(a.nationalites()).isEmpty();
     }
 
     @Test

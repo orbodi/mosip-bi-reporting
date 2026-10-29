@@ -495,6 +495,15 @@ export const AGE_SEXE: AgeSexe = {
   perimetre: 'Ensemble du Togo',
   disponible: true,
   nonRenseignes: 0,
+  // Somme égale à celle de la pyramide (3 058 886) : contrôle de l'API
+  nationalites: [
+    { nom: 'Togo', niuGeneres: 3011220 },
+    { nom: 'BENIN', niuGeneres: 21460 },
+    { nom: 'GHANA', niuGeneres: 12730 },
+    { nom: 'NIGER', niuGeneres: 6120 },
+    { nom: 'BURKINA FASO', niuGeneres: 4310 },
+    { nom: 'Autres', niuGeneres: 3046 },
+  ],
   tranches: [
     { tranche: '0-5', femmes: 33647, hommes: 36707 },
     { tranche: '6-14', femmes: 131532, hommes: 140709 },
