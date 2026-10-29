@@ -17,7 +17,7 @@ describe('Page Enrôlement', () => {
       'Pré-inscription',
       'Profil des pré-inscrits',
       'Devenir des inscriptions',
-      'Inscriptions et NIU par semaine',
+      'Inscriptions et NIU par jour',
       'Territoire : vue nationale',
       'NIU générés par âge, sexe et nationalité',
       'Top des centres',

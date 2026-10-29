@@ -223,6 +223,25 @@ class PageEnrolementIT {
     }
 
     @Test
+    void joursInscriptionsAuJourDeReceptionNiuAuJourDeGenerationJourEnCoursCompris() {
+        InscriptionsParJour j = service.jours(LocalDate.parse("2026-01-14"));
+
+        assertThat(j.jours()).hasSize(28);
+        assertThat(j.jours().getFirst().jour()).isEqualTo("2025-12-18");
+        assertThat(j.jours().getLast().jour()).isEqualTo("2026-01-14");
+        assertThat(j.jours()).filteredOn(d -> d.jour().equals(LocalDate.parse("2026-01-05"))).singleElement()
+                .extracting(InscriptionsParJour.Jour::inscriptions).isEqualTo(100L);
+        // Le NIU du 12/01 compte au jour près, contrairement aux semaines complètes.
+        assertThat(j.jours()).filteredOn(d -> d.jour().equals(LocalDate.parse("2026-01-12"))).singleElement()
+                .extracting(InscriptionsParJour.Jour::niuGeneres).isEqualTo(30L);
+        // Contrôle : les 28 jours couvrent toutes les données du jeu, donc leur somme égale les totaux des faits.
+        assertThat(j.jours().stream().mapToLong(InscriptionsParJour.Jour::inscriptions).sum())
+                .isEqualTo(jdbc.sql("select sum(inscriptions) from bi.fait_enrolement_jour").query(Long.class).single())
+                .isEqualTo(240);
+        assertThat(j.jours().stream().mapToLong(InscriptionsParJour.Jour::niuGeneres).sum()).isEqualTo(140);
+    }
+
+    @Test
     void sansNiuParJourDeGenerationLaSourceEstSignaleeIndisponible() {
         jdbc.sql("truncate bi.fait_niu_jour").update();
 

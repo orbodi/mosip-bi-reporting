@@ -46,6 +46,15 @@ public class EnrolementController {
         return service.semaines(du, au, zone);
     }
 
+    /**
+     * Inscriptions (jour de réception) et NIU générés (jour de génération) des 28 derniers jours, aujourd'hui compris
+     * (heure du Togo). National, sans période : le bloc suit la date du jour.
+     */
+    @GetMapping("/jours")
+    public InscriptionsParJour jours() {
+        return service.jours();
+    }
+
     /** Territoire : totaux de la zone (tout le Togo par défaut) et une ligne par sous-zone directe. */
     @GetMapping("/territoire")
     public Territoire territoire(

@@ -189,6 +189,36 @@ public class EnrolementRepository {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
+    /** Inscriptions par jour de réception, du jour {@code debut} au jour {@code fin} (bornes incluses), tout le Togo. */
+    public Map<LocalDate, Long> inscriptionsParJour(LocalDate debut, LocalDate fin) {
+        return parJour("""
+                select f.jour, sum(f.inscriptions) as total
+                from bi.fait_enrolement_jour f
+                where f.jour between cast(:debut as date) and cast(:fin as date)
+                group by 1
+                """, debut, fin);
+    }
+
+    /** NIU générés par jour de génération, du jour {@code debut} au jour {@code fin} (bornes incluses), tout le Togo. */
+    public Map<LocalDate, Long> niuParJour(LocalDate debut, LocalDate fin) {
+        return parJour("""
+                select f.jour, sum(f.niu_generes) as total
+                from bi.fait_niu_jour f
+                where f.jour between cast(:debut as date) and cast(:fin as date)
+                group by 1
+                """, debut, fin);
+    }
+
+    private Map<LocalDate, Long> parJour(String sql, LocalDate debut, LocalDate fin) {
+        return jdbc.sql(sql)
+                .param("debut", debut)
+                .param("fin", fin)
+                .query((rs, ligne) -> Map.entry(rs.getObject("jour", LocalDate.class), rs.getLong("total")))
+                .list()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
     /** Vrai dès que bi.fait_niu_jour contient au moins une ligne (source alimentée). */
     public boolean niuDisponibles() {
         return jdbc.sql("select exists (select 1 from bi.fait_niu_jour)")

@@ -2,6 +2,7 @@ package tg.anid.bi.enrolement;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -22,6 +23,9 @@ public class EnrolementService {
 
     static final String ENSEMBLE_DU_TOGO = "Ensemble du Togo";
     static final int NOMBRE_SEMAINES = 12;
+    /** Jours du bloc « Inscriptions et NIU par jour » : quatre semaines, aujourd'hui compris. */
+    static final int NOMBRE_JOURS = 28;
+    static final ZoneId TOGO = ZoneId.of("Africa/Lome");
     static final int TAILLE_TOP = 5;
     /** Nationalité des demandes non enrichies ou sans nationalité (valeur de bi.fait_preinscription_profil_jour). */
     static final String NATIONALITE_NON_RENSEIGNEE = "Non renseignée";
@@ -85,6 +89,23 @@ public class EnrolementService {
                         inscriptions.getOrDefault(lundi, 0L), niu.getOrDefault(lundi, 0L)))
                 .toList();
         return new InscriptionsParSemaine(perimetre, du, au, niuDisponibles, semaines);
+    }
+
+    /** Inscriptions et NIU des 28 derniers jours jusqu'à aujourd'hui (heure du Togo), tout le Togo. */
+    public InscriptionsParJour jours() {
+        return jours(LocalDate.now(TOGO));
+    }
+
+    /** Inscriptions et NIU des 28 jours qui finissent le jour {@code aujourdhui} ; un jour sans donnée vaut 0. */
+    InscriptionsParJour jours(LocalDate aujourdhui) {
+        LocalDate debut = aujourdhui.minusDays(NOMBRE_JOURS - 1L);
+        Map<LocalDate, Long> inscriptions = repository.inscriptionsParJour(debut, aujourdhui);
+        Map<LocalDate, Long> niu = repository.niuParJour(debut, aujourdhui);
+        List<InscriptionsParJour.Jour> jours = IntStream.range(0, NOMBRE_JOURS)
+                .mapToObj(debut::plusDays)
+                .map(j -> new InscriptionsParJour.Jour(j, inscriptions.getOrDefault(j, 0L), niu.getOrDefault(j, 0L)))
+                .toList();
+        return new InscriptionsParJour(ENSEMBLE_DU_TOGO, aujourdhui, repository.niuDisponibles(), jours);
     }
 
     /** Totaux de la zone et chiffres de chacune de ses sous-zones directes. */

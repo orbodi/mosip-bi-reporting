@@ -114,6 +114,20 @@ class EnrolementControllerTest {
     }
 
     @Test
+    void renvoieLesJoursJusquAujourdhui() throws Exception {
+        when(service.jours()).thenReturn(new InscriptionsParJour("Ensemble du Togo", LocalDate.parse("2026-10-29"),
+                true, List.of(new InscriptionsParJour.Jour(LocalDate.parse("2026-10-29"), 2134, 1388))));
+
+        mvc.perform(get("/api/v1/enrolement/jours"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aujourdhui").exists())
+                .andExpect(jsonPath("$.niuDisponibles").value(true))
+                .andExpect(jsonPath("$.jours[0].jour").exists())
+                .andExpect(jsonPath("$.jours[0].inscriptions").value(2134))
+                .andExpect(jsonPath("$.jours[0].niuGeneres").value(1388));
+    }
+
+    @Test
     void renvoieLesSemainesAvecLaDisponibiliteDesNiu() throws Exception {
         when(service.semaines(isNull(), isNull(), isNull())).thenReturn(new InscriptionsParSemaine(
                 "Ensemble du Togo", null, null, false,

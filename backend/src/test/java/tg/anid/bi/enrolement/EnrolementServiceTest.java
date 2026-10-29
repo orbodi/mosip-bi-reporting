@@ -88,6 +88,28 @@ class EnrolementServiceTest {
     }
 
     @Test
+    void vingtHuitJoursJusquAujourdhuiLesJoursSansDonneeValentZero() {
+        LocalDate premier = LocalDate.parse("2025-12-18");
+        when(repository.niuDisponibles()).thenReturn(true);
+        when(repository.inscriptionsParJour(premier, MERCREDI_14_JANVIER))
+                .thenReturn(Map.of(LocalDate.parse("2026-01-05"), 100L, MERCREDI_14_JANVIER, 12L));
+        when(repository.niuParJour(premier, MERCREDI_14_JANVIER)).thenReturn(Map.of(LocalDate.parse("2026-01-08"), 60L));
+
+        InscriptionsParJour j = service.jours(MERCREDI_14_JANVIER);
+
+        assertThat(j.perimetre()).isEqualTo("Ensemble du Togo");
+        assertThat(j.aujourdhui()).isEqualTo(MERCREDI_14_JANVIER);
+        assertThat(j.niuDisponibles()).isTrue();
+        // Quatre semaines, du plus ancien à aujourd'hui compris, sans trou.
+        assertThat(j.jours()).hasSize(28);
+        assertThat(j.jours().getFirst().jour()).isEqualTo(premier);
+        assertThat(j.jours().getLast()).isEqualTo(new InscriptionsParJour.Jour(MERCREDI_14_JANVIER, 12, 0));
+        assertThat(j.jours()).filteredOn(d -> d.jour().equals(LocalDate.parse("2026-01-08"))).singleElement()
+                .isEqualTo(new InscriptionsParJour.Jour(LocalDate.parse("2026-01-08"), 0, 60));
+        assertThat(j.jours().stream().mapToLong(InscriptionsParJour.Jour::inscriptions).sum()).isEqualTo(112);
+    }
+
+    @Test
     void sansAucuneDonneeLaListeDesSemainesEstVide() {
         when(repository.derniereDonnee()).thenReturn(Optional.empty());
 

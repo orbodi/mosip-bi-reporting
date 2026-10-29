@@ -8,6 +8,7 @@ import {
   type DevenirInscriptions,
   type Preinscriptions,
   type ProfilPreinscriptions,
+  type InscriptionsParJour,
   type InscriptionsParSemaine,
   type MotifsArret,
   type SynchronisationNonRecue,
@@ -53,6 +54,17 @@ export function useDevenirInscriptions(plage: Plage | undefined, active = true) 
 /** Inscriptions et NIU des 12 semaines complètes (GET /api/v1/enrolement/semaines). */
 export function useSemaines(plage: Plage | undefined, active = true) {
   return useBlocEnrolement<InscriptionsParSemaine>('semaines', plage, active);
+}
+
+/** Inscriptions et NIU des 28 derniers jours, aujourd'hui compris (GET /api/v1/enrolement/jours), relus toutes les 30 s. */
+export function useJours(active = true) {
+  return useQuery({
+    queryKey: ['enrolement', 'jours'],
+    queryFn: () => lireApi<InscriptionsParJour>('/enrolement/jours', {}),
+    enabled: active,
+    refetchInterval: RAFRAICHISSEMENT_MS,
+    placeholderData: keepPreviousData,
+  });
 }
 
 /** Territoire : totaux de la zone et ses sous-zones (GET /api/v1/enrolement/territoire). */

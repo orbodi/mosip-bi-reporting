@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import type {
   AgeSexe,
   DelaisTraitement,
+  InscriptionsParJour,
   InscriptionsParSemaine,
   LigneZone,
   MotifsArret,
@@ -206,6 +207,25 @@ export const SEMAINES: InscriptionsParSemaine = {
     inscriptions: i === 11 ? 20230 : 30000 + i * 500,
     niuGeneres: i === 11 ? 17626 : 28000 + i * 400,
   })),
+};
+
+/**
+ * 28 jours jusqu'au mercredi 14/01/2026 (« aujourd'hui » des tests) : du 18/12/2025 au 14/01/2026. Inscriptions
+ * 4 000 + 10 × rang, NIU 2 500 + 10 × rang ; le 14/01 (jour en cours) : 2 134 inscriptions, 1 388 NIU.
+ */
+export const JOURS: InscriptionsParJour = {
+  perimetre: 'Ensemble du Togo',
+  aujourdhui: '2026-01-14',
+  niuDisponibles: true,
+  jours: Array.from({ length: 28 }, (_, i) => {
+    const d = new Date(Date.UTC(2025, 11, 18 + i));
+    const dernier = i === 27;
+    return {
+      jour: d.toISOString().slice(0, 10),
+      inscriptions: dernier ? 2134 : 4000 + 10 * i,
+      niuGeneres: dernier ? 1388 : 2500 + 10 * i,
+    };
+  }),
 };
 
 export const CENTRES: Record<string, TopCentres> = {
@@ -476,6 +496,7 @@ const PAR_DEFAUT: Record<string, Reponse> = {
     bloques: 59264,
   },
   '/enrolement/semaines': SEMAINES,
+  '/enrolement/jours': JOURS,
   '/enrolement/motifs': MOTIFS,
   '/enrolement/delais': DELAIS,
   '/enrolement/synchronisation': SYNCHRONISATION,

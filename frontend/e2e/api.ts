@@ -399,6 +399,25 @@ export async function simulerEnrolement(page: Page) {
     });
   });
   await page.route('**/api/v1/meta/regions', (route) => route.fulfill({ json: REGIONS }));
+  // 28 jours jusqu'à aujourd'hui (heure du Togo), le jour en cours plus faible.
+  await page.route('**/api/v1/enrolement/jours*', (route) => {
+    const aujourdhui = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00Z');
+    const jours = Array.from({ length: 28 }, (_, i) => {
+      const d = new Date(aujourdhui);
+      d.setUTCDate(aujourdhui.getUTCDate() - 27 + i);
+      const weekEnd = d.getUTCDay() === 0 || d.getUTCDay() === 6;
+      const base = i === 27 ? 2134 : weekEnd ? 1500 : 4600 + ((i * 137) % 700);
+      return { jour: d.toISOString().slice(0, 10), inscriptions: base, niuGeneres: Math.round(base * 0.63) };
+    });
+    return route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        aujourdhui: jours[27].jour,
+        niuDisponibles: true,
+        jours,
+      },
+    });
+  });
   await page.route('**/api/v1/enrolement/semaines*', (route) =>
     route.fulfill({
       json: {

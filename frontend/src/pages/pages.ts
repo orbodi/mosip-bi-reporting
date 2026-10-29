@@ -2,7 +2,13 @@ import type { CodeSource } from '../api/meta';
 
 export interface DefinitionPage {
   chemin:
-    '/' | '/enrolement' | '/impression-cartes' | '/abis' | '/idps' | '/authentifications' | '/exploration';
+    | '/'
+    | '/enrolement'
+    | '/impression-cartes'
+    | '/abis'
+    | '/idps'
+    | '/authentifications'
+    | '/exploration';
   /** Libellé de l'onglet dans l'en-tête. */
   onglet: string;
   /** Titre (h1) du bandeau. */
@@ -41,9 +47,9 @@ export const PAGES: DefinitionPage[] = [
     blocs: [
       'Pré-inscription',
       'Devenir des inscriptions',
-      'Inscriptions et NIU par semaine',
+      'Inscriptions et NIU par jour',
       'Territoire (carte et tableau des zones)',
-      'Âge et sexe',
+      'Âge, sexe et nationalité',
       'Top des centres',
     ],
   },

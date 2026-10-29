@@ -220,9 +220,59 @@
   background: var(--bleu);
 }
 
-/* Bloc « Inscriptions et NIU par semaine » */
-.bloc-semaines .graphique {
-  margin-top: var(--e-2);
+/* Bloc « Inscriptions et NIU par jour » : lecture et navigation par semaine, puis graphique ou tableau. */
+.legende__barre--niu {
+  background: var(--statut-niu);
+}
+.bloc-jours__barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3) var(--e-4);
+  margin-top: var(--e-4);
+}
+.bloc-jours__barre .lecture {
+  margin: 0;
+}
+.bloc-jours__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+}
+.bloc-jours__nav .pagination__bouton {
+  min-width: 36px;
+  min-height: 36px;
+}
+.bloc-jours__points {
+  display: flex;
+  gap: 6px;
+}
+.bloc-jours__points i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--trait);
+}
+.bloc-jours__points i.actif {
+  background: var(--bleu);
+}
+.bloc-jours .legende {
+  margin-bottom: var(--e-2);
+}
+.bloc-jours__aujourdhui th {
+  color: var(--bleu);
+  font-weight: 600;
+}
+.bloc-jours tfoot th,
+.bloc-jours tfoot td {
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .bloc-jours__nav .pagination__bouton {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* Bloc « Territoire » ---------------------------------------------------------------------------------------- */

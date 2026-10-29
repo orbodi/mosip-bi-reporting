@@ -5,9 +5,9 @@ import { BlocAgeSexe } from './BlocAgeSexe';
 import { BlocArrets } from './BlocArrets';
 import { BlocDelais } from './BlocDelais';
 import { BlocDevenir } from './BlocDevenir';
+import { BlocJours } from './BlocJours';
 import { BlocPreinscription } from './BlocPreinscription';
 import { BlocProfilPreinscription } from './BlocProfilPreinscription';
-import { BlocSemaines } from './BlocSemaines';
 import { BlocTerritoire } from './BlocTerritoire';
 import { BlocTopCentres } from './BlocTopCentres';
 
@@ -29,7 +29,7 @@ export function PageEnrolement({ page }: { page: DefinitionPage }) {
         <BlocPreinscription />
         <BlocProfilPreinscription />
         <BlocDevenir />
-        <BlocSemaines />
+        <BlocJours />
         <BlocTerritoire />
         <BlocAgeSexe />
         <BlocTopCentres />

@@ -64,6 +64,17 @@ export interface paths {
       };
     };
   };
+  '/api/v1/enrolement/jours': {
+    get: {
+      responses: {
+        200: {
+          content: {
+            'application/json': components['schemas']['InscriptionsParJour'];
+          };
+        };
+      };
+    };
+  };
   '/api/v1/enrolement/territoire': {
     get: {
       parameters: {
@@ -284,6 +295,21 @@ export interface components {
     Region: {
       code: string;
       nom: string;
+    };
+    InscriptionsParJour: {
+      perimetre: string;
+      /** Format: date */
+      aujourdhui: string;
+      niuDisponibles: boolean;
+      jours: components['schemas']['JourInscriptions'][];
+    };
+    JourInscriptions: {
+      /** Format: date */
+      jour: string;
+      /** Format: int64 */
+      inscriptions: number;
+      /** Format: int64 */
+      niuGeneres: number;
     };
     InscriptionsParSemaine: {
       perimetre: string;
