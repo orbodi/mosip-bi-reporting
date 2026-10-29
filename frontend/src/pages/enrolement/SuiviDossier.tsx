@@ -8,7 +8,6 @@ import {
   Label,
   Modal,
   ModalOverlay,
-  Text,
   TextField,
 } from 'react-aria-components';
 import type { SuiviDossier } from '../../api/client';
@@ -174,9 +173,6 @@ function FenetreSuivi({ fermer }: { fermer: () => void }) {
                   {suivi.isPending ? 'Recherche…' : 'Rechercher'}
                 </Button>
               </div>
-              <Text slot="description" className="texte-2 suivi__aide">
-                Le RID n’est ni conservé ni réaffiché après la recherche.
-              </Text>
             </TextField>
             {erreur && (
               <p className="suivi__erreur" role="alert">

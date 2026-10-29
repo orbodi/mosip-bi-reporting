@@ -149,11 +149,6 @@
 .suivi__bouton--clair[data-hovered] {
   background: var(--bleu-clair);
 }
-.suivi__aide {
-  display: block;
-  margin-top: var(--e-2);
-  font-size: var(--t-xs);
-}
 /* Erreur en rouge adouci (décision du 26/10/2026) */
 .suivi__erreur {
   margin: var(--e-3) 0 0;
