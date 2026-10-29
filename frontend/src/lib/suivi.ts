@@ -114,7 +114,10 @@ export function jalonsDossier(d: SuiviDossier): Jalon[] {
       etat: j.synchroniseLe || j.recuLe ? 'fait' : 'a-venir',
     },
   ];
-  if (j.refusPoste) liste.push({ cle: 'refus', libelle: 'Refusé au poste', quand: '', etat: 'refus' });
+  // Refus au poste : un jalon à part, sauf quand c'est déjà l'étape où le dossier s'est arrêté (sinon il paraît deux fois).
+  if (j.refusPoste && d.etape?.code !== 'REFUS_POSTE') {
+    liste.push({ cle: 'refus', libelle: 'Refusé au poste', quand: '', etat: 'refus' });
+  }
   if (!j.recuLe) {
     liste.push({ cle: 'recu', libelle: 'Reçu par MOSIP', quand: '—', etat: 'actuel' });
     liste.push({ cle: 'niu', libelle: 'NIU généré', quand: '—', etat: 'a-venir' });

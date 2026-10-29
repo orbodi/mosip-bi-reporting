@@ -110,6 +110,21 @@ describe('Suivi d’un dossier', () => {
     const refus = jalonsDossier({ ...EN_COURS, jalons: { ...EN_COURS.jalons, refusPoste: true } });
     expect(refus[2]).toMatchObject({ libelle: 'Refusé au poste', etat: 'refus' });
 
+    // Rejeté au poste : le refus est l'étape finale, il n'apparaît qu'une fois.
+    const refuseAuPoste = jalonsDossier({
+      ...EN_COURS,
+      devenir: 'rejete',
+      bloque: false,
+      etape: { code: 'REFUS_POSTE', libelle: 'Refus au poste', statut: 'REJECTED' },
+      jalons: { ...EN_COURS.jalons, refusPoste: true },
+    });
+    expect(refuseAuPoste.map((x) => [x.libelle, x.etat])).toEqual([
+      ['Enrôlé au poste', 'fait'],
+      ['Synchronisé avec MOSIP', 'fait'],
+      ['Reçu par MOSIP', 'fait'],
+      ['Refus au poste', 'arret'],
+    ]);
+
     const nonRecu = jalonsDossier({
       ...EN_COURS,
       devenir: 'non_recu',
