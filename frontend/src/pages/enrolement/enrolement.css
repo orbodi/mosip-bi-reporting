@@ -156,6 +156,39 @@
 .carte-statut__part {
   font-size: var(--t-s);
 }
+/*
+ * Écrans très étroits (téléphone replié, 320 px, 30/10/2026) : en deux colonnes, une carte ne laissait qu'environ
+ * 60 px au chiffre, qui était coupé (« 6 132 54… »). Une carte par ligne (variante A validée) : chiffre en 22 px, part
+ * alignée à droite sur la même ligne, détail des bloqués sous les deux.
+ */
+@media (max-width: 420px) {
+  .cartes-statuts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--e-2);
+  }
+  .carte-statut {
+    gap: var(--e-3);
+    padding: var(--e-3) var(--e-4);
+  }
+  .carte-statut__corps {
+    display: grid;
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--e-2);
+    row-gap: var(--e-1);
+  }
+  .carte-statut__libelle,
+  .carte-statut__detail {
+    grid-column: 1 / -1;
+  }
+  .carte-statut__valeur {
+    font-size: var(--t-2xl);
+    align-self: baseline;
+  }
+  .carte-statut__part {
+    align-self: baseline;
+  }
+}
 
 .alerte-donnees {
   margin: var(--e-4) 0 0;
