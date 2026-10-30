@@ -14,7 +14,7 @@ import tg.anid.bi.commun.RessourceIntrouvable;
 /**
  * Suivi d'un dossier sur un PostgreSQL jetable (Testcontainers) : la ligne de bi.suivi_dossier est écrite avec
  * l'empreinte calculée par pgcrypto, comme la publication de mosip-cdc ; l'API doit la retrouver avec son propre
- * calcul (même clé). Le journal (V8) ne garde que qui, quand et le résultat.
+ * calcul (même clé). Aucune recherche n'est enregistrée (registre V8 retiré par V12, 30/10/2026).
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:tc:postgresql:17-alpine:///bi",
@@ -39,7 +39,7 @@ class SuiviIT {
     @BeforeEach
     void preparer() {
         jdbc.sql("create extension if not exists pgcrypto").update();
-        jdbc.sql("truncate bi.suivi_dossier, bi.journal_suivi, bi.ref_motif").update();
+        jdbc.sql("truncate bi.suivi_dossier, bi.ref_motif").update();
         jdbc.sql("""
                 insert into bi.ref_motif (motif, libelle, commentaire, piste)
                 values ('REFUS_SUPERVISEUR', 'Rejeté par le superviseur du centre', 'Rejected by Supervisor', null)
@@ -91,20 +91,12 @@ class SuiviIT {
     }
 
     @Test
-    void chaqueRechercheEstJournaliseeSansLeRid() {
+    void aucuneRechercheNEstEnregistree() {
         service.suivre(RID);
         assertThatThrownBy(() -> service.suivre("10011100230041220261021093016"))
                 .isInstanceOf(RessourceIntrouvable.class);
 
-        assertThat(jdbc.sql("select resultat from bi.journal_suivi order by recherche_le, resultat")
-                .query(String.class).list()).containsExactlyInAnyOrder("trouve", "introuvable");
-        assertThat(jdbc.sql("select count(*) from bi.journal_suivi where utilisateur = 'anonyme'")
-                .query(Long.class).single()).isEqualTo(2);
-        // Aucune colonne du journal ne peut contenir le RID ni son empreinte.
-        assertThat(jdbc.sql("""
-                        select string_agg(column_name, ',' order by column_name)
-                        from information_schema.columns
-                        where table_schema = 'bi' and table_name = 'journal_suivi'
-                        """).query(String.class).single()).isEqualTo("recherche_le,resultat,utilisateur");
+        // Registre des recherches retiré (V12) : la table n'existe plus.
+        assertThat(jdbc.sql("select to_regclass('bi.journal_suivi') is null").query(Boolean.class).single()).isTrue();
     }
 }

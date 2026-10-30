@@ -7,8 +7,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Lecture de bi.suivi_dossier par empreinte, avec le libellé de son motif (bi.ref_motif, migration V11), écriture du
- * journal des recherches (migration V8).
+ * Lecture de bi.suivi_dossier par empreinte, avec le libellé de son motif (bi.ref_motif, migration V11).
  */
 @Repository
 public class SuiviRepository {
@@ -59,13 +58,5 @@ public class SuiviRepository {
                         rs.getString("motif_commentaire"),
                         rs.getObject("maj_le", OffsetDateTime.class)))
                 .optional();
-    }
-
-    /** Une recherche au journal : qui et avec quel résultat (trouve, introuvable, format) ; jamais le RID. */
-    public void journaliser(String utilisateur, String resultat) {
-        jdbc.sql("insert into bi.journal_suivi (utilisateur, resultat) values (:utilisateur, :resultat)")
-                .param("utilisateur", utilisateur)
-                .param("resultat", resultat)
-                .update();
     }
 }

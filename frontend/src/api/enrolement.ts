@@ -119,7 +119,7 @@ export function useSynchronisation() {
 
 /**
  * Suivi d'un dossier (POST /api/v1/enrolement/suivi) : une recherche par appel, jamais mise en cache ni relancée
- * (chaque recherche est journalisée côté API). Le RID n'est gardé que le temps de l'appel.
+ * (aucune recherche n'est enregistrée côté API). Le RID n'est gardé que le temps de l'appel.
  */
 export function useSuiviDossier() {
   return useMutation({

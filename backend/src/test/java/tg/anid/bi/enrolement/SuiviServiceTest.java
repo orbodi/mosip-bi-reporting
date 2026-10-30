@@ -63,7 +63,6 @@ class SuiviServiceTest {
         assertThat(d.motif()).isEqualTo(new SuiviDossier.Motif("FILE_VERIF_MANUELLE",
                 "En file d’attente de vérification manuelle", "Manual verification Sent to queue"));
         assertThat(d.jalons().niuLe()).isNull();
-        verify(repository).journaliser("anonyme", "trouve");
     }
 
     @Test
@@ -91,12 +90,11 @@ class SuiviServiceTest {
     }
 
     @Test
-    void unRidMalFormeEstRefuseEtJournaliseSansRecherche() {
+    void unRidMalFormeEstRefuseSansRecherche() {
         assertThatThrownBy(() -> service.suivre("2010110023")).isInstanceOf(RequeteInvalide.class)
                 .hasMessage("Le RID compte 29 chiffres.");
         assertThatThrownBy(() -> service.suivre(null)).isInstanceOf(RequeteInvalide.class);
         verify(repository, never()).parEmpreinte(any());
-        verify(repository, org.mockito.Mockito.times(2)).journaliser("anonyme", "format");
     }
 
     @Test
@@ -106,7 +104,6 @@ class SuiviServiceTest {
         assertThatThrownBy(() -> service.suivre(RID)).isInstanceOf(RessourceIntrouvable.class)
                 .hasMessage("Ce RID ne correspond à aucun dossier ou paquet.")
                 .hasMessageNotContaining(RID);
-        verify(repository).journaliser("anonyme", "introuvable");
     }
 
     @Test
@@ -114,6 +111,6 @@ class SuiviServiceTest {
         SuiviService sansCle = new SuiviService(repository, zones, "", HORLOGE);
 
         assertThatThrownBy(() -> sansCle.suivre(RID)).isInstanceOf(ServiceIndisponible.class);
-        verify(repository, never()).journaliser(any(), any());
+        verify(repository, never()).parEmpreinte(any());
     }
 }

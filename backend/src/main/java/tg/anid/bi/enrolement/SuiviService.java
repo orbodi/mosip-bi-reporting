@@ -12,9 +12,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import tg.anid.bi.commun.RequeteInvalide;
@@ -25,8 +22,9 @@ import tg.anid.bi.config.BiProprietes;
 /**
  * Suivi d'un dossier : l'empreinte du RID est calculée en mémoire, hmac(rid, clé, 'sha256') comme à la publication
  * de bi.suivi_dossier (pgcrypto, clé SUIVI_HMAC_CLE), puis cherchée. Le RID n'est ni gardé, ni renvoyé, ni écrit
- * dans un journal ou un message d'erreur. Chaque recherche est journalisée (qui, quand, résultat), sans plafond
- * (décision du 26/10/2026) ; chaque utilisateur a accès à tout le Togo (décision du 25/10/2026).
+ * dans un journal ou un message d'erreur. Sans plafond de recherches (décision du 26/10/2026) ni registre des
+ * recherches (retiré le 30/10/2026 : un RID ne permet pas de remonter à une personne) ; chaque utilisateur a accès à
+ * tout le Togo (décision du 25/10/2026).
  */
 @Service
 public class SuiviService {
@@ -57,13 +55,10 @@ public class SuiviService {
         if (cle == null || cle.isBlank()) {
             throw new ServiceIndisponible("Le suivi d'un dossier n'est pas configuré sur ce serveur.");
         }
-        String utilisateur = utilisateurCourant();
         if (rid == null || !FORMAT_RID.matcher(rid).matches()) {
-            repository.journaliser(utilisateur, "format");
             throw new RequeteInvalide("Le RID compte 29 chiffres.");
         }
         SuiviRepository.Ligne l = repository.parEmpreinte(empreinte(rid, cle)).orElse(null);
-        repository.journaliser(utilisateur, l == null ? "introuvable" : "trouve");
         if (l == null) {
             throw new RessourceIntrouvable(INTROUVABLE);
         }
@@ -95,15 +90,5 @@ public class SuiviService {
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("HMAC-SHA256 indisponible", e);
         }
-    }
-
-    /** Identifiant Keycloak de l'utilisateur (preferred_username, sinon sub) ; « anonyme » sans Keycloak. */
-    static String utilisateurCourant() {
-        Authentication a = SecurityContextHolder.getContext().getAuthentication();
-        if (a != null && a.getPrincipal() instanceof Jwt jeton) {
-            String nom = jeton.getClaimAsString("preferred_username");
-            return nom != null && !nom.isBlank() ? nom : jeton.getSubject();
-        }
-        return "anonyme";
     }
 }

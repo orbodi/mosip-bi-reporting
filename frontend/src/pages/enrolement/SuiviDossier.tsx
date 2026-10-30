@@ -190,7 +190,7 @@ function FenetreSuivi({ fermer }: { fermer: () => void }) {
 /**
  * Bouton « Suivre un dossier » du bandeau de la page Enrôlement et sa fenêtre (lot 5b-2, décision du 29/10/2026) :
  * recherche exacte d'un dossier par son RID (POST /enrolement/suivi, le RID dans le corps). Le RID est vidé dès la
- * recherche lancée et n'est jamais réaffiché ; la recherche est journalisée côté API, sans le RID. Fenêtre modale
+ * recherche lancée et n'est jamais réaffiché ; aucune recherche n'est enregistrée côté API. Fenêtre modale
  * React Aria : focus gardé dedans, Échap ou la croix pour fermer ; à la fermeture, rien n'est gardé.
  */
 export function SuiviDossierBouton() {
