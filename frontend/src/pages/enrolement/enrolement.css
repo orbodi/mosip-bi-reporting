@@ -449,8 +449,13 @@
   margin: var(--e-3) 0 0;
   font-size: var(--t-s);
 }
+/*
+ * Téléphone : le tableau ne garde que la zone, les inscriptions et les NIU générés (décision du 30/10/2026). Les
+ * notes sur les colonnes masquées (alerte de rejet, délai médian) le sont aussi.
+ */
 @media (max-width: 700px) {
-  .tableau-zones .col-secondaire {
+  .tableau-zones .col-secondaire,
+  .tableau-zones__note.note-secondaire {
     display: none;
   }
 }

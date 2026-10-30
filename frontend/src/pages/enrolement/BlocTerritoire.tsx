@@ -251,13 +251,13 @@ export function BlocTerritoire() {
                     Pré-inscriptions
                   </th>
                 )}
-                <th scope="col" className="tableau__nombre col-secondaire">
+                <th scope="col" className="tableau__nombre">
                   Inscriptions
                 </th>
                 <th scope="col" className="tableau__nombre">
                   NIU générés
                 </th>
-                <th scope="col" className="tableau__nombre">
+                <th scope="col" className="tableau__nombre col-secondaire">
                   Rejets
                 </th>
                 <th scope="col" className="tableau__nombre col-secondaire">
@@ -297,10 +297,10 @@ export function BlocTerritoire() {
                     {preinscriptions && (
                       <td className="chiffre tableau__nombre col-secondaire">{nf(l.preinscriptions)}</td>
                     )}
-                    <td className="chiffre tableau__nombre col-secondaire">{nf(l.inscriptions)}</td>
+                    <td className="chiffre tableau__nombre">{nf(l.inscriptions)}</td>
                     <td className="chiffre tableau__nombre">{nf(l.niuGeneres)}</td>
                     <td
-                      className={`chiffre tableau__nombre${alerte ? ' tableau-zones__alerte' : ''}`}
+                      className={`chiffre tableau__nombre col-secondaire${alerte ? ' tableau-zones__alerte' : ''}`}
                       title={`Taux de rejet : ${pct(tauxRejet(l))}`}
                     >
                       {alerte && (
@@ -352,7 +352,7 @@ export function BlocTerritoire() {
               sans inscription sur la période.
             </p>
           )}
-          <p className="texte-2 tableau-zones__note">
+          <p className="texte-2 tableau-zones__note note-secondaire">
             <span className="alerte-rejet" aria-hidden="true">
               ▲
             </span>{' '}
@@ -364,7 +364,7 @@ export function BlocTerritoire() {
               ? 'Pré-inscriptions selon la préfecture de résidence déclarée ; inscriptions selon le centre d’enrôlement.'
               : 'Inscriptions selon le centre d’enrôlement (les pré-inscriptions ne sont situées qu’à la préfecture).'}
           </p>
-          <p className="texte-2 tableau-zones__note">
+          <p className="texte-2 tableau-zones__note note-secondaire">
             Délai médian : de la réception du paquet par MOSIP au NIU, en heures, pour les premières
             inscriptions dont le NIU a été généré sur la période.
           </p>

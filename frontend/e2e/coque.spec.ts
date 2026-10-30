@@ -100,7 +100,16 @@ test('Enrôlement : sans filtres ; une région ouverte dans le Territoire, le re
   await expect(page.getByRole('button', { name: /^Région/ })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Territoire : vue nationale' })).toBeVisible();
   const territoire = page.getByRole('region', { name: /^Territoire/ });
-  await expect(territoire.getByText('▲', { exact: false }).first()).toBeVisible();
+  // Sur téléphone, la colonne Rejets et son alerte sont masquées (décision du 30/10/2026) : Inscriptions la remplace.
+  const alerte = territoire.getByText('▲', { exact: false }).first();
+  const regions = territoire.getByRole('table', { name: 'Régions' });
+  if (test.info().project.name.startsWith('mobile')) {
+    await expect(alerte).toBeHidden();
+    await expect(regions.getByRole('columnheader', { name: 'Inscriptions' })).toBeVisible();
+    await expect(regions.getByRole('columnheader', { name: 'Rejets' })).toBeHidden();
+  } else {
+    await expect(alerte).toBeVisible();
+  }
 
   await territoire.getByRole('table', { name: 'Régions' }).getByRole('button', { name: /Kara/ }).click();
   await expect(page).toHaveURL(/zone=KAR/);
