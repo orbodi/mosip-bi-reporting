@@ -20,7 +20,13 @@ const chiffresInconnus = {
 export const estConnu = (n: number) => Number.isFinite(n);
 
 export function devenirInconnu(perimetre = 'Ensemble du Togo'): DevenirInscriptions {
-  return { perimetre, ...chiffresInconnus };
+  return {
+    perimetre,
+    ...chiffresInconnus,
+    enReprocessing: INCONNU,
+    demandesMiseAJour: INCONNU,
+    demandesNiuPerdu: INCONNU,
+  };
 }
 
 const versIso = (d: Date) => d.toISOString().slice(0, 10);

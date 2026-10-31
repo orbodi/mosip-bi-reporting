@@ -40,6 +40,9 @@ test.beforeEach(async ({ page }) => {
         echouees: 9218,
         rejetees: 86496,
         nonClassees: 0,
+        enReprocessing: 7783,
+        demandesMiseAJour: 12811,
+        demandesNiuPerdu: 1964,
       },
     }),
   );

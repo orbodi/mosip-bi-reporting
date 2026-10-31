@@ -39,7 +39,7 @@ class EnrolementControllerTest {
         LocalDate du = LocalDate.parse("2026-10-01");
         LocalDate au = LocalDate.parse("2026-10-15");
         when(service.devenir(eq(du), eq(au), isNull())).thenReturn(
-                new DevenirInscriptions("Ensemble du Togo", du, au, 1000, 933, 40, 1, 26, 0, null));
+                new DevenirInscriptions("Ensemble du Togo", du, au, 1000, 933, 40, 1, 26, 0, null, 6, 4, 1));
 
         mvc.perform(get("/api/v1/enrolement/devenir").param("du", "2026-10-01").param("au", "2026-10-15"))
                 .andExpect(status().isOk())
@@ -49,7 +49,10 @@ class EnrolementControllerTest {
                 .andExpect(jsonPath("$.enCours").value(40))
                 .andExpect(jsonPath("$.echouees").value(1))
                 .andExpect(jsonPath("$.rejetees").value(26))
-                .andExpect(jsonPath("$.nonClassees").value(0));
+                .andExpect(jsonPath("$.nonClassees").value(0))
+                .andExpect(jsonPath("$.enReprocessing").value(6))
+                .andExpect(jsonPath("$.demandesMiseAJour").value(4))
+                .andExpect(jsonPath("$.demandesNiuPerdu").value(1));
     }
 
     @Test

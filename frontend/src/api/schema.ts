@@ -307,6 +307,21 @@ export interface components {
        * @description Dont en cours depuis plus de 30 jours (stock), null quand une période est demandée
        */
       bloques?: number | null;
+      /**
+       * Format: int64
+       * @description Dont en cours dont la dernière transaction MOSIP est REPROCESS ; suit la période
+       */
+      enReprocessing: number;
+      /**
+       * Format: int64
+       * @description Dont inscriptions de type mise à jour (UPDATE et RES_UPDATE)
+       */
+      demandesMiseAJour: number;
+      /**
+       * Format: int64
+       * @description Dont inscriptions de type NIU perdu (LOST)
+       */
+      demandesNiuPerdu: number;
     };
     Region: {
       code: string;

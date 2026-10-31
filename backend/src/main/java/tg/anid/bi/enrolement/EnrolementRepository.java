@@ -37,9 +37,12 @@ public class EnrolementRepository {
         this.jdbc = jdbc;
     }
 
-    /** Totaux par statut regroupé. */
+    /**
+     * Totaux par statut regroupé, plus trois parties de ces totaux (jamais des statuts de plus) : les en cours en
+     * reprocessing, et les inscriptions de type mise à jour (UPDATE, RES_UPDATE) ou NIU perdu (LOST).
+     */
     public record Totaux(long inscriptions, long niuGeneres, long enCours, long echouees, long rejetees,
-                         long nonClassees) {
+                         long nonClassees, long enReprocessing, long demandesMiseAJour, long demandesNiuPerdu) {
     }
 
     /** Un centre et ses chiffres sur la période, avec sa préfecture et sa région. */
@@ -122,7 +125,13 @@ public class EnrolementRepository {
                                coalesce(sum(f.en_cours), 0)     as en_cours,
                                coalesce(sum(f.echouees), 0)     as echouees,
                                coalesce(sum(f.rejetees), 0)     as rejetees,
-                               coalesce(sum(f.non_classees), 0) as non_classees
+                               coalesce(sum(f.non_classees), 0) as non_classees,
+                               coalesce(sum(f.en_reprocessing), 0) as en_reprocessing,
+                               coalesce(sum(f.inscriptions)
+                                        filter (where f.type_demande in ('UPDATE', 'RES_UPDATE')), 0)
+                                   as demandes_mise_a_jour,
+                               coalesce(sum(f.inscriptions) filter (where f.type_demande = 'LOST'), 0)
+                                   as demandes_niu_perdu
                         from bi.fait_enrolement_jour f
                         where (cast(:du as date) is null or f.jour >= cast(:du as date))
                           and (cast(:au as date) is null or f.jour <= cast(:au as date))
@@ -137,7 +146,10 @@ public class EnrolementRepository {
                         rs.getLong("en_cours"),
                         rs.getLong("echouees"),
                         rs.getLong("rejetees"),
-                        rs.getLong("non_classees")))
+                        rs.getLong("non_classees"),
+                        rs.getLong("en_reprocessing"),
+                        rs.getLong("demandes_mise_a_jour"),
+                        rs.getLong("demandes_niu_perdu")))
                 .single();
     }
 

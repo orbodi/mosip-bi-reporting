@@ -27,6 +27,9 @@ const DEVENIR: DevenirInscriptions = {
   echouees: 1,
   rejetees: 26,
   nonClassees: 0,
+  enReprocessing: 6,
+  demandesMiseAJour: 4,
+  demandesNiuPerdu: 1,
 };
 
 /**
@@ -80,6 +83,37 @@ describe('Devenir des inscriptions', () => {
       expect(bloc.getByText(libelle)).toBeInTheDocument();
     }
     expect(screen.queryByText('Non classés')).not.toBeInTheDocument();
+  });
+
+  it('place les demandes de mise à jour et de NIU perdu sous le total, avec leur part des inscriptions', async () => {
+    simulerApi(DEVENIR);
+    afficher('/enrolement');
+
+    const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
+    const demandes = within(bloc.getByRole('group', { name: 'Types de demande parmi les inscriptions' }));
+    // Testing Library ramène les espaces fines et insécables à des espaces simples avant de comparer.
+    await waitFor(() =>
+      expect(demandes.getByText('Demandes de mise à jour').closest('div')).toHaveTextContent(
+        `Demandes de mise à jour${nf(4)}${pct(0.004)}`.replace(/\s+/g, ' '),
+      ),
+    );
+    expect(demandes.getByText('Demandes de NIU perdu').closest('div')).toHaveTextContent(
+      `Demandes de NIU perdu${nf(1)}${pct(0.001)}`.replace(/\s+/g, ' '),
+    );
+    // Parties des inscriptions, pas des statuts : toujours quatre cartes de statut et la même barre.
+    expect(bloc.getAllByRole('listitem')).toHaveLength(4);
+    expect(screen.getByRole('img', { name: /NIU générés 93,3/ })).not.toHaveAccessibleName(/mise à jour/);
+  });
+
+  it('montre les dossiers en reprocessing dans la carte En cours, période choisie ou non', async () => {
+    simulerApi({ ...DEVENIR, bloques: null, enReprocessing: 7 });
+    afficher('/enrolement?periode=7j');
+
+    const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
+    await waitFor(() =>
+      expect(bloc.getByText('En reprocessing').parentElement).toHaveTextContent(`En reprocessing${nf(7)}`),
+    );
+    expect(bloc.getByText('En reprocessing').closest('li')).toHaveTextContent(/^En cours/);
   });
 
   it('garde ses cartes, chiffres à 0 et sans message, quand l’API ne répond pas', async () => {

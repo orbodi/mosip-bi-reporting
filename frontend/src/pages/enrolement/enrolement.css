@@ -157,6 +157,68 @@
   font-size: var(--t-s);
 }
 /*
+ * Dossiers en reprocessing (variante A du 31/10/2026) : encart dans la carte En cours, dont ils font partie. Filet
+ * de la couleur des en cours, fond or pâle (texte encre : contraste ≈ 16:1).
+ */
+.carte-statut__encart {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  border-left: 3px solid var(--statut-en-cours);
+  background: var(--or-pale);
+}
+.carte-statut__encart-libelle {
+  color: var(--bleu);
+  font-size: var(--t-s);
+  font-weight: 600;
+}
+.carte-statut__encart-valeur {
+  font-size: var(--t-xl);
+  font-weight: 700;
+}
+
+/*
+ * Demandes de mise à jour et de NIU perdu (variante A du 31/10/2026) : deux cartes compactes sous le total des
+ * inscriptions, dont elles sont une partie ; filet neutre, pour ne pas les confondre avec les statuts.
+ */
+.cartes-demandes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e-3);
+  margin: 0 0 var(--e-4);
+}
+.carte-demande {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e-1) var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--trait);
+  border-radius: var(--r-m);
+  background: var(--surface);
+}
+.carte-demande__libelle {
+  color: var(--bleu);
+  font-size: var(--t-s);
+  font-weight: 600;
+}
+.carte-demande__chiffres {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-2);
+  margin: 0;
+}
+.carte-demande__valeur {
+  font-size: var(--t-xl);
+  font-weight: 700;
+}
+.carte-demande__part {
+  font-size: var(--t-s);
+}
+/*
  * Écrans très étroits (téléphone replié, 320 px, 30/10/2026) : en deux colonnes, une carte ne laissait qu'environ
  * 60 px au chiffre, qui était coupé (« 6 132 54… »). Une carte par ligne (variante A validée) : chiffre en 22 px, part
  * alignée à droite sur la même ligne, détail des bloqués sous les deux.
@@ -178,8 +240,13 @@
     row-gap: var(--e-1);
   }
   .carte-statut__libelle,
-  .carte-statut__detail {
+  .carte-statut__detail,
+  .carte-statut__encart {
     grid-column: 1 / -1;
+  }
+  .cartes-demandes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--e-2);
   }
   .carte-statut__valeur {
     font-size: var(--t-2xl);

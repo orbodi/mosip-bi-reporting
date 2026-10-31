@@ -62,7 +62,8 @@ public class EnrolementService {
         // « Dont bloqués » : stock à l'heure du calcul, sans date ; seulement sans période (pages de vue d'ensemble).
         Long bloques = du == null && au == null ? traitement.bloques(zone) : null;
         return new DevenirInscriptions(perimetre, du, au, t.inscriptions(), t.niuGeneres(), t.enCours(),
-                t.echouees(), t.rejetees(), t.nonClassees(), bloques);
+                t.echouees(), t.rejetees(), t.nonClassees(), bloques, t.enReprocessing(), t.demandesMiseAJour(),
+                t.demandesNiuPerdu());
     }
 
     /**

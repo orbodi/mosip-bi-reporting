@@ -38,6 +38,9 @@ const DEVENIR = {
   rejetees: 86496,
   nonClassees: 0,
   bloques: 59264,
+  enReprocessing: 7783,
+  demandesMiseAJour: 12811,
+  demandesNiuPerdu: 1964,
 };
 
 test.beforeEach(async ({ page }) => {
@@ -78,6 +81,17 @@ test('Enrôlement : devenir des inscriptions, accessibilité et capture', async 
   await expect(bloc.getByText('NIU générés, soit 93,3', { exact: false })).toBeVisible();
   await expect(bloc.getByRole('img', { name: /NIU générés 93,3/ })).toBeVisible();
   await expect(bloc.getByText('Actualisé automatiquement toutes les 30 secondes.')).toBeVisible();
+  // Variante A du 31/10/2026 : demandes sous le total, reprocessing dans la carte En cours, à toutes les largeurs.
+  const demandes = bloc.getByRole('group', { name: 'Types de demande parmi les inscriptions' });
+  await expect(demandes.getByText('Demandes de mise à jour')).toBeVisible();
+  await expect(demandes.getByText('Demandes de NIU perdu')).toBeVisible();
+  const enCours = bloc.getByRole('listitem').filter({ hasText: 'En reprocessing' });
+  await expect(enCours).toHaveCount(1);
+  await expect(enCours).toContainText('En cours');
+  // Aucun chiffre coupé sur téléphone : l'encart tient dans sa carte.
+  const encart = await enCours.getByText('En reprocessing').boundingBox();
+  const carte = await enCours.boundingBox();
+  expect(encart && carte && encart.x + encart.width <= carte.x + carte.width).toBe(true);
 
   const audit = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

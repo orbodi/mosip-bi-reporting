@@ -270,6 +270,50 @@ class PageEnrolementIT {
     }
 
     @Test
+    void devenirReprocessingEtTypesDeDemandeParmiLesTotaux() {
+        // En plus des 240 inscriptions NEW (sans reprocessing) : mises à jour (dont RES_UPDATE) et NIU perdus.
+        jdbc.sql("""
+                insert into bi.fait_enrolement_jour (jour, centre_id, sexe, tranche_age, type_demande, inscriptions,
+                                                     niu_generes, en_cours, echouees, rejetees, non_classees,
+                                                     en_reprocessing)
+                select v.jour, z.id, 'I', 'inconnu', v.type, v.ins, v.niu, v.cours, 0, 0, 0, v.repro
+                from (values (date '2026-01-05', '10011', 'UPDATE',     12, 9, 3, 2),
+                             (date '2026-01-06', '10012', 'RES_UPDATE',  2, 2, 0, 0),
+                             (date '2026-01-07', '10021', 'LOST',        5, 1, 4, 3))
+                     as v (jour, code, type, ins, niu, cours, repro)
+                join bi.zone z on z.code = v.code
+                """).update();
+        jdbc.sql("update bi.fait_enrolement_jour set en_reprocessing = 1 where type_demande = 'NEW' and en_cours = 4")
+                .update();
+
+        DevenirInscriptions d = service.devenir(null, null, null);
+        assertThat(d.inscriptions()).isEqualTo(259);
+        assertThat(d.demandesMiseAJour()).isEqualTo(14);
+        assertThat(d.demandesNiuPerdu()).isEqualTo(5);
+        assertThat(d.enReprocessing()).isEqualTo(6);
+        // Parties des totaux, jamais des statuts de plus : la somme des statuts reste égale aux inscriptions.
+        assertThat(d.enReprocessing()).isLessThanOrEqualTo(d.enCours());
+        assertThat(d.niuGeneres() + d.enCours() + d.echouees() + d.rejetees() + d.nonClassees())
+                .isEqualTo(d.inscriptions());
+
+        // Suivent la période et la zone comme les autres chiffres du bloc.
+        LocalDate jour = LocalDate.parse("2026-01-07");
+        DevenirInscriptions duJour = service.devenir(jour, jour, null);
+        assertThat(duJour.demandesNiuPerdu()).isEqualTo(5);
+        assertThat(duJour.demandesMiseAJour()).isZero();
+        assertThat(duJour.enReprocessing()).isEqualTo(3);
+        DevenirInscriptions savanes = service.devenir(null, null, "SAV");
+        assertThat(savanes.demandesMiseAJour()).isEqualTo(14);
+        assertThat(savanes.demandesNiuPerdu()).isZero();
+        assertThat(savanes.enReprocessing()).isEqualTo(3);
+
+        // Contrainte de V13 : jamais plus de reprocessing que d'en cours.
+        assertThatThrownBy(() -> jdbc.sql(
+                "update bi.fait_enrolement_jour set en_reprocessing = en_cours + 1 where type_demande = 'LOST'")
+                .update()).hasMessageContaining("fait_enrolement_jour_reprocessing_en_cours");
+    }
+
+    @Test
     void filtreRegionLesSixRegionsDuNordAuSud() {
         assertThat(regions.regions()).extracting(Region::code)
                 .containsExactly("SAV", "KAR", "CEN", "PLA", "MAR", "GLO");

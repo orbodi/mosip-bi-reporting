@@ -20,11 +20,17 @@ interface Statut {
   valeur: number;
   /** Paquets en cours bloqués depuis plus de 30 jours (carte « En cours »). */
   bloques?: number;
+  /** Paquets en cours que MOSIP reprendra, dernière transaction REPROCESS (carte « En cours »). */
+  enReprocessing?: number;
 }
 
 /**
- * Bloc « Devenir des inscriptions » (maquette Enrôlement) : NIU générés, en cours (dont bloqués), échoués,
- * rejetés.
+ * Bloc « Devenir des inscriptions » (maquette Enrôlement) : NIU générés, en cours (dont bloqués, dont en
+ * reprocessing), échoués, rejetés.
+ * Variante A du 31/10/2026 : chaque chiffre qui précise un autre se place à côté de lui, sans être un statut de plus.
+ * Les demandes de mise à jour et de NIU perdu, sous le total des inscriptions dont elles font partie ; les dossiers en
+ * reprocessing (dernière transaction MOSIP REPROCESS), dans la carte En cours. Ni la barre ni la somme des statuts ne
+ * changent.
  * Suit le filtre Période ; relu toutes les 30 s (pipeline temps réel). Contrôle affiché si des statuts MOSIP n'ont
  * pas encore de correspondance validée (« non classées »), jamais réparties d'office.
  */
@@ -48,6 +54,7 @@ export function BlocDevenir() {
       libelle: 'En cours',
       valeur: d.enCours,
       bloques: !data || data.bloques != null ? depuisApi(data?.bloques) : undefined,
+      enReprocessing: depuisApi(d.enReprocessing),
     },
     { cle: 'echoue', libelle: 'Échoués', valeur: d.echouees },
     { cle: 'rejete', libelle: 'Rejetés', valeur: d.rejetees },
@@ -56,6 +63,11 @@ export function BlocDevenir() {
       : []),
   ];
   const total = d.inscriptions;
+  // Parties des inscriptions selon le type de demande (UPDATE et RES_UPDATE, LOST), sous le total.
+  const demandes = [
+    { cle: 'mise-a-jour', libelle: 'Demandes de mise à jour', valeur: depuisApi(d.demandesMiseAJour) },
+    { cle: 'niu-perdu', libelle: 'Demandes de NIU perdu', valeur: depuisApi(d.demandesNiuPerdu) },
+  ];
   const description = statuts.map((s) => `${s.libelle} ${pct(part(s.valeur, total))}`).join(', ');
 
   return (
@@ -77,6 +89,19 @@ export function BlocDevenir() {
           NIU générés, soit {pct(part(d.niuGeneres, total))} des {nf(total)} inscriptions
         </span>
       </p>
+      <div role="group" aria-label="Types de demande parmi les inscriptions">
+        <dl className="cartes-demandes">
+          {demandes.map((t) => (
+            <div key={t.cle} className="carte-demande">
+              <dt className="carte-demande__libelle">{t.libelle}</dt>
+              <dd className="carte-demande__chiffres">
+                <span className="chiffre carte-demande__valeur">{nf(t.valeur)}</span>
+                <span className="texte-2 carte-demande__part">{pct(part(t.valeur, total))}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
       <div className="barre-statuts" role="img" aria-label={`Devenir des inscriptions : ${description}`}>
         {connu &&
           total > 0 &&
@@ -103,6 +128,12 @@ export function BlocDevenir() {
               {s.bloques !== undefined && (
                 <span className="carte-statut__detail">
                   dont <strong className="chiffre">{nf(s.bloques)}</strong> bloqués depuis plus de 30 jours
+                </span>
+              )}
+              {s.enReprocessing !== undefined && (
+                <span className="carte-statut__encart">
+                  <span className="carte-statut__encart-libelle">En reprocessing</span>
+                  <span className="chiffre carte-statut__encart-valeur">{nf(s.enReprocessing)}</span>
                 </span>
               )}
             </div>

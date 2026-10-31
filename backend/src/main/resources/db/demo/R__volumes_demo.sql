@@ -188,14 +188,17 @@ cross join (values (2, 0.00, 0.10), (4, 0.10, 0.30), (6, 0.30, 0.55),
 delete from bi.fait_niu_jour;
 delete from bi.fait_enrolement_jour;
 
+-- Reprocessing (V13) : environ 12 % des paquets bloqués, comme le stock observé le 30/10/2026 (7 783 sur ≈ 64 700).
 insert into bi.fait_enrolement_jour (jour, centre_id, sexe, tranche_age, type_demande, inscriptions, niu_generes,
-                                     en_cours, echouees, rejetees, non_classees)
+                                     en_cours, echouees, rejetees, non_classees, en_reprocessing)
 select s.jour, s.centre_id, 'I', 'inconnu', s.type_demande, s.n,
        coalesce(n.generes, 0),
        s.bloquees + coalesce(n.a_venir, 0),
        s.echouees,
        s.rejetees,
-       0
+       0,
+       least(s.bloquees,
+             floor(s.bloquees * 0.12 + pg_temp.alea('repro ' || s.code || s.jour || s.type_demande))::int)
 from demo_statut s
 left join (
     select x.jour, x.centre_id, x.type_demande,
