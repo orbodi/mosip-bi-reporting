@@ -15,12 +15,12 @@ const noms = (liste: HTMLElement) =>
 describe('Où s’arrêtent les paquets', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('trois onglets avec leur nombre, Rejetés ouvert ; les paquets sans NIU en sous-titre', async () => {
+  it('quatre onglets avec leur nombre, Rejetés ouvert ; les paquets sans NIU en sous-titre', async () => {
     simulerApi();
     afficher('/enrolement');
 
     const bloc = await blocAffiche();
-    // 86 496 rejetés + 9 218 échoués + 123 639 en cours, comme le bloc Devenir.
+    // 86 496 rejetés + 9 218 échoués + 123 639 en cours, comme le bloc Devenir ; le reprocessing n'y entre pas.
     await waitFor(() =>
       expect(bloc.getByText(/paquets n’ont pas encore abouti à un NIU/)).toHaveTextContent(
         texte(`${nf(219353)} paquets n’ont pas encore abouti à un NIU.`),
@@ -32,6 +32,7 @@ describe('Où s’arrêtent les paquets', () => {
       texte(`Rejetés${nf(86496)}`),
       texte(`Échoués${nf(9218)}`),
       texte(`En cours${nf(123639)}`),
+      texte(`En reprocessing${nf(7783)}parmi les en cours`),
     ]);
     expect(onglets.getByRole('tab', { name: /^Rejetés/, selected: true })).toBeInTheDocument();
   });
@@ -86,6 +87,32 @@ describe('Où s’arrêtent les paquets', () => {
     expect(bloc.queryByRole('list', { name: 'Rejetés par motif' })).not.toBeInTheDocument();
   });
 
+  it('En reprocessing, au clic : ses motifs, bloqués en tête et par motif, comme En cours', async () => {
+    simulerApi();
+    afficher('/enrolement');
+    const utilisateur = userEvent.setup();
+
+    const bloc = await blocAffiche();
+    await bloc.findByText('Rejeté par le superviseur du centre');
+    await utilisateur.click(bloc.getByRole('tab', { name: /^En reprocessing/ }));
+
+    expect(bloc.getByRole('tab', { name: /^En reprocessing/, selected: true })).toBeInTheDocument();
+    expect(bloc.getByText(/sans activité depuis plus de 30 jours/)).toHaveTextContent(
+      texte(`${nf(6902)} sans activité depuis plus de 30 jours`),
+    );
+    const liste = bloc.getByRole('list', { name: 'En reprocessing par motif' });
+    expect(noms(liste)).toEqual(['Erreur lors de la vérification manuelle', 'Autres cas']);
+    const erreur = within(liste).getByText('Erreur lors de la vérification manuelle').closest('li')!;
+    expect(erreur).toHaveTextContent(texte(`${nf(7263)}${pct(7263 / 7783)}`));
+    expect(erreur).toHaveTextContent('Vérification manuelle · Error in manual verification');
+    expect(erreur.querySelector('.motif-arret__detail')).toHaveTextContent(
+      texte(`${nf(6620)} sans activité depuis 30 jours · ${nf(7263 - 6620)} récents`),
+    );
+    // Barre : bloqués rayés puis récents à la couleur des en cours.
+    expect(erreur.querySelector('.motif-bloque')).toBeInTheDocument();
+    expect(erreur.querySelector('.statut--reprocessing')).toBeInTheDocument();
+  });
+
   it('reste national', async () => {
     const appels = simulerApi();
     afficher('/enrolement?zone=SAV');
@@ -96,14 +123,15 @@ describe('Où s’arrêtent les paquets', () => {
     expect(lus.every((u) => !u.searchParams.has('zone'))).toBe(true);
   });
 
-  it('sans réponse de l’API : trois onglets à 0, sans ligne ni message', async () => {
+  it('sans réponse de l’API : quatre onglets à 0, sans ligne ni message', async () => {
     simulerApi({ '/enrolement/motifs': undefined });
     afficher('/enrolement');
 
     const bloc = await blocAffiche();
     await waitFor(() => expect(bloc.queryByText('Chargement des chiffres…')).not.toBeInTheDocument());
-    expect(bloc.getAllByRole('tab')).toHaveLength(3);
+    expect(bloc.getAllByRole('tab')).toHaveLength(4);
     expect(bloc.getAllByRole('tab').map((o) => o.querySelector('.arrets__nombre')?.textContent)).toEqual([
+      '0',
       '0',
       '0',
       '0',

@@ -4,6 +4,7 @@ import { useMotifs } from '../../api/enrolement';
 import { IconeStatut } from '../../composants/blocs/Icone';
 import { nf, pct } from '../../lib/format';
 import {
+  avecBloques,
   colonnesArrets,
   largeurBarre,
   type CleArret,
@@ -16,9 +17,9 @@ import './enrolement.css';
 /** Seuil des paquets bloqués quand l'API ne l'a pas encore donné (MotifsArret.seuilJours). */
 const SEUIL_JOURS = 30;
 
-/** Barre de la part du motif dans l'onglet ; en cours : bloqués (rayures) puis récents. */
+/** Barre de la part du motif dans l'onglet ; en cours et en reprocessing : bloqués (rayures) puis récents. */
 function Barre({ ligne, colonne }: { ligne: LigneArret; colonne: ColonneArret }) {
-  const enCours = colonne.cle === 'en-cours';
+  const enCours = avecBloques(colonne.cle);
   const teinte = ligne.autres ? 'motif-arret__barre--autres' : `statut--${colonne.cle}`;
   return (
     <span className="motif-arret__piste" aria-hidden="true">
@@ -35,9 +36,12 @@ function Barre({ ligne, colonne }: { ligne: LigneArret; colonne: ColonneArret })
   );
 }
 
-/** Motifs d'un onglet : nom, paquets, part, barre, étape · message de MOSIP ; en cours, bloqués et récents. */
+/**
+ * Motifs d'un onglet : nom, paquets, part, barre, étape · message de MOSIP ; en cours et en reprocessing, bloqués et
+ * récents.
+ */
 function Motifs({ colonne, seuil }: { colonne: ColonneArret; seuil: number }) {
-  const enCours = colonne.cle === 'en-cours';
+  const enCours = avecBloques(colonne.cle);
   return (
     <>
       {enCours && (
@@ -89,7 +93,8 @@ function Motifs({ colonne, seuil }: { colonne: ColonneArret; seuil: number }) {
 }
 
 /**
- * Bloc « Où s'arrêtent les paquets » (décisions des 26 et 28/10/2026) : trois onglets (rejetés, échoués, en cours),
+ * Bloc « Où s'arrêtent les paquets » (décisions des 26 et 28/10/2026, puis 02/11/2026) : quatre onglets (rejetés,
+ * échoués, en cours, et en reprocessing, la partie des en cours que MOSIP reprendra, hors du total sans NIU),
  * chacun avec son icône, son nombre et, dessous, ses motifs donnés par MOSIP (status_comment traduit fidèlement par le
  * catalogue des motifs), du plus fréquent au moins fréquent, avec leur étape principale et le message de MOSIP
  * (GET /enrolement/motifs). National. Onglets React Aria comme le « Top des centres » : flèches du clavier, Rejetés à
@@ -128,6 +133,7 @@ export function BlocArrets() {
               <span className="arrets__texte">
                 <span className="arrets__titre">{c.titre}</span>
                 <span className="arrets__nombre chiffre">{nf(c.total)}</span>
+                {c.partieDe && <span className="arrets__partie">{c.partieDe}</span>}
               </span>
             </Tab>
           ))}

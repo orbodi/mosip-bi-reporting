@@ -1,6 +1,7 @@
 package tg.anid.bi.enrolement;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 
@@ -219,6 +220,40 @@ class TraitementIT {
         LocalDate jour = LocalDate.parse("2026-01-05");
         assertThat(traitement.motifs(jour, jour, null).totalRejets())
                 .isEqualTo(service.devenir(jour, jour, null).rejetees()).isEqualTo(10);
+    }
+
+    @Test
+    void motifsDuReprocessingParmiLesEnCours() {
+        // Reprocessing (V13, V14) : 3 des 4 bloqués et le récent de la file de vérification manuelle (10011).
+        jdbc.sql("""
+                update bi.stock_en_cours_motif set en_reprocessing = case anciennete when 'plus_30j' then 3 else 1 end
+                where motif = 'FILE_VERIF_MANUELLE'
+                """).update();
+        jdbc.sql("""
+                update bi.fait_enrolement_jour set en_reprocessing = 4
+                where centre_id = (select id from bi.zone where code = '10011')
+                """).update();
+
+        MotifsArret togo = traitement.motifs(null, null, null);
+        assertThat(togo.reprocessing()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::inscriptions,
+                        MotifsArret.Ligne::bloques, MotifsArret.Ligne::stageLibelle)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("FILE_VERIF_MANUELLE", 4L, 3L,
+                        "Déduplication biométrique"));
+        assertThat(togo.totalReprocessing()).isEqualTo(service.devenir(null, null, null).enReprocessing())
+                .isEqualTo(4);
+        assertThat(togo.bloquesReprocessing()).isEqualTo(3);
+        // Une partie des en cours : leurs chiffres ne changent pas.
+        assertThat(togo.totalEnCours()).isEqualTo(9);
+        assertThat(togo.bloques()).isEqualTo(4);
+        // Le motif sans reprocessing (RECU_EN_ATTENTE) n'a pas de ligne ; la Kara n'en a aucun.
+        MotifsArret kara = traitement.motifs(null, null, "KAR");
+        assertThat(kara.reprocessing()).isEmpty();
+        assertThat(kara.totalReprocessing()).isZero();
+
+        // Contrainte de V14 : jamais plus de reprocessing que de paquets sur la ligne.
+        assertThatThrownBy(() -> jdbc.sql(
+                "update bi.stock_en_cours_motif set en_reprocessing = inscriptions + 1 where motif = 'RECU_EN_ATTENTE'")
+                .update()).hasMessageContaining("stock_en_cours_motif_reprocessing_inscriptions");
     }
 
     @Test

@@ -112,7 +112,10 @@ class EnrolementTraitementServiceTest {
                 motif("rejete", "DemoDedupeStage", "DOUBLON_ABIS", 285, 0),
                 motif("rejete", "ManualVerificationStage", "DOUBLON_VERIFICATEUR", 280, 0),
                 motif("rejete", "BioDedupeStage", "DOUBLON_VERIFICATEUR", 5, 0),
-                motif("rejete", "DemoDedupeStage", "DOUBLON_VERIFICATEUR", 5, 0)));
+                motif("rejete", "DemoDedupeStage", "DOUBLON_VERIFICATEUR", 5, 0),
+                // Reprocessing : une partie des en cours (V14), en devenir à part.
+                motif("reprocessing", "ManualVerificationStage", "ERREUR_VERIF_MANUELLE", 87, 80),
+                motif("reprocessing", "BioDedupeStage", "ABIS_SANS_REPONSE", 13, 5)));
 
         MotifsArret m = service.motifs(null, null, null);
 
@@ -142,6 +145,13 @@ class EnrolementTraitementServiceTest {
         assertThat(m.totalEchecs()).isEqualTo(100);
         assertThat(m.totalEnCours()).isEqualTo(1000);
         assertThat(m.bloques()).isEqualTo(853);
+        // Reprocessing : ses lignes et ses totaux, sans rien changer aux en cours.
+        assertThat(m.reprocessing()).extracting(MotifsArret.Ligne::motif, MotifsArret.Ligne::inscriptions,
+                        MotifsArret.Ligne::bloques, MotifsArret.Ligne::stage)
+                .containsExactly(tuple("ERREUR_VERIF_MANUELLE", 87L, 80L, "ManualVerificationStage"),
+                        tuple("ABIS_SANS_REPONSE", 13L, 5L, "BioDedupeStage"));
+        assertThat(m.totalReprocessing()).isEqualTo(100);
+        assertThat(m.bloquesReprocessing()).isEqualTo(85);
         assertThat(m.seuilJours()).isEqualTo(30);
         assertThat(m.perimetre()).isEqualTo("Ensemble du Togo");
     }

@@ -592,6 +592,17 @@ export interface components {
       rejets: components['schemas']['LigneMotif'][];
       echecs: components['schemas']['LigneMotif'][];
       enCours: components['schemas']['LigneMotif'][];
+      /**
+       * Format: int64
+       * @description Dont en reprocessing : dernière transaction MOSIP REPROCESS (stock, sans période)
+       */
+      totalReprocessing: number;
+      /**
+       * Format: int64
+       * @description Dont en reprocessing et bloqués
+       */
+      bloquesReprocessing: number;
+      reprocessing: components['schemas']['LigneMotif'][];
     };
     LigneMotif: {
       /** @description Code du motif (REFUS_SUPERVISEUR…), null pour « Autres cas » */

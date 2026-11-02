@@ -82,7 +82,8 @@ public class EnrolementTraitementService {
     }
 
     /**
-     * Rejets et échecs (sur la période) et paquets en cours (stock) par motif, dans la zone : une ligne par motif toutes
+     * Rejets et échecs (sur la période) et paquets en cours et en reprocessing (stock) par motif, dans la zone : une
+     * ligne par motif toutes
      * étapes confondues, du plus fréquent au moins fréquent, les motifs de moins de 1 % du devenir regroupés en
      * « Autres cas ».
      */
@@ -94,10 +95,12 @@ public class EnrolementTraitementService {
         List<MotifsArret.Ligne> rejets = lignesMotif(motifs, "rejete");
         List<MotifsArret.Ligne> echecs = lignesMotif(motifs, "echoue");
         List<MotifsArret.Ligne> enCours = lignesMotif(motifs, "en_cours");
+        List<MotifsArret.Ligne> reprocessing = lignesMotif(motifs, "reprocessing");
         return new MotifsArret(perimetre, du, au, repository.enCoursMotifCalculeLe(), SEUIL_BLOQUE_JOURS,
                 somme(rejets, MotifsArret.Ligne::inscriptions), somme(echecs, MotifsArret.Ligne::inscriptions),
                 somme(enCours, MotifsArret.Ligne::inscriptions), somme(enCours, MotifsArret.Ligne::bloques),
-                rejets, echecs, enCours);
+                rejets, echecs, enCours, somme(reprocessing, MotifsArret.Ligne::inscriptions),
+                somme(reprocessing, MotifsArret.Ligne::bloques), reprocessing);
     }
 
     /**

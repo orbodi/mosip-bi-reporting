@@ -101,6 +101,10 @@
 .statut--bloque {
   background: var(--statut-bloque);
 }
+/* Récents de l'onglet En reprocessing : la couleur des en cours, dont ils font partie. */
+.statut--reprocessing {
+  background: var(--statut-en-cours);
+}
 /* Bloqués : rayures sombres, pour ne pas reposer sur la seule couleur. */
 .motif-bloque {
   background: repeating-linear-gradient(
@@ -616,10 +620,13 @@
   color: var(--statut-bloque);
 }
 
-/* Bloc « Où s'arrêtent les paquets » : trois onglets (contrôle segmenté) puis les motifs de l'onglet choisi. */
+/*
+ * Bloc « Où s'arrêtent les paquets » : quatre onglets (contrôle segmenté) puis les motifs de l'onglet choisi.
+ * Deux par ligne sur téléphone (décision du 02/11/2026) : à quatre, il ne restait qu'environ 80 px par onglet.
+ */
 .arrets__onglets {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 2px;
   margin-top: var(--e-5);
   padding: 3px;
@@ -645,7 +652,8 @@
 .arrets__onglet--echoue {
   --statut: var(--statut-echoue);
 }
-.arrets__onglet--en-cours {
+.arrets__onglet--en-cours,
+.arrets__onglet--reprocessing {
   --statut: var(--statut-en-cours);
 }
 .arrets__onglet[data-hovered]:not([data-selected]) {
@@ -692,6 +700,16 @@
   font-size: var(--t-xl);
   font-weight: 600;
   line-height: 1.25;
+}
+/* « parmi les en cours » : l'onglet En reprocessing ne s'ajoute pas aux trois autres. */
+.arrets__partie {
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+}
+@media (max-width: 600px) {
+  .arrets__onglets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 700px) {
   .arrets__onglet {

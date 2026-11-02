@@ -36,7 +36,10 @@ public class EnrolementTraitementRepository {
     public record EnCoursEtape(String etape, String libelle, int ordre, long inscriptions, long bloques) {
     }
 
-    /** Paquets d'un devenir (rejete, echoue, en_cours) à une étape et un motif ; bloqués pour les en cours. */
+    /**
+     * Paquets d'un devenir (rejete, echoue, en_cours, et reprocessing : la partie des en cours que MOSIP reprendra) à
+     * une étape et un motif ; bloqués pour les en cours et le reprocessing.
+     */
     public record Motif(String devenir, String stage, String stageLibelle, int stageOrdre, String motif,
                         String motifLibelle, String motifCommentaire, String motifPiste, long inscriptions,
                         long bloques) {
@@ -92,7 +95,8 @@ public class EnrolementTraitementRepository {
 
     /**
      * Rejets et échecs par étape et motif, au jour de réception (bornes incluses, null = non bornée), puis paquets en
-     * cours par étape et motif (stock, sans période), du plus fréquent au moins fréquent dans chaque devenir.
+     * cours et, parmi eux, en reprocessing (V14), par étape et motif (stock, sans période), du plus fréquent au moins
+     * fréquent dans chaque devenir.
      */
     public List<Motif> parMotif(LocalDate du, LocalDate au, String zone) {
         return jdbc.sql(PERIMETRE + """
@@ -113,6 +117,14 @@ public class EnrolementTraitementRepository {
                                    min(s.motif_libelle), min(s.motif_commentaire), min(s.motif_piste),
                                    sum(s.inscriptions),
                                    coalesce(sum(s.inscriptions) filter (where s.anciennete = 'plus_30j'), 0)
+                            from bi.stock_en_cours_motif s
+                            where cast(:zone as text) is null or s.centre_id in (select id from perimetre)
+                            group by s.stage, s.motif
+                            union all
+                            select 'reprocessing', s.stage, min(s.stage_libelle), min(s.stage_ordre), s.motif,
+                                   min(s.motif_libelle), min(s.motif_commentaire), min(s.motif_piste),
+                                   sum(s.en_reprocessing),
+                                   coalesce(sum(s.en_reprocessing) filter (where s.anciennete = 'plus_30j'), 0)
                             from bi.stock_en_cours_motif s
                             where cast(:zone as text) is null or s.centre_id in (select id from perimetre)
                             group by s.stage, s.motif

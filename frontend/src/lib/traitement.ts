@@ -2,7 +2,10 @@ import type { LigneMotif, MotifsArret } from '../api/client';
 import { estConnu, INCONNUE } from './blocsVides';
 import { nf, part, typographie } from './format';
 
-export type CleArret = 'rejete' | 'echoue' | 'en-cours';
+export type CleArret = 'rejete' | 'echoue' | 'en-cours' | 'reprocessing';
+
+/** Colonnes qui ont des paquets bloqués (stock des en cours et sa partie en reprocessing). */
+export const avecBloques = (cle: CleArret) => cle === 'en-cours' || cle === 'reprocessing';
 
 export interface LigneArret {
   /** Clé React : le motif, « autres » pour le regroupement « Autres cas ». */
@@ -19,7 +22,7 @@ export interface LigneArret {
   /** Ce qu'il faut vérifier pour ce motif (catalogue), null pour « Autres cas ». */
   piste: string | null;
   valeur: number;
-  /** Paquets en cours bloqués (colonne « En cours » seulement), sinon 0. */
+  /** Paquets bloqués (colonnes « En cours » et « En reprocessing »), sinon 0. */
   bloques: number;
   /** Part de la colonne. */
   part: number;
@@ -33,10 +36,12 @@ export interface ColonneArret {
   cle: CleArret;
   titre: string;
   total: number;
-  /** Part des paquets sans NIU. */
+  /** Part des paquets sans NIU ; pour « En reprocessing », part des en cours. */
   part: number;
-  /** Paquets bloqués (colonne « En cours »), sinon 0. */
+  /** Paquets bloqués (colonnes « En cours » et « En reprocessing »), sinon 0. */
   bloques: number;
+  /** Colonne qui est une partie d'une autre (« parmi les en cours »), hors du total des paquets sans NIU. */
+  partieDe: string | null;
   lignes: LigneArret[];
 }
 
@@ -52,13 +57,21 @@ export function etapeDuMotif(stageLibelle: string | null | undefined, autresEtap
 }
 
 /**
- * Colonnes du bloc « Où s'arrêtent les paquets » (GET /enrolement/motifs) : rejetés, échoués, en cours, chacune avec
- * une ligne par motif (toutes étapes confondues) dans l'ordre de l'API (du plus fréquent au moins fréquent, « Autres
- * cas » en dernier). Libellés et pistes avec la ponctuation française. Les paquets sans NIU sont la somme des trois
- * totaux. Sans réponse de l'API, la colonne garde son titre, total inconnu (affiché 0) et aucune ligne.
+ * Colonnes du bloc « Où s'arrêtent les paquets » (GET /enrolement/motifs) : rejetés, échoués, en cours, puis en
+ * reprocessing (partie des en cours, onglet du 02/11/2026), chacune avec une ligne par motif (toutes étapes
+ * confondues) dans l'ordre de l'API (du plus fréquent au moins fréquent, « Autres cas » en dernier). Libellés et
+ * pistes avec la ponctuation française. Les paquets sans NIU sont la somme des trois premiers totaux : le reprocessing
+ * n'y entre pas. Sans réponse de l'API, la colonne garde son titre, total inconnu (affiché 0) et aucune ligne.
  */
 export function colonnesArrets(motifs?: MotifsArret): { sansNiu: number; colonnes: ColonneArret[] } {
-  const brutes: { cle: CleArret; titre: string; total: number; bloques: number; lignes: LigneMotif[] }[] = [
+  const brutes: {
+    cle: CleArret;
+    titre: string;
+    total: number;
+    bloques: number;
+    lignes: LigneMotif[];
+    partieDe?: string;
+  }[] = [
     {
       cle: 'rejete',
       titre: 'Rejetés',
@@ -80,16 +93,26 @@ export function colonnesArrets(motifs?: MotifsArret): { sansNiu: number; colonne
       bloques: motifs ? motifs.bloques : INCONNUE,
       lignes: motifs?.enCours ?? [],
     },
+    {
+      cle: 'reprocessing',
+      titre: 'En reprocessing',
+      total: motifs ? motifs.totalReprocessing : INCONNUE,
+      bloques: motifs ? motifs.bloquesReprocessing : INCONNUE,
+      lignes: motifs?.reprocessing ?? [],
+      partieDe: 'parmi les en cours',
+    },
   ];
-  const sansNiu = motifs ? brutes.reduce((s, c) => s + c.total, 0) : INCONNUE;
+  const sansNiu = motifs ? brutes.reduce((s, c) => (c.partieDe ? s : s + c.total), 0) : INCONNUE;
+  const enCours = brutes.find((c) => c.cle === 'en-cours')?.total ?? INCONNUE;
   return {
     sansNiu,
     colonnes: brutes.map((c) => ({
       cle: c.cle,
       titre: c.titre,
       total: c.total,
-      part: part(c.total, sansNiu),
+      part: part(c.total, c.partieDe ? enCours : sansNiu),
       bloques: c.bloques,
+      partieDe: c.partieDe ?? null,
       lignes: c.lignes.map((l, i) => ({
         cle: l.motif ?? 'autres',
         libelle: typographie(l.libelle),

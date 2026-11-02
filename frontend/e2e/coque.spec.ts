@@ -93,6 +93,22 @@ test('Enrôlement : devenir des inscriptions, accessibilité et capture', async 
   const carte = await enCours.boundingBox();
   expect(encart && carte && encart.x + encart.width <= carte.x + carte.width).toBe(true);
 
+  // Onglet « En reprocessing » (02/11/2026) : quatrième onglet, deux par ligne sur téléphone.
+  const arrets = page.getByRole('region', { name: 'Où s’arrêtent les paquets' });
+  const onglets = arrets.getByRole('tab');
+  await expect(onglets).toHaveCount(4);
+  await arrets.getByRole('tab', { name: /^En reprocessing/ }).click();
+  await expect(arrets.getByRole('list', { name: 'En reprocessing par motif' })).toContainText(
+    'Erreur lors de la vérification manuelle',
+  );
+  const premier = await onglets.nth(0).boundingBox();
+  const troisieme = await onglets.nth(2).boundingBox();
+  if (testInfo.project.name.startsWith('mobile')) {
+    expect(premier && troisieme && troisieme.y > premier.y).toBe(true);
+  } else {
+    expect(premier && troisieme && troisieme.y === premier.y).toBe(true);
+  }
+
   const audit = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();

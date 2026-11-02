@@ -44,6 +44,9 @@ const MOTIFS: MotifsArret = {
     ligne('PacketReceiverStage', 'RECU_EN_ATTENTE', 100),
     ligne(null, null, 50, 10),
   ],
+  totalReprocessing: 200,
+  bloquesReprocessing: 150,
+  reprocessing: [ligne('ManualVerificationStage', 'ERREUR_VERIF_MANUELLE', 200, 150)],
 };
 
 describe('Où s’arrêtent les paquets', () => {
@@ -54,8 +57,13 @@ describe('Où s’arrêtent les paquets', () => {
       ['Rejetés', 150, 0.15],
       ['Échoués', 50, 0.05],
       ['En cours', 800, 0.8],
+      // Partie des en cours : hors des paquets sans NIU, sa part se lit sur les en cours.
+      ['En reprocessing', 200, 0.25],
     ]);
     expect(colonnes[2].bloques).toBe(600);
+    expect(colonnes.map((c) => c.partieDe)).toEqual([null, null, null, 'parmi les en cours']);
+    expect(colonnes[3].bloques).toBe(150);
+    expect(colonnes[3].lignes[0]).toMatchObject({ valeur: 200, bloques: 150, part: 1, principale: true });
   });
 
   it('garde l’ordre de l’API (du plus fréquent au moins fréquent) et met en avant le premier motif', () => {
@@ -113,10 +121,10 @@ describe('Où s’arrêtent les paquets', () => {
     expect(colonnes[1].lignes[0].principale).toBe(false);
   });
 
-  it('sans réponse de l’API : trois colonnes, totaux inconnus, aucune ligne', () => {
+  it('sans réponse de l’API : quatre colonnes, totaux inconnus, aucune ligne', () => {
     const { sansNiu, colonnes } = colonnesArrets(undefined);
     expect(Number.isNaN(sansNiu)).toBe(true);
-    expect(colonnes).toHaveLength(3);
+    expect(colonnes).toHaveLength(4);
     expect(Number.isNaN(colonnes[0].total)).toBe(true);
     expect(colonnes[0].lignes).toEqual([]);
     expect(Number.isNaN(colonnes[2].part)).toBe(true);

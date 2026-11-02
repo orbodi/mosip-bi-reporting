@@ -13,7 +13,8 @@ import java.util.List;
  * étapes. Les motifs de moins de 1 % du devenir sont regroupés en « Autres cas » (motif null), en dernier. Le texte de MOSIP d'une inscription n'est jamais renvoyé :
  * seulement le message type du catalogue.
  * Contrôles : totalRejets = rejetees et totalEchecs = echouees du bloc « Devenir » (même zone, même période) ;
- * totalEnCours = enCours du bloc « Devenir » sans période.
+ * totalEnCours = enCours du bloc « Devenir » sans période ; totalReprocessing ≤ totalEnCours (une partie des en cours,
+ * onglet « En reprocessing », 02/11/2026, migration V14), = enReprocessing du bloc « Devenir » sans période.
  *
  * @param perimetre    « Ensemble du Togo » ou nom de la zone
  * @param du           première date incluse (jour de réception) des rejets et échecs, ou null depuis le début
@@ -27,10 +28,14 @@ import java.util.List;
  * @param rejets       lignes des rejetés
  * @param echecs       lignes des échoués
  * @param enCours      lignes des en cours
+ * @param totalReprocessing   dont en reprocessing : dernière transaction MOSIP REPROCESS (stock, sans période)
+ * @param bloquesReprocessing dont en reprocessing et bloqués
+ * @param reprocessing        lignes des en reprocessing
  */
 public record MotifsArret(String perimetre, LocalDate du, LocalDate au, OffsetDateTime calculeLe, int seuilJours,
                           long totalRejets, long totalEchecs, long totalEnCours, long bloques, List<Ligne> rejets,
-                          List<Ligne> echecs, List<Ligne> enCours) {
+                          List<Ligne> echecs, List<Ligne> enCours, long totalReprocessing,
+                          long bloquesReprocessing, List<Ligne> reprocessing) {
 
     /**
      * Un motif, toutes étapes confondues.
@@ -44,7 +49,7 @@ public record MotifsArret(String perimetre, LocalDate du, LocalDate au, OffsetDa
      * @param stageLibelle  étape principale en français, null pour « Autres cas »
      * @param autresEtapes  nombre d'autres étapes où MOSIP pose ce motif (0 si une seule, et pour « Autres cas »)
      * @param inscriptions  paquets, toutes étapes confondues
-     * @param bloques       dont bloqués depuis plus de 30 jours (en cours seulement, 0 sinon)
+     * @param bloques       dont bloqués depuis plus de 30 jours (en cours et reprocessing seulement, 0 sinon)
      */
     @Schema(name = "LigneMotif")
     public record Ligne(String motif, String libelle, String commentaire, String piste, String stage,

@@ -432,6 +432,33 @@ export const MOTIFS: MotifsArret = {
       bloques: 430,
     },
   ],
+  // Partie des en cours (onglet du 02/11/2026) : 7 783 = enReprocessing du Devenir.
+  totalReprocessing: 7783,
+  bloquesReprocessing: 6902,
+  reprocessing: [
+    {
+      motif: 'ERREUR_VERIF_MANUELLE',
+      libelle: 'Erreur lors de la vérification manuelle',
+      commentaire: 'Error in manual verification',
+      piste: 'Dossier bloqué dans la file : à signaler à l’équipe MOSIP.',
+      stage: 'ManualVerificationStage',
+      stageLibelle: 'Vérification manuelle',
+      autresEtapes: 0,
+      inscriptions: 7263,
+      bloques: 6620,
+    },
+    {
+      motif: null,
+      libelle: 'Autres cas',
+      commentaire: null,
+      piste: null,
+      stage: null,
+      stageLibelle: null,
+      autresEtapes: 0,
+      inscriptions: 520,
+      bloques: 282,
+    },
+  ],
 };
 
 export const DELAIS: DelaisTraitement = {

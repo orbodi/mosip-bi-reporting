@@ -306,20 +306,22 @@ export function Icone({
 }
 
 /**
- * Icônes de statut d'un paquet (rejeté, échoué, en cours), au trait, dessinées sur un même cercle : d'après Lucide
- * (circle-x, circle-alert, clock ; licence ISC, https://lucide.dev). Couleur du texte parent (currentColor), décoratives.
+ * Icônes de statut d'un paquet (rejeté, échoué, en cours, en reprocessing), au trait, dessinées sur un même cercle :
+ * d'après Lucide (circle-x, circle-alert, clock, refresh-cw ; licence ISC, https://lucide.dev). Couleur du texte parent
+ * (currentColor), décoratives.
  */
-const STATUTS: Record<'rejete' | 'echoue' | 'en-cours', ReactElement> = {
+const STATUTS: Record<'rejete' | 'echoue' | 'en-cours' | 'reprocessing', ReactElement> = {
   rejete: <path d="m15 9-6 6M9 9l6 6" />,
   echoue: <path d="M12 8v4M12 16h.01" />,
   'en-cours': <path d="M12 6v6l4 2" />,
+  reprocessing: <path d="M8 12a4 4 0 0 1 7-2.6M16 7.5v2.5h-2.5M16 12a4 4 0 0 1-7 2.6M8 16.5V14h2.5" />,
 };
 
 export function IconeStatut({
   statut,
   taille = 20,
 }: {
-  statut: 'rejete' | 'echoue' | 'en-cours';
+  statut: 'rejete' | 'echoue' | 'en-cours' | 'reprocessing';
   taille?: number;
 }) {
   return (
