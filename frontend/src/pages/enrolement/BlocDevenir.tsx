@@ -5,10 +5,13 @@ import { nf, part, pct } from '../../lib/format';
 import { usePlagePeriode } from '../../lib/usePlagePeriode';
 import './enrolement.css';
 
-/** Pictogrammes des cartes de statut (maquette). */
+/**
+ * Pictogrammes des cartes de statut (02/11/2026) : carte d'identité cochée pour les NIU, sablier pour les en cours (les
+ * flèches en cercle vont au reprocessing), triangle et croix pour les échecs et les rejets.
+ */
 const ICONE_STATUT: Record<Statut['cle'], string> = {
-  niu: 'diese',
-  'en-cours': 'cycle',
+  niu: 'carteOk',
+  'en-cours': 'sablier',
   echoue: 'alerte',
   rejete: 'croix',
   'non-classe': 'document',
@@ -65,8 +68,18 @@ export function BlocDevenir() {
   const total = d.inscriptions;
   // Parties des inscriptions selon le type de demande (UPDATE et RES_UPDATE, LOST), sous le total.
   const demandes = [
-    { cle: 'mise-a-jour', libelle: 'Demandes de mise à jour', valeur: depuisApi(d.demandesMiseAJour) },
-    { cle: 'niu-perdu', libelle: 'Demandes de NIU perdu', valeur: depuisApi(d.demandesNiuPerdu) },
+    {
+      cle: 'mise-a-jour',
+      libelle: 'Demandes de mise à jour',
+      icone: 'carteCrayon',
+      valeur: depuisApi(d.demandesMiseAJour),
+    },
+    {
+      cle: 'niu-perdu',
+      libelle: 'Demandes de NIU perdu',
+      icone: 'carteLoupe',
+      valeur: depuisApi(d.demandesNiuPerdu),
+    },
   ];
   const description = statuts.map((s) => `${s.libelle} ${pct(part(s.valeur, total))}`).join(', ');
 
@@ -93,7 +106,10 @@ export function BlocDevenir() {
         <dl className="cartes-demandes">
           {demandes.map((t) => (
             <div key={t.cle} className="carte-demande">
-              <dt className="carte-demande__libelle">{t.libelle}</dt>
+              <dt className="carte-demande__libelle">
+                <Icone nom={t.icone} taille={24} />
+                {t.libelle}
+              </dt>
               <dd className="carte-demande__chiffres">
                 <span className="chiffre carte-demande__valeur">{nf(t.valeur)}</span>
                 <span className="texte-2 carte-demande__part">{pct(part(t.valeur, total))}</span>
@@ -117,14 +133,16 @@ export function BlocDevenir() {
       <ul className="cartes-statuts">
         {statuts.map((s) => (
           <li key={s.cle} className="carte-statut">
-            <Icone nom={ICONE_STATUT[s.cle]} />
+            <Icone nom={ICONE_STATUT[s.cle]} taille={32} />
             <div className="carte-statut__corps">
               <span className="carte-statut__libelle">
                 <i className={`puce-statut statut--${s.cle}`} aria-hidden="true" />
                 {s.libelle}
               </span>
-              <span className="chiffre carte-statut__valeur">{nf(s.valeur)}</span>
-              <span className="texte-2 carte-statut__part">{pct(part(s.valeur, total))}</span>
+              <span className="carte-statut__chiffres">
+                <span className="chiffre carte-statut__valeur">{nf(s.valeur)}</span>
+                <span className="texte-2 carte-statut__part">{pct(part(s.valeur, total))}</span>
+              </span>
               {s.bloques !== undefined && (
                 <span className="carte-statut__detail">
                   dont <strong className="chiffre">{nf(s.bloques)}</strong> bloqués depuis plus de 30 jours
@@ -132,6 +150,7 @@ export function BlocDevenir() {
               )}
               {s.enReprocessing !== undefined && (
                 <span className="carte-statut__encart">
+                  <Icone nom="cycle" taille={16} />
                   <span className="carte-statut__encart-libelle">En reprocessing</span>
                   <span className="chiffre carte-statut__encart-valeur">{nf(s.enReprocessing)}</span>
                 </span>

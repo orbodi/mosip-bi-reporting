@@ -106,6 +106,31 @@ const ICONES: Record<string, ReactElement> = {
       <path d="M25 19h12M25 25h12M25 31h8" {...p} />
     </g>
   ),
+  // Bloc « Devenir des inscriptions » (02/11/2026) : la carte d'identité, avec une pastille qui dit son devenir.
+  carteOk: (
+    <g fill="none">
+      <rect x="4" y="9" width="32" height="24" rx="4" fill={Y} fillOpacity=".35" {...p} />
+      <path d="M9 16h8v8H9zM21 17h10M21 22h10" {...p} />
+      <circle cx="35" cy="34" r="8" fill={F} {...p} />
+      <path d="m31 34 3 3 5-6" {...p} />
+    </g>
+  ),
+  carteCrayon: (
+    <g fill="none">
+      <rect x="4" y="9" width="32" height="24" rx="4" fill={Y} fillOpacity=".35" {...p} />
+      <path d="M9 16h8v8H9zM21 17h10M21 22h10" {...p} />
+      <circle cx="35" cy="34" r="8" fill={F} {...p} />
+      <path d="m32 37 1-3 5-5 2 2-5 5z" {...p} />
+    </g>
+  ),
+  carteLoupe: (
+    <g fill="none">
+      <rect x="4" y="9" width="32" height="24" rx="4" fill={Y} fillOpacity=".35" {...p} />
+      <path d="M9 16h8v8H9zM21 17h10M21 22h10" {...p} />
+      <circle cx="34" cy="33" r="6" fill={F} {...p} />
+      <path d="m38.5 37.5 4 4" {...p} />
+    </g>
+  ),
   carteHorloge: (
     <g fill="none">
       <rect x="4" y="9" width="32" height="24" rx="4" fill={Y} fillOpacity=".35" {...p} />

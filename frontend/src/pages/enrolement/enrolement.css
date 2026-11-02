@@ -72,8 +72,8 @@
 .barre-statuts {
   display: flex;
   gap: 2px;
-  height: 10px;
-  margin-bottom: var(--e-5);
+  height: 8px;
+  margin-bottom: var(--e-4);
   border-radius: var(--r-pilule);
   overflow: hidden;
   background: var(--trait);
@@ -114,19 +114,24 @@
   );
 }
 
+/*
+ * Cartes de statut, compactes (02/11/2026) : pictogramme de 32 px calé en haut, à la hauteur du libellé (les cartes
+ * d'une rangée ont la même hauteur, leur contenu commence sur la même ligne), chiffre en 22 px et part sur la même
+ * ligne.
+ */
 .cartes-statuts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--e-3);
+  gap: var(--e-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .carte-statut {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: var(--e-4);
+  align-items: flex-start;
+  gap: var(--e-3);
+  padding: 10px var(--e-3);
   border: 1px solid color-mix(in srgb, var(--or) 45%, var(--surface));
   border-radius: var(--r-m);
   background: var(--surface);
@@ -136,87 +141,111 @@
 }
 .carte-statut__corps {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--e-1);
+  gap: 2px;
   min-width: 0;
 }
 .carte-statut__libelle {
   display: flex;
   align-items: center;
-  gap: var(--e-2);
+  gap: 6px;
   color: var(--bleu);
   font-size: var(--t-s);
   font-weight: 600;
 }
 .puce-statut {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
 }
+.carte-statut__chiffres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--e-2);
+}
 .carte-statut__valeur {
-  font-size: var(--t-kpi);
+  font-size: var(--t-2xl);
   font-weight: 700;
 }
 .carte-statut__part {
   font-size: var(--t-s);
 }
+.carte-statut__detail {
+  font-size: var(--t-xs);
+}
 /*
- * Dossiers en reprocessing (variante A du 31/10/2026) : encart dans la carte En cours, dont ils font partie. Filet
- * de la couleur des en cours, fond or pâle (texte encre : contraste ≈ 16:1).
+ * Dossiers en reprocessing (variante A du 31/10/2026, une ligne depuis le 02/11/2026) : encart dans la carte En cours,
+ * dont ils font partie, à la largeur du texte de la carte. Filet de la couleur des en cours, fond or pâle (texte encre :
+ * contraste ≈ 16:1).
  */
 .carte-statut__encart {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: var(--e-2);
-  padding: var(--e-2) var(--e-3);
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--e-1);
+  padding: var(--e-1) var(--e-2);
   border-left: 3px solid var(--statut-en-cours);
   background: var(--or-pale);
 }
+.carte-statut__encart > .icone {
+  flex-shrink: 0;
+}
 .carte-statut__encart-libelle {
+  flex: 1;
+  min-width: 0;
   color: var(--bleu);
   font-size: var(--t-s);
   font-weight: 600;
 }
 .carte-statut__encart-valeur {
-  font-size: var(--t-xl);
+  font-size: var(--t-l);
   font-weight: 700;
 }
 
 /*
- * Demandes de mise à jour et de NIU perdu (variante A du 31/10/2026) : deux cartes compactes sous le total des
- * inscriptions, dont elles sont une partie ; filet neutre, pour ne pas les confondre avec les statuts.
+ * Demandes de mise à jour et de NIU perdu (variante A du 31/10/2026, une ligne depuis le 02/11/2026) : deux cartes
+ * compactes sous le total des inscriptions, dont elles sont une partie ; filet neutre, pour ne pas les confondre avec
+ * les statuts.
  */
 .cartes-demandes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--e-3);
-  margin: 0 0 var(--e-4);
+  gap: var(--e-2);
+  margin: 0 0 var(--e-3);
 }
 .carte-demande {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--e-1) var(--e-2);
-  padding: var(--e-2) var(--e-3);
+  padding: var(--e-2) 10px;
   border: 1px solid var(--trait);
   border-radius: var(--r-m);
   background: var(--surface);
 }
 .carte-demande__libelle {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-width: 0;
   color: var(--bleu);
   font-size: var(--t-s);
   font-weight: 600;
 }
+.carte-demande__libelle > .icone {
+  flex-shrink: 0;
+}
 .carte-demande__chiffres {
   display: flex;
   align-items: baseline;
-  gap: var(--e-2);
+  gap: 6px;
   margin: 0;
 }
 .carte-demande__valeur {
-  font-size: var(--t-xl);
+  font-size: var(--t-l);
   font-weight: 700;
 }
 .carte-demande__part {
@@ -224,40 +253,16 @@
 }
 /*
  * Écrans très étroits (téléphone replié, 320 px, 30/10/2026) : en deux colonnes, une carte ne laissait qu'environ
- * 60 px au chiffre, qui était coupé (« 6 132 54… »). Une carte par ligne (variante A validée) : chiffre en 22 px, part
- * alignée à droite sur la même ligne, détail des bloqués sous les deux.
+ * 60 px au chiffre, qui était coupé (« 6 132 54… »). Une carte par ligne (variante A validée) : part alignée à droite
+ * du chiffre, détail des bloqués et reprocessing dessous.
  */
 @media (max-width: 420px) {
-  .cartes-statuts {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--e-2);
-  }
-  .carte-statut {
-    gap: var(--e-3);
-    padding: var(--e-3) var(--e-4);
-  }
-  .carte-statut__corps {
-    display: grid;
-    flex: 1;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: var(--e-2);
-    row-gap: var(--e-1);
-  }
-  .carte-statut__libelle,
-  .carte-statut__detail,
-  .carte-statut__encart {
-    grid-column: 1 / -1;
-  }
+  .cartes-statuts,
   .cartes-demandes {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--e-2);
   }
-  .carte-statut__valeur {
-    font-size: var(--t-2xl);
-    align-self: baseline;
-  }
-  .carte-statut__part {
-    align-self: baseline;
+  .carte-statut__chiffres {
+    justify-content: space-between;
   }
 }
 
