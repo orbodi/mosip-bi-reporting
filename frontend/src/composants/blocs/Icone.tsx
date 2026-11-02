@@ -273,6 +273,16 @@ const BLANCHES: Record<string, ReactElement> = {
       />
     </g>
   ),
+  // NIU générés (02/11/2026) : carte d'identité cochée, comme le bloc « Devenir » ; la carte s'arrête avant la pastille
+  // (pas de fond sur la pastille bleue ou or de la frise).
+  carteOk: (
+    <g>
+      <path d="M27 33H8a4 4 0 0 1-4-4V13a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v12" {...W} />
+      <path d="M9 16h8v8H9zM21 17h10M21 22h8" {...W} />
+      <circle cx="35" cy="34" r="8" {...W} />
+      <path d="m31 34 3 3 5-6" {...W} />
+    </g>
+  ),
   diese: (
     <g>
       <rect x="6" y="9" width="36" height="30" rx="5" {...W} />

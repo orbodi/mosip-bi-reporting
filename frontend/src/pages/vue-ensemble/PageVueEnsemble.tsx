@@ -53,7 +53,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
     },
     { nom: 'Inscription', libelle: 'Inscriptions', icone: 'personne', valeur: ins, part: false },
     { nom: 'Traitement', libelle: 'Paquets traités', icone: 'engrenage', valeur: traites, part: true },
-    { nom: 'NIU', libelle: 'NIU générés', icone: 'diese', valeur: d.niuGeneres, part: true },
+    { nom: 'NIU', libelle: 'NIU générés', icone: 'carteOk', valeur: d.niuGeneres, part: true },
     { nom: 'Demande', libelle: 'Demandes d’impression', icone: 'document', valeur: INCONNUE, part: true },
     {
       nom: 'Impression',
