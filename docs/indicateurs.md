@@ -31,11 +31,12 @@ de non-régression sur un instantané des données : le nouveau BI doit les retr
 | E-NIU | NIU générés | inscriptions abouties avec NIU ; % = NIU / inscriptions | `registration` traitée (NEW) ; `mosip_idrepo.uin` exclue de la capture (NIU, données d'identité) sauf dérogation | 3 058 886 (93,3 %) | à confirmer |
 | E-COURS | En cours | inscriptions ni abouties, ni échouées, ni rejetées | `registration` | 123 639 | à confirmer |
 | E-BLOQ | Bloquées depuis plus de 30 jours | en cours dont la dernière transaction a plus de 30 jours | `registration_transaction` | 118 402 | à confirmer |
+| E-REPRO | En reprocessing | en cours dont la dernière transaction a le statut REPROCESS (MOSIP les reprendra) ; partie de E-COURS, jamais un statut de plus ; lecture cohorte, suit la période | `registration.latest_trn_status_code` (déjà capté ; `registration_transaction` non captée, analyse du 30/10/2026) | 7 783 (30/10/2026, stock) | décidé (31/10/2026) |
 | E-ECH | Échouées | traitement en échec technique | `registration` | 9 218 | test (répartition) |
 | E-REJ | Rejetées | `status_code = REJECTED` ; taux = rejets / inscriptions | `registration` | 86 496 (2,6 %) | à confirmer |
 | E-TRAIT | Paquets traités | NIU + échouées + rejetées | calcul | 3 154 600 | validé (maquette) |
-| E-MAJ | Mises à jour | `reg_type` UPDATE (et RES_UPDATE ?) | `registration` | 12 689 | à confirmer |
-| E-PERTE | Récupérations de NIU | `reg_type` LOST | `registration` | 2 051 | à confirmer |
+| E-MAJ | Demandes de mise à jour | inscriptions de `reg_type` UPDATE ou RES_UPDATE (RES_UPDATE compté avec les mises à jour, décision du 31/10/2026) ; % = / inscriptions ; partie de E-INS | `registration` | 12 689 ; 21 488 + 4 RES_UPDATE (24/10/2026) | décidé (31/10/2026) |
+| E-PERTE | Demandes de NIU perdu | inscriptions de `reg_type` LOST ; % = / inscriptions ; partie de E-INS | `registration` | 2 051 ; 5 171 (24/10/2026) | décidé (31/10/2026) |
 | E-DELAI | Délai médian inscription → NIU | médiane (date NIU − date d'inscription), en jours | `registration` (date du NIU sans `uin` : à définir) | 6,5 j | test |
 | E-NIU-PROFIL | NIU générés par âge et par sexe | profils anonymisés de processus « New », au jour du profil, par sexe (F, H) et tranche d'âge ; NIU sans sexe ou sans âge comptés à part (« non renseignés ») ; par région (lieu du profil) | `mosip_idrepo.anonymous_profile` (1.1.5.5 et plus) | F 53,0 % / H 47,0 % (maquette) | test |
 
@@ -43,6 +44,12 @@ Contrôle E-NIU-PROFIL : sur toute la durée, le total des profils « New » doi
 (sources différentes : un écart s'affiche et se consigne, il ne se corrige pas).
 
 Contrôle : pour chaque zone et chaque période, NIU + rejetées + échouées + en cours (+ non classées) = inscriptions.
+Contrôles des parties (31/10/2026) : E-REPRO ≤ E-COURS (contrainte de `bi.fait_enrolement_jour`, migration V13, et
+test dbt) ; E-MAJ + E-PERTE ≤ E-INS.
+
+Bloc « Devenir des inscriptions », variante A du 31/10/2026 : E-MAJ et E-PERTE en deux cartes compactes sous le total
+des inscriptions ; E-REPRO en encart de la carte En cours. Ni la barre ni la somme des cartes de statut ne changent.
+Champs `demandesMiseAJour`, `demandesNiuPerdu` et `enReprocessing` de `GET /api/v1/enrolement/devenir`.
 
 Mise en œuvre temps réel (16/10/2026, bloc « Devenir des inscriptions », `GET /api/v1/enrolement/devenir`) :
 `bi.fait_enrolement_jour` est recalculé en continu depuis `etat.registration` (pipeline CDC, `pipeline/README.md`).
