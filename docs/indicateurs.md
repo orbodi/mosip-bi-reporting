@@ -50,6 +50,11 @@ test dbt) ; E-MAJ + E-PERTE ≤ E-INS.
 Bloc « Devenir des inscriptions », variante A du 31/10/2026 : E-MAJ et E-PERTE en deux cartes compactes sous le total
 des inscriptions ; E-REPRO en encart de la carte En cours. Ni la barre ni la somme des cartes de statut ne changent.
 Champs `demandesMiseAJour`, `demandesNiuPerdu` et `enReprocessing` de `GET /api/v1/enrolement/devenir`.
+Bloc « Où s'arrêtent les paquets », onglet « En reprocessing » (02/11/2026) : E-REPRO par motif, étape et bloqués,
+comme l'onglet En cours (stock à l'instant, sans période ; `bi.stock_en_cours_motif.en_reprocessing`, migration V14) ;
+« parmi les en cours », hors du total des paquets sans NIU. Contrôle : total de l'onglet = E-REPRO du bloc Devenir
+sans période (test dbt `assert_enrolement_motifs_egal_devenir`). Champs `totalReprocessing`, `bloquesReprocessing`
+et `reprocessing` de `GET /api/v1/enrolement/motifs`.
 
 Mise en œuvre temps réel (16/10/2026, bloc « Devenir des inscriptions », `GET /api/v1/enrolement/devenir`) :
 `bi.fait_enrolement_jour` est recalculé en continu depuis `etat.registration` (pipeline CDC, `pipeline/README.md`).
