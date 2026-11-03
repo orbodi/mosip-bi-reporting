@@ -88,7 +88,8 @@ describe('Pages de la maquette', () => {
 
     const bloc = within(await screen.findByRole('region', { name: 'Impression et remise' }));
     expect(bloc.getAllByText('0').length).toBeGreaterThanOrEqual(2);
-    expect(bloc.getByText('Parmi les demandes')).toBeInTheDocument();
+    // Annulées et erreurs d'envoi à l'IDPS, sans motif ni date tant que l'API ne répond pas.
+    expect(bloc.getAllByText('Parmi les demandes')).toHaveLength(2);
     expect(screen.queryByText(/pas encore raccordée|non disponible|indisponible/i)).not.toBeInTheDocument();
   });
 
