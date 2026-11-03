@@ -281,7 +281,7 @@ public class EnrolementService {
      * Lundis des {@code nombre} dernières semaines complètes (lundi à dimanche) qui finissent au plus tard le jour
      * {@code fin}, de la plus ancienne à la plus récente. Une semaine en cours n'est jamais comptée.
      */
-    static List<LocalDate> lundisDesSemainesCompletes(LocalDate fin, int nombre) {
+    public static List<LocalDate> lundisDesSemainesCompletes(LocalDate fin, int nombre) {
         LocalDate dernierLundi = fin.getDayOfWeek() == DayOfWeek.SUNDAY
                 ? fin.minusDays(6)
                 : fin.with(DayOfWeek.MONDAY).minusWeeks(1);
@@ -291,7 +291,7 @@ public class EnrolementService {
     }
 
     /** Vrai si la semaine qui commence ce lundi a au moins un jour dans la période (bornes nulles = non bornée). */
-    static boolean touchePeriode(LocalDate lundi, LocalDate du, LocalDate au) {
+    public static boolean touchePeriode(LocalDate lundi, LocalDate du, LocalDate au) {
         return (du == null || !lundi.plusDays(6).isBefore(du)) && (au == null || !lundi.isAfter(au));
     }
 
