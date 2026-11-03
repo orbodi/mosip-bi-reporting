@@ -1,8 +1,15 @@
-/* Page Impression des cartes (lot 8c) : cartes des demandes (quatre) et des cartes (trois) en deux groupes titrés. */
-.impression__cartes {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-4);
+/* Page Impression des cartes (lot 8c, corrigé le 03/11/2026 d'après la capture) : grand chiffre et cartes des cartes
+   en haut, les quatre cartes des demandes sur toute la largeur du bloc en dessous (environ 290 px chacune à 1 440 px,
+   au lieu de 175 px dans la colonne de droite). Contenu des cartes aligné en haut, comme le bloc Devenir. */
+.impression .indicateur {
+  align-items: flex-start;
+}
+.impression .indicateur__detail {
+  overflow-wrap: break-word;
+}
+.impression__demandes {
+  padding: var(--e-5) 28px 28px;
+  border-top: 1px solid var(--trait);
 }
 .impression__groupe {
   margin: 0 0 var(--e-2);
@@ -23,6 +30,10 @@
   }
 }
 @media (max-width: 700px) {
+  .impression__demandes {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
   .cartes-m--4 {
     grid-template-columns: minmax(0, 1fr);
   }

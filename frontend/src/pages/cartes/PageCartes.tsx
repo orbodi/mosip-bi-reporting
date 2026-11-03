@@ -109,28 +109,57 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
       <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
       <div className="contenu page-m">
         <Panneau id="titre-impression" titre="Impression et remise" coins sansMarge>
-          <div className="duo">
-            <div className="duo__principal">
-              <GrandChiffre
-                valeur={nf(c.remises)}
-                detail={`cartes remises, soit ${pct(part(c.remises, c.expediees))} des ${nf(c.expediees)} cartes expédiées`}
-              />
-              <Repartition
-                libelle="Cartes remises et à remettre"
-                parts={[
-                  { libelle: 'Remises', valeur: c.remises, couleur: 'bleu' },
-                  { libelle: 'À remettre', valeur: c.aRemettre, couleur: 'en-cours' },
-                ]}
-              />
-              <Legende
-                elements={[
-                  { libelle: 'Remises', couleur: 'bleu', note: pct(part(c.remises, c.expediees)) },
-                  { libelle: 'À remettre', couleur: 'en-cours', note: pct(part(c.aRemettre, c.expediees)) },
-                ]}
-              />
-              <p className="note-m note-m--filet impression__modes">{texteModesRemise(c)}</p>
+          <div className="impression">
+            <div className="duo">
+              <div className="duo__principal">
+                <GrandChiffre
+                  valeur={nf(c.remises)}
+                  detail={`cartes remises, soit ${pct(part(c.remises, c.expediees))} des ${nf(c.expediees)} cartes expédiées`}
+                />
+                <Repartition
+                  libelle="Cartes remises et à remettre"
+                  parts={[
+                    { libelle: 'Remises', valeur: c.remises, couleur: 'bleu' },
+                    { libelle: 'À remettre', valeur: c.aRemettre, couleur: 'en-cours' },
+                  ]}
+                />
+                <Legende
+                  elements={[
+                    { libelle: 'Remises', couleur: 'bleu', note: pct(part(c.remises, c.expediees)) },
+                    { libelle: 'À remettre', couleur: 'en-cours', note: pct(part(c.aRemettre, c.expediees)) },
+                  ]}
+                />
+                <p className="note-m note-m--filet impression__modes">{texteModesRemise(c)}</p>
+              </div>
+              <div className="duo__cartes">
+                <div role="group" aria-labelledby="titre-groupe-cartes">
+                  <h3 id="titre-groupe-cartes" className="impression__groupe">
+                    Cartes
+                  </h3>
+                  <div className="cartes-m cartes-m--3">
+                    <CarteIndicateur
+                      icone="imprimante"
+                      nom="Imprimées et expédiées"
+                      valeur={nf(c.expediees)}
+                      detail={`${pct(part(c.expediees, c.demandes))} des demandes`}
+                    />
+                    <CarteIndicateur
+                      icone="carteHorloge"
+                      nom="Cartes à remettre"
+                      valeur={nf(c.aRemettre)}
+                      detail={`${pct(part(c.aRemettre, c.expediees))} des cartes expédiées`}
+                    />
+                    <CarteIndicateur
+                      icone="chrono"
+                      nom="Délai du NIU à la carte"
+                      valeur={`${nf(c.delaiMedianJours)} jours`}
+                      detail="Médiane, sur les cartes remises"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="duo__cartes impression__cartes">
+            <div className="impression__demandes">
               <div role="group" aria-labelledby="titre-groupe-demandes">
                 <h3 id="titre-groupe-demandes" className="impression__groupe">
                   Demandes
@@ -140,7 +169,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                     icone="document"
                     nom="Demandes d’impression"
                     valeur={nf(c.demandes)}
-                    detail={`${pct(part(c.envoyees, c.demandes))} envoyées à l’imprimeur`}
+                    detail={`dont ${nf(c.envoyees)} envoyées à l’imprimeur`}
                   />
                   <CarteIndicateur
                     icone="sablier"
@@ -163,31 +192,6 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                     nom="Demandes annulées"
                     valeur={nf(c.annulees)}
                     detail={texteAnnulees(annulations.data?.motifs)}
-                  />
-                </div>
-              </div>
-              <div role="group" aria-labelledby="titre-groupe-cartes">
-                <h3 id="titre-groupe-cartes" className="impression__groupe">
-                  Cartes
-                </h3>
-                <div className="cartes-m cartes-m--3">
-                  <CarteIndicateur
-                    icone="imprimante"
-                    nom="Imprimées et expédiées"
-                    valeur={nf(c.expediees)}
-                    detail={`${pct(part(c.expediees, c.demandes))} des demandes`}
-                  />
-                  <CarteIndicateur
-                    icone="carteHorloge"
-                    nom="Cartes à remettre"
-                    valeur={nf(c.aRemettre)}
-                    detail={`${pct(part(c.aRemettre, c.expediees))} des cartes expédiées`}
-                  />
-                  <CarteIndicateur
-                    icone="chrono"
-                    nom="Délai du NIU à la carte"
-                    valeur={`${nf(c.delaiMedianJours)} jours`}
-                    detail="Médiane, sur les cartes remises"
                   />
                 </div>
               </div>
