@@ -48,7 +48,9 @@ class CartesServiceTest {
         when(repository.disponible()).thenReturn(true);
         when(zones.nomZone("SAV")).thenReturn(Optional.of("Savanes"));
         when(repository.demandes(isNull(), isNull(), eq("SAV"))).thenReturn(
-                new CartesRepository.TotauxDemandes(150, 145, 4, 1, 0, 2, LocalDate.parse("2026-10-04")));
+                new CartesRepository.TotauxDemandes(150, 145, 4, 1, 0, 2, LocalDate.parse("2026-10-04"), 12,
+                        LocalDate.parse("2026-09-30")));
+        when(repository.niuSansCommande("SAV")).thenReturn(new CartesRepository.NiuSansCommande(5, 3));
         when(repository.cartes(isNull(), isNull(), eq("SAV"))).thenReturn(
                 new CartesRepository.TotauxCartes(130, 100, 90, 10, 0, 0, 30));
         when(repository.delaiMedianJours(isNull(), isNull(), eq("SAV"))).thenReturn(Optional.of(34));
@@ -61,6 +63,27 @@ class CartesServiceTest {
         assertThat(i.derniereRejetee()).isEqualTo("2026-10-04");
         assertThat(i.remises() + i.aRemettre()).isEqualTo(i.expediees());
         assertThat(i.delaiMedianJours()).isEqualTo(34);
+        assertThat(i.erreursIdps()).isEqualTo(12);
+        assertThat(i.derniereErreurIdps()).isEqualTo("2026-09-30");
+        assertThat(i.niuSansCommande()).isEqualTo(5);
+        assertThat(i.niuSansCommandePlus7j()).isEqualTo(3);
+    }
+
+    @Test
+    void surUnePeriodeLesNiuSansCommandeNeSontPasDonnes() {
+        LocalDate du = LocalDate.parse("2026-10-01");
+        LocalDate au = LocalDate.parse("2026-10-31");
+        when(repository.disponible()).thenReturn(true);
+        when(repository.demandes(du, au, null)).thenReturn(
+                new CartesRepository.TotauxDemandes(10, 10, 0, 0, 0, 0, null, 0, null));
+        when(repository.cartes(du, au, null)).thenReturn(new CartesRepository.TotauxCartes(8, 5, 5, 0, 0, 0, 3));
+        when(repository.delaiMedianJours(du, au, null)).thenReturn(Optional.empty());
+
+        ImpressionRemise i = service.impression(du, au, null);
+
+        assertThat(i.niuSansCommande()).isNull();
+        assertThat(i.niuSansCommandePlus7j()).isNull();
+        verify(repository, never()).niuSansCommande(any());
     }
 
     @Test

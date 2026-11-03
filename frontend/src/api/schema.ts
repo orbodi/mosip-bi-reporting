@@ -718,6 +718,14 @@ export interface components {
       aRemettre?: number | null;
       /** Format: int32 */
       delaiMedianJours?: number | null;
+      /** Format: int64 */
+      erreursIdps?: number | null;
+      /** Format: date */
+      derniereErreurIdps?: string | null;
+      /** Format: int64 */
+      niuSansCommande?: number | null;
+      /** Format: int64 */
+      niuSansCommandePlus7j?: number | null;
     };
     ImpressionsParSemaine: {
       perimetre: string;

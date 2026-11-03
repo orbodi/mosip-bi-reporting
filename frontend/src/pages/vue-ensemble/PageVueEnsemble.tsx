@@ -10,7 +10,13 @@ import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
 import { INCONNUE, depuisApi, devenirInconnu } from '../../lib/blocsVides';
-import { CLASSES_AVEC_CARTE, chiffresImpression, classeAvecCarte, moinsDeLaMoitie } from '../../lib/cartes';
+import {
+  CLASSES_AVEC_CARTE,
+  chiffresImpression,
+  classeAvecCarte,
+  moinsDeLaMoitie,
+  texteNiuSansCommande,
+} from '../../lib/cartes';
 import { nf, part, pct } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi } from '../../lib/usePlagePeriode';
@@ -197,6 +203,12 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               );
             })}
           </ol>
+          {texteNiuSansCommande(cartes) && (
+            <p className="note-m parcours__note parcours__alerte">
+              <Icone nom="alerte" taille={18} />
+              <span>{texteNiuSansCommande(cartes)}</span>
+            </p>
+          )}
           {!toutes && (
             <p className="note-m parcours__note">
               Sur une période, chaque étape compte ce qui s’y est passé pendant la période : les cartes

@@ -37,7 +37,7 @@ class CartesControllerTest {
         LocalDate au = LocalDate.parse("2026-10-31");
         when(service.impression(eq(du), eq(au), isNull())).thenReturn(new ImpressionRemise("Ensemble du Togo", du, au,
                 true, 6179588L, 6177214L, 2366L, 8L, 0L, 693L, LocalDate.parse("2026-03-13"), 6088392L, 4643515L,
-                4446113L, 197370L, 32L, 0L, 1444877L, 34));
+                4446113L, 197370L, 32L, 0L, 1444877L, 34, 172354L, LocalDate.parse("2026-01-14"), 55L, 41L));
 
         mvc.perform(get("/api/v1/cartes/impression").param("du", "2026-10-01").param("au", "2026-10-31"))
                 .andExpect(status().isOk())
@@ -49,7 +49,11 @@ class CartesControllerTest {
                 .andExpect(jsonPath("$.remises").value(4643515))
                 .andExpect(jsonPath("$.remisesEnLigne").value(197370))
                 .andExpect(jsonPath("$.aRemettre").value(1444877))
-                .andExpect(jsonPath("$.delaiMedianJours").value(34));
+                .andExpect(jsonPath("$.delaiMedianJours").value(34))
+                .andExpect(jsonPath("$.erreursIdps").value(172354))
+                .andExpect(jsonPath("$.derniereErreurIdps").value("2026-01-14"))
+                .andExpect(jsonPath("$.niuSansCommande").value(55))
+                .andExpect(jsonPath("$.niuSansCommandePlus7j").value(41));
     }
 
     @Test

@@ -12,6 +12,7 @@ import {
   semainesCartes,
   texteAnnulees,
   texteModesRemise,
+  texteNiuSansCommande,
 } from './cartes';
 
 const IMPRESSION = {
@@ -32,6 +33,10 @@ const IMPRESSION = {
   remisesAutre: 0,
   aRemettre: 1463791,
   delaiMedianJours: 31,
+  erreursIdps: 172354,
+  derniereErreurIdps: '2026-01-09',
+  niuSansCommande: 55,
+  niuSansCommandePlus7j: 41,
 };
 
 describe('Impression des cartes', () => {
@@ -116,6 +121,22 @@ describe('Impression des cartes', () => {
     ]);
     expect(noteAttente(api)).toMatch(/^1\s219\s599 cartes, soit 83,3\s% des cartes à remettre/);
     expect(barresAttente(undefined).every((b) => Number.isNaN(b.valeur))).toBe(true);
+  });
+
+  it('Vue d’ensemble : NIU sans demande d’impression, rien quand il n’y en a pas ou sur une période', () => {
+    expect(texteNiuSansCommande(chiffresImpression(IMPRESSION))).toBe(
+      '55 NIU de première inscription sans demande d’impression, dont 41 depuis plus de 7 jours.',
+    );
+    expect(
+      texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: 3, niuSansCommandePlus7j: 0 })),
+    ).toBe('3 NIU de première inscription sans demande d’impression, tous générés il y a moins de 7 jours.');
+    expect(
+      texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: 2, niuSansCommandePlus7j: 2 })),
+    ).toBe('2 NIU de première inscription sans demande d’impression, tous depuis plus de 7 jours.');
+    expect(texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: 0 }))).toBeUndefined();
+    expect(
+      texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: null, niuSansCommandePlus7j: null })),
+    ).toBeUndefined();
   });
 
   it('Vue d’ensemble : part des inscrits avec carte, en quatre classes', () => {

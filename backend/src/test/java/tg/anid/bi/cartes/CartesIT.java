@@ -49,17 +49,17 @@ class CartesIT {
     void preparer() {
         jdbc.sql("""
                 truncate bi.fait_demande_impression_jour, bi.fait_carte_jour, bi.fait_delai_carte_jour,
-                         bi.fait_annulation_impression_jour
+                         bi.fait_annulation_impression_jour, bi.stock_niu_sans_commande
                 """).update();
         jdbc.sql("""
                 insert into bi.fait_demande_impression_jour (jour, centre_id, demandes, envoyees, en_attente, rejetees,
-                                                             non_classees, annulees)
-                select v.jour, z.id, v.dem, v.env, v.att, v.rej, 0, v.ann
-                from (values (date '2026-01-05', '10011', 100, 95, 4, 1, 2),
-                             (date '2026-01-06', '10012',  50, 50, 0, 0, 0),
-                             (date '2026-01-07', '10021',  80, 78, 0, 2, 1),
-                             (date '2025-12-29', 'CENTRE_NON_REFERENCE', 10, 10, 0, 0, 0))
-                     as v (jour, code, dem, env, att, rej, ann)
+                                                             non_classees, annulees, erreurs_idps)
+                select v.jour, z.id, v.dem, v.env, v.att, v.rej, 0, v.ann, v.err
+                from (values (date '2026-01-05', '10011', 100, 95, 4, 1, 2, 7),
+                             (date '2026-01-06', '10012',  50, 50, 0, 0, 0, 3),
+                             (date '2026-01-07', '10021',  80, 78, 0, 2, 1, 0),
+                             (date '2025-12-29', 'CENTRE_NON_REFERENCE', 10, 10, 0, 0, 0, 0))
+                     as v (jour, code, dem, env, att, rej, ann, err)
                 join bi.zone z on z.code = v.code
                 """).update();
         // Cartes : une expédiée en juin 2025 (plus de 180 jours au 14/01/2026), les autres en janvier 2026.
@@ -80,6 +80,13 @@ class CartesIT {
                 from (values (date '2026-01-08', '10011', 20, 30), (date '2026-01-08', '10011', 40, 30),
                              (date '2026-01-09', '10012', 30, 40), (date '2026-01-09', '10021', 120, 20))
                      as v (jour, code, classe, cartes)
+                join bi.zone z on z.code = v.code
+                """).update();
+        jdbc.sql("""
+                insert into bi.stock_niu_sans_commande (centre_id, anciennete, niu, plus_ancien_le, calcule_le)
+                select z.id, v.anc, v.n, timestamptz '2025-12-01 10:00+00', now()
+                from (values ('10011', 'plus_7j', 4), ('10011', 'moins_7j', 2), ('10021', 'plus_7j', 1))
+                     as v (code, anc, n)
                 join bi.zone z on z.code = v.code
                 """).update();
         jdbc.sql("""
@@ -111,12 +118,18 @@ class CartesIT {
         assertThat(i.remisesEnLigne()).isEqualTo(15);
         // Histogramme : 30 à 20 j, 40 à 30 j, 30 à 40 j, 20 à 120 j ; la 60e carte sur 120 tombe dans la classe 30.
         assertThat(i.delaiMedianJours()).isEqualTo(30);
+        // Lot 8d : erreurs d'envoi à l'IDPS (parmi les demandes) et NIU sans commande (stock, sans période).
+        assertThat(i.erreursIdps()).isEqualTo(10);
+        assertThat(i.derniereErreurIdps()).isEqualTo("2026-01-06");
+        assertThat(i.niuSansCommande()).isEqualTo(7);
+        assertThat(i.niuSansCommandePlus7j()).isEqualTo(5);
     }
 
     @Test
     void impressionDUneRegionEtDUnePeriode() {
         ImpressionRemise savanes = service.impression(null, null, "SAV");
         assertThat(savanes.perimetre()).isEqualTo("Savanes");
+        assertThat(savanes.niuSansCommande()).isEqualTo(6);
         assertThat(savanes.demandes()).isEqualTo(150);
         assertThat(savanes.expediees()).isEqualTo(130);
         assertThat(savanes.delaiMedianJours()).isEqualTo(30);
@@ -125,6 +138,7 @@ class CartesIT {
                 service.impression(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"), null);
         assertThat(janvier.demandes()).isEqualTo(230);
         assertThat(janvier.expediees()).isEqualTo(200);
+        assertThat(janvier.niuSansCommande()).isNull();
     }
 
     @Test
@@ -209,6 +223,8 @@ class CartesIT {
                 .hasMessageContaining("fait_carte_jour_remises");
         assertThatThrownBy(() -> jdbc.sql("update bi.fait_demande_impression_jour set annulees = demandes + 1")
                 .update()).hasMessageContaining("fait_demande_impression_jour_annulees");
+        assertThatThrownBy(() -> jdbc.sql("update bi.fait_demande_impression_jour set erreurs_idps = demandes + 1")
+                .update()).hasMessageContaining("fait_demande_impression_jour_erreurs_idps");
     }
 
     @Test

@@ -164,7 +164,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                 <h3 id="titre-groupe-demandes" className="impression__groupe">
                   Demandes
                 </h3>
-                <div className="cartes-m cartes-m--4">
+                <div className="cartes-m cartes-m--5">
                   <CarteIndicateur
                     icone="document"
                     nom="Demandes d’impression"
@@ -192,6 +192,16 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                     nom="Demandes annulées"
                     valeur={nf(c.annulees)}
                     detail={texteAnnulees(annulations.data?.motifs)}
+                  />
+                  <CarteIndicateur
+                    icone="alerte"
+                    nom="Erreurs d’envoi à l’IDPS"
+                    valeur={nf(c.erreursIdps)}
+                    detail={
+                      c.derniereErreurIdps
+                        ? `Parmi les demandes ; dernière reçue le ${dateFr(c.derniereErreurIdps)}`
+                        : 'Parmi les demandes'
+                    }
                   />
                 </div>
               </div>

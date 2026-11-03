@@ -45,7 +45,12 @@ public class CartesRepository {
 
     /** Commandes par statut sur la période, au jour de réception. */
     public record TotauxDemandes(long demandes, long envoyees, long enAttente, long rejetees, long nonClassees,
-                                 long annulees, LocalDate derniereRejetee) {
+                                 long annulees, LocalDate derniereRejetee, long erreursIdps,
+                                 LocalDate derniereErreurIdps) {
+    }
+
+    /** NIU de première inscription sans commande d'impression (stock), dont ceux de plus de 7 jours. */
+    public record NiuSansCommande(long total, long plus7j) {
     }
 
     /** Cartes expédiées sur la période, remises (par mode) ou à remettre. */
@@ -72,7 +77,9 @@ public class CartesRepository {
                                coalesce(sum(f.rejetees), 0)     as rejetees,
                                coalesce(sum(f.non_classees), 0) as non_classees,
                                coalesce(sum(f.annulees), 0)     as annulees,
-                               max(f.jour) filter (where f.rejetees > 0) as derniere_rejetee
+                               max(f.jour) filter (where f.rejetees > 0) as derniere_rejetee,
+                               coalesce(sum(f.erreurs_idps), 0) as erreurs_idps,
+                               max(f.jour) filter (where f.erreurs_idps > 0) as derniere_erreur_idps
                         from bi.fait_demande_impression_jour f
                         where """ + FILTRE)
                 .param("du", du)
@@ -85,7 +92,9 @@ public class CartesRepository {
                         rs.getLong("rejetees"),
                         rs.getLong("non_classees"),
                         rs.getLong("annulees"),
-                        rs.getObject("derniere_rejetee", LocalDate.class)))
+                        rs.getObject("derniere_rejetee", LocalDate.class),
+                        rs.getLong("erreurs_idps"),
+                        rs.getObject("derniere_erreur_idps", LocalDate.class)))
                 .single();
     }
 
@@ -111,6 +120,19 @@ public class CartesRepository {
                         rs.getLong("remises_support"),
                         rs.getLong("remises_autre"),
                         rs.getLong("a_remettre")))
+                .single();
+    }
+
+    /** NIU de première inscription sans commande d'impression dans le périmètre, au dernier calcul (stock). */
+    public NiuSansCommande niuSansCommande(String zone) {
+        return jdbc.sql(AVEC_PERIMETRE + """
+                        select coalesce(sum(s.niu), 0) as total,
+                               coalesce(sum(s.niu) filter (where s.anciennete = 'plus_7j'), 0) as plus_7j
+                        from bi.stock_niu_sans_commande s
+                        where cast(:zone as text) is null or s.centre_id in (select id from perimetre)
+                        """)
+                .param("zone", zone)
+                .query((rs, ligne) -> new NiuSansCommande(rs.getLong("total"), rs.getLong("plus_7j")))
                 .single();
     }
 

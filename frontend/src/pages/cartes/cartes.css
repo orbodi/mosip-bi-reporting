@@ -21,11 +21,17 @@
 .impression__modes {
   margin-top: 0;
 }
-.cartes-m--4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+/* Cinq cartes des demandes (lot 8d : erreurs d'envoi à l'IDPS) : 5, puis 3 + 2, puis 2, puis 1 par ligne. */
+.cartes-m--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 1250px) {
+  .cartes-m--5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 1100px) {
-  .cartes-m--4 {
+  .cartes-m--5 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -34,7 +40,7 @@
     padding-left: 18px;
     padding-right: 18px;
   }
-  .cartes-m--4 {
+  .cartes-m--5 {
     grid-template-columns: minmax(0, 1fr);
   }
 }

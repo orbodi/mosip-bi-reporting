@@ -44,6 +44,8 @@ describe('Pages de la maquette', () => {
       await demandes.findByText('Parmi les demandes : photo 643, sexe 36, nom 10, personnalisation 4'),
     ).toBeInTheDocument();
     expect(demandes.getByText('Dernière reçue le 07/01/2026')).toBeInTheDocument();
+    expect(demandes.getByText(/^172\s354$/)).toBeInTheDocument();
+    expect(demandes.getByText('Parmi les demandes ; dernière reçue le 09/01/2026')).toBeInTheDocument();
     expect(within(bloc.getByRole('group', { name: 'Cartes' })).getByText(/^31 jours$/)).toBeInTheDocument();
 
     const rejets = within(screen.getByRole('region', { name: 'Rejetées et annulées par semaine' }));
@@ -102,8 +104,11 @@ describe('Pages de la maquette', () => {
     expect(await parcours.findByText(/^6\s195\s305$/)).toBeInTheDocument();
     expect(parcours.getByText(/^6\s107\s359$/)).toBeInTheDocument();
     expect(parcours.getAllByText(/^4\s643\s568$/).length).toBeGreaterThanOrEqual(1);
+    expect(
+      parcours.getByText('55 NIU de première inscription sans demande d’impression, dont 41 depuis plus de 7 jours.'),
+    ).toBeInTheDocument();
     const regions = within(screen.getByRole('region', { name: 'Le parcours par région' }));
-    const savanes = await regions.findByRole('row', { name: /Savanes/ });
+    const savanes = await regions.findByRole('row', { name: /Savanes.*41,9/ });
     // Savanes : 188 796 cartes remises pour 450 239 inscriptions, moins de la moitié (en gras).
     expect(await within(savanes).findByText(/^41,9\s%$/, { selector: 'strong' })).toBeInTheDocument();
     expect(await regions.findByRole('rowheader', { name: 'Grand Lomé' })).toBeInTheDocument();

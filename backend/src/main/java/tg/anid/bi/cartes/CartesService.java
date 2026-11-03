@@ -63,9 +63,13 @@ public class CartesService {
         CartesRepository.TotauxDemandes d = repository.demandes(du, au, zone);
         CartesRepository.TotauxCartes c = repository.cartes(du, au, zone);
         Integer delai = repository.delaiMedianJours(du, au, zone).orElse(null);
+        // NIU sans commande : stock à l'heure du calcul, sans date ; seulement sans période (comme les « bloqués »).
+        CartesRepository.NiuSansCommande sans = du == null && au == null ? repository.niuSansCommande(zone) : null;
         return new ImpressionRemise(perimetre, du, au, true, d.demandes(), d.envoyees(), d.enAttente(), d.rejetees(),
                 d.nonClassees(), d.annulees(), d.derniereRejetee(), c.expediees(), c.remises(),
-                c.remisesHorsLigne(), c.remisesEnLigne(), c.remisesSupport(), c.remisesAutre(), c.aRemettre(), delai);
+                c.remisesHorsLigne(), c.remisesEnLigne(), c.remisesSupport(), c.remisesAutre(), c.aRemettre(), delai,
+                d.erreursIdps(), d.derniereErreurIdps(), sans == null ? null : sans.total(),
+                sans == null ? null : sans.plus7j());
     }
 
     /**

@@ -29,6 +29,11 @@ export interface ChiffresImpression {
   remisesAutre: number;
   aRemettre: number;
   delaiMedianJours: number;
+  erreursIdps: number;
+  derniereErreurIdps?: string;
+  /** Stock sans période ; inconnu (NaN) sur une période. */
+  niuSansCommande: number;
+  niuSansCommandePlus7j: number;
 }
 
 export function chiffresImpression(api?: ImpressionRemise): ChiffresImpression {
@@ -48,6 +53,10 @@ export function chiffresImpression(api?: ImpressionRemise): ChiffresImpression {
     remisesAutre: depuisApi(a?.remisesAutre),
     aRemettre: depuisApi(a?.aRemettre),
     delaiMedianJours: depuisApi(a?.delaiMedianJours),
+    erreursIdps: depuisApi(a?.erreursIdps),
+    derniereErreurIdps: a?.derniereErreurIdps ?? undefined,
+    niuSansCommande: depuisApi(a?.niuSansCommande),
+    niuSansCommandePlus7j: depuisApi(a?.niuSansCommandePlus7j),
   };
 }
 
@@ -181,3 +190,19 @@ export function classeAvecCarte(partZone: number): number {
 
 /** Vrai si moins de la moitié des inscrits a reçu sa carte (mise en gras du tableau). */
 export const moinsDeLaMoitie = (partZone: number) => Number.isFinite(partZone) && partZone < 0.5;
+
+/**
+ * Note de la frise de la Vue d'ensemble (I-SANS, lot 8d) : « 55 NIU de première inscription sans demande
+ * d'impression, dont 41 depuis plus de 7 jours. » Rien (undefined) sans chiffre ou quand il n'y en a aucun.
+ */
+export function texteNiuSansCommande(c: ChiffresImpression): string | undefined {
+  if (!estConnu(c.niuSansCommande) || c.niuSansCommande === 0) return undefined;
+  const plus = estConnu(c.niuSansCommandePlus7j) ? c.niuSansCommandePlus7j : 0;
+  const suite =
+    plus === 0
+      ? 'tous générés il y a moins de 7 jours'
+      : plus === c.niuSansCommande
+        ? 'tous depuis plus de 7 jours'
+        : `dont ${nf(plus)} depuis plus de 7 jours`;
+  return `${nf(c.niuSansCommande)} NIU de première inscription sans demande d’impression, ${suite}.`;
+}
