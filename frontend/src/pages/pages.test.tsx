@@ -62,7 +62,8 @@ describe('Pages de la maquette', () => {
     const utilisateur = userEvent.setup();
 
     const geo = within(await screen.findByRole('region', { name: 'Cartes à remettre par région' }));
-    const savanes = await geo.findByRole('row', { name: /Savanes/ });
+    // La ligne avec ses chiffres (et non celle, sans chiffres, affichée avant la réponse de l'API).
+    const savanes = await geo.findByRole('row', { name: /Savanes.*55,4/ });
     expect(within(savanes).getByRole('img', { name: /plus de la moitié/ })).toBeInTheDocument();
     expect(within(savanes).getByText(/55,4\s%/)).toBeInTheDocument();
     await utilisateur.click(within(savanes).getByRole('button', { name: /Savanes/ }));
