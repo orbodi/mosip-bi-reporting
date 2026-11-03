@@ -192,17 +192,12 @@ export function classeAvecCarte(partZone: number): number {
 export const moinsDeLaMoitie = (partZone: number) => Number.isFinite(partZone) && partZone < 0.5;
 
 /**
- * Note de la frise de la Vue d'ensemble (I-SANS, lot 8d) : « 55 NIU de première inscription sans demande
- * d'impression, dont 41 depuis plus de 7 jours. » Rien (undefined) sans chiffre ou quand il n'y en a aucun.
+ * Note de la frise de la Vue d'ensemble (I-SANS, lot 8d ; corrigée le 03/11/2026) : les seuls NIU bloqués,
+ * « 3 NIU de première inscription sans demande d'impression depuis plus de 7 jours. » Les NIU plus récents sont en
+ * route (la commande suit en quelques minutes : 30 puis 73 le 03/11/2026 à 15 h 53, aucun bloqué) ; une note
+ * toujours affichée serait une fausse alerte. Rien (undefined) sans chiffre ou sans NIU bloqué.
  */
 export function texteNiuSansCommande(c: ChiffresImpression): string | undefined {
-  if (!estConnu(c.niuSansCommande) || c.niuSansCommande === 0) return undefined;
-  const plus = estConnu(c.niuSansCommandePlus7j) ? c.niuSansCommandePlus7j : 0;
-  const suite =
-    plus === 0
-      ? 'tous générés il y a moins de 7 jours'
-      : plus === c.niuSansCommande
-        ? 'tous depuis plus de 7 jours'
-        : `dont ${nf(plus)} depuis plus de 7 jours`;
-  return `${nf(c.niuSansCommande)} NIU de première inscription sans demande d’impression, ${suite}.`;
+  if (!estConnu(c.niuSansCommandePlus7j) || c.niuSansCommandePlus7j === 0) return undefined;
+  return `${nf(c.niuSansCommandePlus7j)} NIU de première inscription sans demande d’impression depuis plus de 7 jours.`;
 }

@@ -106,7 +106,7 @@ describe('Pages de la maquette', () => {
     expect(parcours.getByText(/^6\s107\s359$/)).toBeInTheDocument();
     expect(parcours.getAllByText(/^4\s643\s568$/).length).toBeGreaterThanOrEqual(1);
     expect(
-      parcours.getByText('55 NIU de première inscription sans demande d’impression, dont 41 depuis plus de 7 jours.'),
+      parcours.getByText('3 NIU de première inscription sans demande d’impression depuis plus de 7 jours.'),
     ).toBeInTheDocument();
     const regions = within(screen.getByRole('region', { name: 'Le parcours par région' }));
     const savanes = await regions.findByRole('row', { name: /Savanes.*41,9/ });

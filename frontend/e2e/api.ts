@@ -549,8 +549,8 @@ export async function simulerCartes(page: Page) {
         delaiMedianJours: 31,
         erreursIdps: 172354,
         derniereErreurIdps: '2026-01-09',
-        niuSansCommande: 55,
-        niuSansCommandePlus7j: 41,
+        niuSansCommande: 58,
+        niuSansCommandePlus7j: 3,
       },
     }),
   );

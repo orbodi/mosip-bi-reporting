@@ -35,8 +35,8 @@ const IMPRESSION = {
   delaiMedianJours: 31,
   erreursIdps: 172354,
   derniereErreurIdps: '2026-01-09',
-  niuSansCommande: 55,
-  niuSansCommandePlus7j: 41,
+  niuSansCommande: 58,
+  niuSansCommandePlus7j: 3,
 };
 
 describe('Impression des cartes', () => {
@@ -123,17 +123,14 @@ describe('Impression des cartes', () => {
     expect(barresAttente(undefined).every((b) => Number.isNaN(b.valeur))).toBe(true);
   });
 
-  it('Vue d’ensemble : NIU sans demande d’impression, rien quand il n’y en a pas ou sur une période', () => {
+  it('Vue d’ensemble : note des seuls NIU bloqués, rien pour des NIU en route ou sur une période', () => {
     expect(texteNiuSansCommande(chiffresImpression(IMPRESSION))).toBe(
-      '55 NIU de première inscription sans demande d’impression, dont 41 depuis plus de 7 jours.',
+      '3 NIU de première inscription sans demande d’impression depuis plus de 7 jours.',
     );
+    // Cas habituel : des NIU de moins de 7 jours, dont la commande va suivre ; pas de note.
     expect(
-      texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: 3, niuSansCommandePlus7j: 0 })),
-    ).toBe('3 NIU de première inscription sans demande d’impression, tous générés il y a moins de 7 jours.');
-    expect(
-      texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: 2, niuSansCommandePlus7j: 2 })),
-    ).toBe('2 NIU de première inscription sans demande d’impression, tous depuis plus de 7 jours.');
-    expect(texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: 0 }))).toBeUndefined();
+      texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: 73, niuSansCommandePlus7j: 0 })),
+    ).toBeUndefined();
     expect(
       texteNiuSansCommande(chiffresImpression({ ...IMPRESSION, niuSansCommande: null, niuSansCommandePlus7j: null })),
     ).toBeUndefined();
