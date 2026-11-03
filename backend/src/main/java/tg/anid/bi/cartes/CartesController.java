@@ -24,7 +24,7 @@ public class CartesController {
         this.service = service;
     }
 
-    /** Impression et remise : demandes par statut, annulées, cartes expédiées, remises (par mode), à remettre, délai. */
+    /** Impression et remise : demandes par statut, annulées, cartes expédiées, remises par mode, à remettre, délai. */
     @GetMapping("/impression")
     public ImpressionRemise impression(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
@@ -33,7 +33,7 @@ public class CartesController {
         return service.impression(du, au, zone);
     }
 
-    /** Demandes, cartes imprimées et demandes rejetées des 12 semaines complètes jusqu'à la fin de la période. */
+    /** Demandes, cartes imprimées, rejetées et annulées des 12 semaines complètes jusqu'à la fin de la période. */
     @GetMapping("/semaines")
     public ImpressionsParSemaine semaines(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,

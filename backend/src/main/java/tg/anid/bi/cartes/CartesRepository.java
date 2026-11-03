@@ -162,11 +162,15 @@ public class CartesRepository {
                 .optional();
     }
 
-    /** Demandes et rejetées par semaine de réception (clé : lundi), du lundi {@code debut} au dimanche {@code fin}. */
+    /**
+     * Demandes, rejetées et annulées par semaine de réception (clé : lundi ; valeurs dans cet ordre), du lundi
+     * {@code debut} au dimanche {@code fin}.
+     */
     public Map<LocalDate, long[]> demandesParSemaine(LocalDate debut, LocalDate fin, String zone) {
         return jdbc.sql(AVEC_PERIMETRE + """
                         select cast(date_trunc('week', cast(f.jour as timestamp)) as date) as lundi,
-                               sum(f.demandes) as demandes, sum(f.rejetees) as rejetees
+                               sum(f.demandes) as demandes, sum(f.rejetees) as rejetees,
+                               sum(f.annulees) as annulees
                         from bi.fait_demande_impression_jour f
                         where f.jour between cast(:debut as date) and cast(:fin as date)
                           and (cast(:zone as text) is null or f.centre_id in (select id from perimetre))
@@ -176,7 +180,7 @@ public class CartesRepository {
                 .param("fin", fin)
                 .param("zone", zone)
                 .query((rs, ligne) -> Map.entry(rs.getObject("lundi", LocalDate.class),
-                        new long[] {rs.getLong("demandes"), rs.getLong("rejetees")}))
+                        new long[] {rs.getLong("demandes"), rs.getLong("rejetees"), rs.getLong("annulees")}))
                 .list()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

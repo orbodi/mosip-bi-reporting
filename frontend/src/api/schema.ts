@@ -681,5 +681,147 @@ export interface components {
       /** Format: date-time */
       plusAncienneLe?: string | null;
     };
+    ImpressionRemise: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      disponible: boolean;
+      /** Format: int64 */
+      demandes?: number | null;
+      /** Format: int64 */
+      envoyees?: number | null;
+      /** Format: int64 */
+      enAttente?: number | null;
+      /** Format: int64 */
+      rejetees?: number | null;
+      /** Format: int64 */
+      nonClassees?: number | null;
+      /** Format: int64 */
+      annulees?: number | null;
+      /** Format: date */
+      derniereRejetee?: string | null;
+      /** Format: int64 */
+      expediees?: number | null;
+      /** Format: int64 */
+      remises?: number | null;
+      /** Format: int64 */
+      remisesHorsLigne?: number | null;
+      /** Format: int64 */
+      remisesEnLigne?: number | null;
+      /** Format: int64 */
+      remisesSupport?: number | null;
+      /** Format: int64 */
+      remisesAutre?: number | null;
+      /** Format: int64 */
+      aRemettre?: number | null;
+      /** Format: int32 */
+      delaiMedianJours?: number | null;
+    };
+    ImpressionsParSemaine: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      semaines: components['schemas']['SemaineImpression'][];
+    };
+    SemaineImpression: {
+      /** Format: date */
+      lundi: string;
+      dansPeriode: boolean;
+      /** Format: int64 */
+      demandes: number;
+      /** Format: int64 */
+      expediees: number;
+      /** Format: int64 */
+      rejetees: number;
+      /** Format: int64 */
+      annulees: number;
+    };
+    TerritoireCartes: {
+      perimetre: string;
+      zone?: string | null;
+      niveau?: string | null;
+      ascendants: components['schemas']['ZoneParente'][];
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      /** Format: int64 */
+      expediees: number;
+      /** Format: int64 */
+      remises: number;
+      /** Format: int64 */
+      aRemettre: number;
+      lignes: components['schemas']['LigneZoneCartes'][];
+    };
+    LigneZoneCartes: {
+      code: string;
+      nom: string;
+      niveau: string;
+      horsReferentiel: boolean;
+      ouvrable: boolean;
+      /** Format: int64 */
+      expediees: number;
+      /** Format: int64 */
+      remises: number;
+      /** Format: int64 */
+      aRemettre: number;
+    };
+    CartesEnAttente: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      /** Format: date */
+      calculeLe: string;
+      /** Format: int64 */
+      aRemettre: number;
+      tranches: components['schemas']['TrancheAttente'][];
+    };
+    TrancheAttente: {
+      code: string;
+      /** Format: int32 */
+      depuisJours: number;
+      /** Format: int32 */
+      avantJours?: number | null;
+      /** Format: int64 */
+      cartes: number;
+    };
+    TopCentresCartes: {
+      perimetre: string;
+      centres: components['schemas']['CentreCartes'][];
+    };
+    CentreCartes: {
+      /** Format: int32 */
+      rang: number;
+      code: string;
+      nom: string;
+      prefecture?: string | null;
+      region: string;
+      /** Format: int64 */
+      remises: number;
+      /** Format: int64 */
+      expediees: number;
+    };
+    AnnulationsParMotif: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      /** Format: int64 */
+      total: number;
+      motifs: components['schemas']['MotifAnnulation'][];
+    };
+    MotifAnnulation: {
+      code: string;
+      libelle: string;
+      /** Format: int64 */
+      demandes: number;
+    };
   };
 }

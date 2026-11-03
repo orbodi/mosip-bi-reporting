@@ -543,6 +543,133 @@ export const AGE_SEXE: AgeSexe = {
   ],
 };
 
+/** Impression des cartes (lot 8c) : chiffres publiés le 03/11/2026, semaines de la maquette (dernière : 05/01/2026). */
+export const IMPRESSION = {
+  perimetre: 'Ensemble du Togo',
+  disponible: true,
+  demandes: 6195305,
+  envoyees: 6192991,
+  enAttente: 2306,
+  rejetees: 8,
+  nonClassees: 0,
+  annulees: 693,
+  derniereRejetee: '2026-01-07',
+  expediees: 6107359,
+  remises: 4643568,
+  remisesHorsLigne: 4446166,
+  remisesEnLigne: 197370,
+  remisesSupport: 32,
+  remisesAutre: 0,
+  aRemettre: 1463791,
+  delaiMedianJours: 31,
+};
+
+const ANNULATIONS = {
+  perimetre: 'Ensemble du Togo',
+  total: 693,
+  motifs: [
+    { code: 'CANCEL_PHOTO', libelle: 'Photo à reprendre', demandes: 643 },
+    { code: 'CANCEL_SEX', libelle: 'Sexe à corriger', demandes: 36 },
+    { code: 'CANCEL_NAME', libelle: 'Nom à corriger', demandes: 10 },
+    {
+      code: 'PERSONALIZATION_MANAGER_REPORTED_ERROR',
+      libelle: 'Erreur signalée à la personnalisation',
+      demandes: 4,
+    },
+  ],
+};
+
+const SEMAINES_CARTES = {
+  perimetre: 'Ensemble du Togo',
+  semaines: LUNDIS.map((lundi, i) => ({
+    lundi,
+    dansPeriode: true,
+    demandes: 29000 + 300 * i,
+    expediees: 28500 + 250 * i,
+    rejetees: i === 11 ? 1 : 0,
+    annulees: i % 3,
+  })),
+};
+
+const ligneCartes = (code: string, nom: string, niveau: string, expediees: number, remises: number) => ({
+  code,
+  nom,
+  niveau,
+  horsReferentiel: false,
+  ouvrable: niveau === 'region',
+  expediees,
+  remises,
+  aRemettre: expediees - remises,
+});
+
+const territoireCartes = (
+  perimetre: string,
+  zone: string | null,
+  lignes: ReturnType<typeof ligneCartes>[],
+) => ({
+  perimetre,
+  zone,
+  niveau: zone ? 'region' : null,
+  ascendants: [],
+  expediees: lignes.reduce((t, l) => t + l.expediees, 0),
+  remises: lignes.reduce((t, l) => t + l.remises, 0),
+  aRemettre: lignes.reduce((t, l) => t + l.aRemettre, 0),
+  lignes,
+});
+
+const CARTES_NATIONAL = territoireCartes('Ensemble du Togo', null, [
+  ligneCartes('SAV', 'Savanes', 'region', 423590, 188796),
+  ligneCartes('KAR', 'Kara', 'region', 362000, 290000),
+  ligneCartes('CEN', 'Centrale', 'region', 292000, 230000),
+  ligneCartes('PLA', 'Plateaux', 'region', 563000, 440000),
+  ligneCartes('MAR', 'Maritime', 'region', 486000, 380000),
+  ligneCartes('GLO', 'Grand Lomé', 'region', 975000, 760000),
+]);
+
+const CARTES_SAVANES = territoireCartes('Savanes', 'SAV', [
+  ligneCartes('SAV-01', 'Cinkassé', 'prefecture', 70000, 30000),
+  ligneCartes('SAV-02', 'Tône', 'prefecture', 180000, 82796),
+  ligneCartes('SAV-03', 'Kpendjal', 'prefecture', 60000, 26000),
+  ligneCartes('SAV-04', 'Tandjouaré', 'prefecture', 50000, 20000),
+  ligneCartes('SAV-05', 'Oti', 'prefecture', 63590, 30000),
+]);
+
+const ATTENTE = {
+  perimetre: 'Ensemble du Togo',
+  calculeLe: '2026-01-14',
+  aRemettre: 1463791,
+  tranches: [
+    { code: 'moins_30j', depuisJours: 0, avantJours: 30, cartes: 121430 },
+    { code: '30_90j', depuisJours: 30, avantJours: 90, cartes: 61748 },
+    { code: '90_180j', depuisJours: 90, avantJours: 180, cartes: 61014 },
+    { code: 'plus_180j', depuisJours: 180, avantJours: null, cartes: 1219599 },
+  ],
+};
+
+const CENTRES_CARTES = {
+  perimetre: 'Ensemble du Togo',
+  centres: [
+    {
+      rang: 1,
+      code: '10011',
+      nom: 'EPP Doumassesse',
+      prefecture: 'Golfe',
+      region: 'Grand Lomé',
+      remises: 31289,
+      expediees: 44370,
+    },
+    {
+      rang: 2,
+      code: '10012',
+      nom: 'CEG Baguida',
+      prefecture: 'Golfe',
+      region: 'Grand Lomé',
+      remises: 11818,
+      expediees: 16033,
+    },
+  ],
+};
+
 /** Valeur renvoyée, ou calculée depuis l'adresse et la requête (corps d'un POST) ; undefined répond 404. */
 type Reponse = unknown | ((url: URL, init?: RequestInit) => unknown);
 
@@ -574,6 +701,13 @@ const PAR_DEFAUT: Record<string, Reponse> = {
   '/enrolement/centres': (url: URL) => CENTRES[url.searchParams.get('classement') ?? 'inscriptions'],
   '/enrolement/preinscriptions': PREINSCRIPTIONS,
   '/enrolement/preinscriptions/profil': PROFIL_PREINSCRIPTIONS,
+  '/cartes/impression': IMPRESSION,
+  '/cartes/annulations': ANNULATIONS,
+  '/cartes/semaines': SEMAINES_CARTES,
+  '/cartes/territoire': (url: URL) =>
+    url.searchParams.get('zone') === 'SAV' ? CARTES_SAVANES : CARTES_NATIONAL,
+  '/cartes/attente': ATTENTE,
+  '/cartes/centres': CENTRES_CARTES,
   '/enrolement/age-sexe': (url: URL) =>
     url.searchParams.get('zone') === 'SAV'
       ? {

@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
+import { useImpression, useTerritoireCartes } from '../../api/cartes';
 import { useDevenirInscriptions, usePreinscriptions, useTerritoire } from '../../api/enrolement';
 import { CarteZones } from '../../composants/carte/CarteZones';
 import { CARTE_REGIONS } from '../../composants/carte/fondsDeCarte';
@@ -9,6 +10,7 @@ import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
 import { INCONNUE, depuisApi, devenirInconnu } from '../../lib/blocsVides';
+import { CLASSES_AVEC_CARTE, chiffresImpression, classeAvecCarte, moinsDeLaMoitie } from '../../lib/cartes';
 import { nf, part, pct } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import { usePlageApi } from '../../lib/usePlagePeriode';
@@ -28,7 +30,8 @@ const COULEURS_BANDES = ['bleu', 'bleu-vif', 'bleu', 'bleu-vif', 'bleu', 'bleu-v
 
 /**
  * Vue d'ensemble du parcours citoyen (maquette/pages/Main.dc.html). Les étapes d'enrôlement viennent de l'API
- * (blocs « Devenir des inscriptions » et « Pré-inscription ») ; demandes, impression et remise attendent leurs
+ * (blocs « Devenir des inscriptions » et « Pré-inscription »), les demandes, l'impression et la remise de l'API des
+ * cartes (lot 8c, GET /api/v1/cartes/impression et /territoire) ; ABIS, IDPS et authentifications attendent leurs
  * sources (0, décision du 20/10/2026).
  */
 export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
@@ -38,11 +41,13 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
   const d = devenir.data ?? devenirInconnu();
   const territoire = useTerritoire(plage, undefined, prete);
   const preinscriptions = usePreinscriptions(plage, prete);
+  const cartes = chiffresImpression(useImpression(plage, prete).data);
+  const cartesRegions = useTerritoireCartes(plage, undefined, prete);
   const toutes = choix === 'tout';
 
   const ins = d.inscriptions;
   const traites = d.niuGeneres + d.echouees + d.rejetees;
-  const remises = INCONNUE;
+  const remises = cartes.remises;
   const etapes: Etape[] = [
     {
       nom: 'Pré-inscription',
@@ -54,12 +59,12 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
     { nom: 'Inscription', libelle: 'Inscriptions', icone: 'personne', valeur: ins, part: false },
     { nom: 'Traitement', libelle: 'Paquets traités', icone: 'engrenage', valeur: traites, part: true },
     { nom: 'NIU', libelle: 'NIU générés', icone: 'carteOk', valeur: d.niuGeneres, part: true },
-    { nom: 'Demande', libelle: 'Demandes d’impression', icone: 'document', valeur: INCONNUE, part: true },
+    { nom: 'Demande', libelle: 'Demandes d’impression', icone: 'document', valeur: cartes.demandes, part: true },
     {
       nom: 'Impression',
       libelle: 'Cartes imprimées et expédiées',
       icone: 'imprimante',
-      valeur: INCONNUE,
+      valeur: cartes.expediees,
       part: true,
     },
     { nom: 'Remise', libelle: 'Cartes remises', icone: 'remise', valeur: remises, part: true },
@@ -79,7 +84,14 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
         inscriptions: number;
         niuGeneres: number;
       }[]);
-  const lectureRegion = (nom: string) => `${nom} : ${pct(INCONNUE)} des inscrits ont reçu leur carte`;
+  // Cartes remises de chaque région (même code que bi.zone), rapportées à ses inscriptions.
+  const remisesRegion = new Map<string, number>(
+    (cartesRegions.data?.lignes ?? []).map((l) => [l.code, l.remises] as const),
+  );
+  const avecCarte = (r: { code: string; inscriptions: number }) =>
+    part(depuisApi(remisesRegion.get(r.code)), r.inscriptions);
+  const partNationale = part(remises, ins);
+  const lectureRegion = (nom: string, p: number) => `${nom} : ${pct(p)} des inscrits ont reçu leur carte`;
 
   return (
     <>
@@ -214,11 +226,11 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               lien="/impression-cartes"
               icone="carteId"
               nom="Impression des cartes"
-              valeur={nf(INCONNUE)}
+              valeur={nf(remises)}
               unite="cartes remises"
               detail={
                 <>
-                  <strong>{nf(INCONNUE)}</strong> cartes expédiées encore à remettre
+                  <strong>{nf(cartes.aRemettre)}</strong> cartes expédiées encore à remettre
                 </>
               }
             />
@@ -280,7 +292,7 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
         <Panneau
           id="titre-parcours-regions"
           titre="Le parcours par région"
-          sousTitre={`Part des inscrits qui ont reçu leur carte, par région (moyenne nationale : ${pct(INCONNUE)}).`}
+          sousTitre={`Part des inscrits qui ont reçu leur carte, par région (moyenne nationale : ${pct(partNationale)}).`}
           aside={
             <Link to="/impression-cartes" search={(precedent) => precedent} className="lien-panneau">
               Détail des cartes par région <Chevron />
@@ -292,22 +304,22 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               fond={CARTE_REGIONS}
               zone={{
                 nom: 'Togo',
-                valeur: pct(INCONNUE),
-                lecture: lectureRegion('Togo'),
+                valeur: pct(partNationale),
+                lecture: lectureRegion('Togo', partNationale),
               }}
               zones={lignesRegions.map((r) => ({
                 code: r.code,
                 nom: r.nom,
-                valeur: pct(INCONNUE),
-                classe: -1,
-                lecture: lectureRegion(r.nom),
+                valeur: pct(avecCarte(r)),
+                classe: classeAvecCarte(avecCarte(r)),
+                lecture: lectureRegion(r.nom, avecCarte(r)),
                 ouvrable: regions.length > 0,
               }))}
               titreListe="Régions, du nord au sud"
               libelleCarte="Carte des régions du Togo, colorée selon la part des inscrits ayant reçu leur carte"
               legende={{
                 titre: 'Inscrits ayant reçu leur carte',
-                libelles: ['< 45 %', '45 à 50 %', '50 à 60 %', '60 % et +'],
+                libelles: CLASSES_AVEC_CARTE.map((c) => c.libelle),
               }}
               libelleOuvrir="Choisir cette région"
               selection={region?.nom}
@@ -339,8 +351,14 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
                           <th scope="row">{r.nom}</th>
                           <td>{nf(r.inscriptions)}</td>
                           <td>{nf(r.niuGeneres)}</td>
-                          <td>{nf(INCONNUE)}</td>
-                          <td>{pct(INCONNUE)}</td>
+                          <td>{nf(depuisApi(remisesRegion.get(r.code)))}</td>
+                          <td>
+                            {moinsDeLaMoitie(avecCarte(r)) ? (
+                              <strong>{pct(avecCarte(r))}</strong>
+                            ) : (
+                              pct(avecCarte(r))
+                            )}
+                          </td>
                         </tr>
                       ))}
                   </tbody>

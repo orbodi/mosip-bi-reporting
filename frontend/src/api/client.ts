@@ -29,6 +29,17 @@ export type EtapeEnCours = components['schemas']['EtapeEnCours'];
 export type DelaisTraitement = components['schemas']['DelaisTraitement'];
 export type MesureDelai = components['schemas']['Mesure'];
 export type SynchronisationNonRecue = components['schemas']['SynchronisationNonRecue'];
+export type ImpressionRemise = components['schemas']['ImpressionRemise'];
+export type ImpressionsParSemaine = components['schemas']['ImpressionsParSemaine'];
+export type SemaineImpression = components['schemas']['SemaineImpression'];
+export type TerritoireCartes = components['schemas']['TerritoireCartes'];
+export type LigneZoneCartes = components['schemas']['LigneZoneCartes'];
+export type CartesEnAttente = components['schemas']['CartesEnAttente'];
+export type TrancheAttente = components['schemas']['TrancheAttente'];
+export type TopCentresCartes = components['schemas']['TopCentresCartes'];
+export type CentreCartes = components['schemas']['CentreCartes'];
+export type AnnulationsParMotif = components['schemas']['AnnulationsParMotif'];
+export type MotifAnnulation = components['schemas']['MotifAnnulation'];
 
 /**
  * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la

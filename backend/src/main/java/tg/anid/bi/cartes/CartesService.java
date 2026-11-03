@@ -69,8 +69,8 @@ public class CartesService {
     }
 
     /**
-     * Demandes, cartes imprimées et demandes rejetées des 12 semaines complètes qui finissent au plus tard à la fin de
-     * la période (ou à la dernière donnée d'impression).
+     * Demandes, cartes imprimées, demandes rejetées et annulées des 12 semaines complètes qui finissent au plus tard
+     * à la fin de la période (ou à la dernière donnée d'impression).
      */
     public ImpressionsParSemaine semaines(LocalDate du, LocalDate au, String zoneDemandee) {
         verifierOrdre(du, au);
@@ -86,12 +86,12 @@ public class CartesService {
         LocalDate dernierDimanche = lundis.getLast().plusDays(6);
         Map<LocalDate, long[]> demandes = repository.demandesParSemaine(debut, dernierDimanche, zone);
         Map<LocalDate, Long> expediees = repository.expedieesParSemaine(debut, dernierDimanche, zone);
-        long[] aucune = {0, 0};
+        long[] aucune = {0, 0, 0};
         List<ImpressionsParSemaine.Semaine> semaines = lundis.stream()
                 .map(lundi -> {
                     long[] d = demandes.getOrDefault(lundi, aucune);
                     return new ImpressionsParSemaine.Semaine(lundi, EnrolementService.touchePeriode(lundi, du, au),
-                            d[0], expediees.getOrDefault(lundi, 0L), d[1]);
+                            d[0], expediees.getOrDefault(lundi, 0L), d[1], d[2]);
                 })
                 .toList();
         return new ImpressionsParSemaine(perimetre, du, au, semaines);

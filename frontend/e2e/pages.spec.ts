@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { simulerEnrolement } from './api';
+import { simulerCartes, simulerEnrolement } from './api';
 
 const META = {
   application: 'BI Reporting ANID',
@@ -47,6 +47,7 @@ test.beforeEach(async ({ page }) => {
     }),
   );
   await simulerEnrolement(page);
+  await simulerCartes(page);
 });
 
 /** Les sept pages de la maquette : titre, premier bloc, accessibilité et capture (skill /verif-visuelle). */
@@ -99,11 +100,12 @@ for (const p of PAGES) {
   });
 }
 
-test('Vue d’ensemble : les étapes d’enrôlement viennent de l’API, les autres sont à 0', async ({ page }) => {
+test('Vue d’ensemble : les étapes d’enrôlement et des cartes viennent de l’API', async ({ page }) => {
   await page.goto('/');
   const parcours = page.getByRole('region', { name: 'De la pré-inscription à la carte en main' });
   await expect(parcours.getByText('3 278 239')).toBeVisible();
   await expect(parcours.getByText('3 058 886')).toBeVisible();
+  await expect(parcours.getByText('6 195 305')).toBeVisible();
   await expect(parcours.getByText('–', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Impression des cartes.*cartes remises/ })).toBeVisible();
 });

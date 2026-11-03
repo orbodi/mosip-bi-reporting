@@ -131,6 +131,14 @@ const ICONES: Record<string, ReactElement> = {
       <path d="m38.5 37.5 4 4" {...p} />
     </g>
   ),
+  documentAnnule: (
+    <g fill="none">
+      <path d="M9 5h17l8 8v26H9z" fill={Y} fillOpacity=".35" {...p} />
+      <path d="M26 5v8h8M15 20h12M15 26h8" {...p} />
+      <circle cx="35" cy="35" r="8" fill={F} {...p} />
+      <path d="m29.5 29.5 11 11" {...p} />
+    </g>
+  ),
   carteHorloge: (
     <g fill="none">
       <rect x="4" y="9" width="32" height="24" rx="4" fill={Y} fillOpacity=".35" {...p} />

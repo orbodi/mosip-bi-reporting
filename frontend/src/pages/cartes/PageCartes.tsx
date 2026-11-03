@@ -1,3 +1,12 @@
+import {
+  useAnnulations,
+  useAttenteCartes,
+  useImpression,
+  useSemainesCartes,
+  useTerritoireCartes,
+  useTopCentresCartes,
+} from '../../api/cartes';
+import type { LigneZoneCartes } from '../../api/client';
 import { BarresHorizontales } from '../../composants/blocs/BarresHorizontales';
 import { Classement } from '../../composants/blocs/Classement';
 import { GraphiqueHebdo } from '../../composants/blocs/GraphiqueHebdo';
@@ -9,32 +18,91 @@ import { CarteZones } from '../../composants/carte/CarteZones';
 import { CARTE_REGIONS, carteRegion } from '../../composants/carte/fondsDeCarte';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
-import { INCONNUE, semainesVides } from '../../lib/blocsVides';
-import { nf, pct, semaineFr } from '../../lib/format';
+import { INCONNUE } from '../../lib/blocsVides';
+import {
+  CLASSES_A_REMETTRE,
+  alerteARemettre,
+  barresAttente,
+  chiffresImpression,
+  classeARemettre,
+  lectureARemettre,
+  noteAttente,
+  noteRejeteesAnnulees,
+  partARemettre,
+  semainesCartes,
+  texteAnnulees,
+  texteModesRemise,
+} from '../../lib/cartes';
+import { dateFr, nf, part, pct, semaineFr } from '../../lib/format';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
-import { useFinPeriode, usePlagePeriode } from '../../lib/usePlagePeriode';
+import { useFinPeriode, usePlageApi } from '../../lib/usePlagePeriode';
 import type { DefinitionPage } from '../pages';
+import './cartes.css';
 
 /**
- * Impression des cartes (maquette/pages/Cartes.dc.html). Source credential / partenaires d'impression et de
- * distribution pas encore raccordée : mise en page de la maquette, indicateurs à 0 (décision du 20/10/2026).
+ * Impression des cartes (maquette/pages/Cartes.dc.html), lot 8 : tables printing_* de MOSIP (GET /api/v1/cartes/…).
+ * Commandes au jour de réception, cartes au jour d'expédition (lecture cohorte, décision du 03/11/2026). Seul le bloc
+ * géographique suit le filtre Région (?region=) ; les autres blocs sont nationaux.
  */
 export function PageCartes({ page }: { page: DefinitionPage }) {
+  const { plage, prete, choix } = usePlageApi(page.source);
   const fin = useFinPeriode(page.source);
-  const { choix } = usePlagePeriode(page.source);
-  const { region, regions, choisir } = useFiltreRegion();
-  const semaines = semainesVides(fin, ['imprimees', 'demandes', 'rejetees']);
+  const { region, regions, code, choisir } = useFiltreRegion();
+
+  const impression = useImpression(plage, prete);
+  const annulations = useAnnulations(plage, prete);
+  const semainesApi = useSemainesCartes(plage, prete);
+  const territoire = useTerritoireCartes(plage, code, prete);
+  const attente = useAttenteCartes(plage, prete);
+  const centres = useTopCentresCartes(plage, prete);
+
+  const c = chiffresImpression(impression.data);
+  const semaines = semainesCartes(semainesApi.data, fin);
   const sousTitreSemaines =
     choix === 'tout'
       ? '12 dernières semaines complètes.'
       : '12 semaines complètes jusqu’à la fin de la période.';
 
-  const zones = region
-    ? (carteRegion(region.nom)?.contours ?? []).map((c) => ({ code: c.nom, nom: c.nom }))
-    : regions.length > 1
-      ? regions
-      : CARTE_REGIONS.contours.map((c) => ({ code: c.nom, nom: c.nom }));
+  // Bloc géographique : lignes de l'API (régions, ou préfectures de la région ouverte) ; sans réponse, les zones de la
+  // carte sans chiffres.
+  const t = territoire.data;
+  const fond = region ? carteRegion(region.nom) : CARTE_REGIONS;
+  const zonesConnues = t?.lignes ?? [];
+  const zonesVides: LigneZoneCartes[] = (
+    region
+      ? (fond?.contours ?? []).map((z) => ({ code: z.nom, nom: z.nom }))
+      : regions.length
+        ? regions
+        : CARTE_REGIONS.contours.map((z) => ({ code: z.nom, nom: z.nom }))
+  ).map((z) => ({
+    ...z,
+    niveau: region ? 'prefecture' : 'region',
+    horsReferentiel: false,
+    ouvrable: !region,
+    expediees: INCONNUE,
+    remises: INCONNUE,
+    aRemettre: INCONNUE,
+  }));
+  const zones: LigneZoneCartes[] = zonesConnues.length ? zonesConnues : zonesVides;
+  const totaux = t ?? { expediees: INCONNUE, remises: INCONNUE, aRemettre: INCONNUE };
   const nomZone = region?.nom ?? 'Togo';
+  const ouvrables = !region && regions.length > 1;
+
+  const lignesCentres = centres.data?.centres.length
+    ? centres.data.centres.map((x) => ({
+        cle: x.code,
+        nom: x.nom,
+        lieu: [x.prefecture, x.region].filter(Boolean).join(', '),
+        valeur: nf(x.remises),
+        detail: `${pct(part(x.remises, x.expediees))} des ${nf(x.expediees)} cartes expédiées`,
+      }))
+    : [1, 2, 3, 4, 5].map((n) => ({
+        cle: String(n),
+        nom: '–',
+        lieu: '–',
+        valeur: nf(INCONNUE),
+        detail: `${pct(INCONNUE)} des ${nf(INCONNUE)} cartes expédiées`,
+      }));
 
   return (
     <>
@@ -44,61 +112,84 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
           <div className="duo">
             <div className="duo__principal">
               <GrandChiffre
-                valeur={nf(INCONNUE)}
-                detail={`cartes remises, soit ${pct(INCONNUE)} des ${nf(INCONNUE)} cartes expédiées`}
+                valeur={nf(c.remises)}
+                detail={`cartes remises, soit ${pct(part(c.remises, c.expediees))} des ${nf(c.expediees)} cartes expédiées`}
               />
               <Repartition
                 libelle="Cartes remises et à remettre"
                 parts={[
-                  { libelle: 'Remises', valeur: INCONNUE, couleur: 'bleu' },
-                  { libelle: 'À remettre', valeur: INCONNUE, couleur: 'en-cours' },
+                  { libelle: 'Remises', valeur: c.remises, couleur: 'bleu' },
+                  { libelle: 'À remettre', valeur: c.aRemettre, couleur: 'en-cours' },
                 ]}
               />
               <Legende
                 elements={[
-                  { libelle: 'Remises', couleur: 'bleu', note: pct(INCONNUE) },
-                  { libelle: 'À remettre', couleur: 'en-cours', note: pct(INCONNUE) },
+                  { libelle: 'Remises', couleur: 'bleu', note: pct(part(c.remises, c.expediees)) },
+                  { libelle: 'À remettre', couleur: 'en-cours', note: pct(part(c.aRemettre, c.expediees)) },
                 ]}
               />
+              <p className="note-m note-m--filet impression__modes">{texteModesRemise(c)}</p>
             </div>
-            <div className="duo__cartes">
-              <div className="cartes-m cartes-m--3">
-                <CarteIndicateur
-                  icone="document"
-                  nom="Demandes d’impression"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des NIU générés`}
-                />
-                <CarteIndicateur
-                  icone="sablier"
-                  nom="En attente d’impression"
-                  valeur={nf(INCONNUE)}
-                  detail="Pas encore lancées en production"
-                />
-                <CarteIndicateur
-                  icone="croix"
-                  nom="Demandes rejetées"
-                  valeur={nf(INCONNUE)}
-                  detail="Dernière : –"
-                />
-                <CarteIndicateur
-                  icone="imprimante"
-                  nom="Imprimées et expédiées"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des demandes`}
-                />
-                <CarteIndicateur
-                  icone="carteHorloge"
-                  nom="Cartes à remettre"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des cartes expédiées`}
-                />
-                <CarteIndicateur
-                  icone="chrono"
-                  nom="Délai du NIU à la carte"
-                  valeur={`${nf(INCONNUE)} jours`}
-                  detail="Médiane, sur les cartes remises"
-                />
+            <div className="duo__cartes impression__cartes">
+              <div role="group" aria-labelledby="titre-groupe-demandes">
+                <h3 id="titre-groupe-demandes" className="impression__groupe">
+                  Demandes
+                </h3>
+                <div className="cartes-m cartes-m--4">
+                  <CarteIndicateur
+                    icone="document"
+                    nom="Demandes d’impression"
+                    valeur={nf(c.demandes)}
+                    detail={`${pct(part(c.envoyees, c.demandes))} envoyées à l’imprimeur`}
+                  />
+                  <CarteIndicateur
+                    icone="sablier"
+                    nom="En attente d’impression"
+                    valeur={nf(c.enAttente)}
+                    detail="Pas encore envoyées à l’imprimeur"
+                  />
+                  <CarteIndicateur
+                    icone="croix"
+                    nom="Demandes rejetées"
+                    valeur={nf(c.rejetees)}
+                    detail={
+                      c.derniereRejetee
+                        ? `Dernière reçue le ${dateFr(c.derniereRejetee)}`
+                        : 'Aucune sur la période'
+                    }
+                  />
+                  <CarteIndicateur
+                    icone="documentAnnule"
+                    nom="Demandes annulées"
+                    valeur={nf(c.annulees)}
+                    detail={texteAnnulees(annulations.data?.motifs)}
+                  />
+                </div>
+              </div>
+              <div role="group" aria-labelledby="titre-groupe-cartes">
+                <h3 id="titre-groupe-cartes" className="impression__groupe">
+                  Cartes
+                </h3>
+                <div className="cartes-m cartes-m--3">
+                  <CarteIndicateur
+                    icone="imprimante"
+                    nom="Imprimées et expédiées"
+                    valeur={nf(c.expediees)}
+                    detail={`${pct(part(c.expediees, c.demandes))} des demandes`}
+                  />
+                  <CarteIndicateur
+                    icone="carteHorloge"
+                    nom="Cartes à remettre"
+                    valeur={nf(c.aRemettre)}
+                    detail={`${pct(part(c.aRemettre, c.expediees))} des cartes expédiées`}
+                  />
+                  <CarteIndicateur
+                    icone="chrono"
+                    nom="Délai du NIU à la carte"
+                    valeur={`${nf(c.delaiMedianJours)} jours`}
+                    detail="Médiane, sur les cartes remises"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -133,18 +224,31 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
           </Panneau>
           <Panneau
             id="titre-rejets-semaine"
-            titre="Demandes rejetées par semaine"
-            sousTitre="Mêmes semaines."
+            titre="Rejetées et annulées par semaine"
+            sousTitre="Mêmes semaines, au jour de réception de la demande."
+            aside={
+              <Legende
+                elements={[
+                  { libelle: 'Rejetées', couleur: 'rouge' },
+                  { libelle: 'Annulées', couleur: 'orange' },
+                ]}
+              />
+            }
           >
             <GraphiqueHebdo
               semaines={semaines}
               hauteur={240}
               ton="rouge"
-              libelle="Demandes d’impression rejetées par semaine"
-              series={[{ cle: 'rejetees', libelle: 'Demandes rejetées', couleur: 'rouge', type: 'barre' }]}
-              lecture={(s) => `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.rejetees)} demandes rejetées.`}
+              libelle="Demandes d’impression rejetées et annulées par semaine"
+              series={[
+                { cle: 'rejetees', libelle: 'Rejetées', couleur: 'rouge', type: 'pile' },
+                { cle: 'annulees', libelle: 'Annulées', couleur: 'orange', type: 'pile' },
+              ]}
+              lecture={(s) =>
+                `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.rejetees)} rejetées, ${nf(s.valeurs.annulees)} annulées.`
+              }
             />
-            <p className="note-m note-m--filet">{nf(INCONNUE)} demande rejetée sur la période.</p>
+            <p className="note-m note-m--filet">{noteRejeteesAnnulees(semaines)}</p>
           </Panneau>
         </div>
 
@@ -175,35 +279,35 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
           <dl className="chiffres-zone">
             <div>
               <dt>Cartes expédiées</dt>
-              <dd className="chiffre">{nf(INCONNUE)}</dd>
+              <dd className="chiffre">{nf(totaux.expediees)}</dd>
               <dd>{region ? region.nom : 'Ensemble du Togo'}</dd>
             </div>
             <div>
               <dt>Remises</dt>
-              <dd className="chiffre">{nf(INCONNUE)}</dd>
-              <dd>{pct(INCONNUE)} des expédiées</dd>
+              <dd className="chiffre">{nf(totaux.remises)}</dd>
+              <dd>{pct(part(totaux.remises, totaux.expediees))} des expédiées</dd>
             </div>
             <div>
               <dt>À remettre</dt>
-              <dd className="chiffre">{nf(INCONNUE)}</dd>
-              <dd>{pct(INCONNUE)} des expédiées</dd>
+              <dd className="chiffre">{nf(totaux.aRemettre)}</dd>
+              <dd>{pct(part(totaux.aRemettre, totaux.expediees))} des expédiées</dd>
             </div>
           </dl>
           <div className="geo-m">
             <CarteZones
-              fond={region ? carteRegion(region.nom) : CARTE_REGIONS}
+              fond={fond}
               zone={{
                 nom: nomZone,
-                valeur: pct(INCONNUE),
-                lecture: `${nomZone} : ${pct(INCONNUE)} des cartes expédiées à remettre`,
+                valeur: pct(partARemettre(totaux)),
+                lecture: lectureARemettre(nomZone, totaux),
               }}
               zones={zones.map((z) => ({
                 code: z.code,
                 nom: z.nom,
-                valeur: pct(INCONNUE),
-                classe: -1,
-                lecture: `${z.nom} : ${pct(INCONNUE)} des cartes expédiées à remettre`,
-                ouvrable: !region && regions.length > 1,
+                valeur: pct(partARemettre(z)),
+                classe: classeARemettre(partARemettre(z)),
+                lecture: lectureARemettre(z.nom, z),
+                ouvrable: ouvrables && z.ouvrable && !z.horsReferentiel,
               }))}
               titreListe={region ? 'Préfectures, du nord au sud' : 'Régions, du nord au sud'}
               libelleCarte={
@@ -213,9 +317,9 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
               }
               legende={{
                 titre: 'Part des cartes expédiées à remettre',
-                libelles: ['< 35 %', '35 à 45 %', '45 à 52 %', '52 % et +'],
+                libelles: CLASSES_A_REMETTRE.map((x) => x.libelle),
               }}
-              onOuvrir={(c) => choisir(c, { historique: true })}
+              onOuvrir={(z) => choisir(z, { historique: true })}
             />
             <div
               className="tableau-m-defile"
@@ -238,7 +342,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                   {zones.map((z) => (
                     <tr key={z.code}>
                       <th scope="row">
-                        {!region && regions.length > 1 ? (
+                        {ouvrables && z.ouvrable && !z.horsReferentiel ? (
                           <button
                             type="button"
                             className="bouton-zone"
@@ -251,10 +355,15 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
                           z.nom
                         )}
                       </th>
-                      <td>{nf(INCONNUE)}</td>
-                      <td>{nf(INCONNUE)}</td>
-                      <td>{nf(INCONNUE)}</td>
-                      <td>{pct(INCONNUE)}</td>
+                      <td>{nf(z.expediees)}</td>
+                      <td>{nf(z.remises)}</td>
+                      <td>{nf(z.aRemettre)}</td>
+                      <td>
+                        {alerteARemettre(z) && (
+                          <Drapeau libelle="Alerte : plus de la moitié reste à remettre" />
+                        )}
+                        {pct(partARemettre(z))}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -275,34 +384,20 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
           >
             <BarresHorizontales
               libelle="Cartes à remettre par ancienneté"
-              elements={[
-                { libelle: 'Moins de 30 jours', valeur: INCONNUE, couleur: 'bleu-pale' },
-                { libelle: '30 à 90 jours', valeur: INCONNUE, couleur: 'bleu-clair' },
-                { libelle: '90 à 180 jours', valeur: INCONNUE, couleur: 'serie-1' },
-                { libelle: 'Plus de 180 jours', valeur: INCONNUE, couleur: 'bleu-fonce' },
-              ]}
+              elements={barresAttente(attente.data)}
             />
-            <p className="note-m note-m--filet">
-              {nf(INCONNUE)} cartes, soit {pct(INCONNUE)} des cartes à remettre, attendent depuis plus de six
-              mois.
-            </p>
+            <p className="note-m note-m--filet">{noteAttente(attente.data)}</p>
           </Panneau>
           <Panneau
             id="titre-top-centres-cartes"
             titre="Top des centres"
-            sousTitre={`${region ? region.nom : 'Ensemble du Togo'}, classés par nombre de cartes remises`}
+            sousTitre="Ensemble du Togo, classés par nombre de cartes remises"
           >
             <Classement
               titre="Top des centres par cartes remises"
               colonneNom="Centre"
               colonneValeur="Cartes remises"
-              lignes={[1, 2, 3, 4, 5].map((n) => ({
-                cle: String(n),
-                nom: '–',
-                lieu: '–',
-                valeur: nf(INCONNUE),
-                detail: `${pct(INCONNUE)} des ${nf(INCONNUE)} cartes expédiées`,
-              }))}
+              lignes={lignesCentres}
             />
           </Panneau>
         </div>

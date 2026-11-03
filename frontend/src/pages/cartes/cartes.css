@@ -1,0 +1,29 @@
+/* Page Impression des cartes (lot 8c) : cartes des demandes (quatre) et des cartes (trois) en deux groupes titrés. */
+.impression__cartes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+.impression__groupe {
+  margin: 0 0 var(--e-2);
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.impression__modes {
+  margin-top: 0;
+}
+.cartes-m--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .cartes-m--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .cartes-m--4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

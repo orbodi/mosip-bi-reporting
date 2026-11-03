@@ -121,7 +121,8 @@ class CartesIT {
         assertThat(savanes.expediees()).isEqualTo(130);
         assertThat(savanes.delaiMedianJours()).isEqualTo(30);
 
-        ImpressionRemise janvier = service.impression(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"), null);
+        ImpressionRemise janvier =
+                service.impression(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"), null);
         assertThat(janvier.demandes()).isEqualTo(230);
         assertThat(janvier.expediees()).isEqualTo(200);
     }
@@ -145,6 +146,7 @@ class CartesIT {
         assertThat(s.semaines().getLast().demandes()).isEqualTo(230);
         assertThat(s.semaines().getLast().expediees()).isEqualTo(200);
         assertThat(s.semaines().getLast().rejetees()).isEqualTo(3);
+        assertThat(s.semaines().getLast().annulees()).isEqualTo(3);
         assertThat(s.semaines().get(10).demandes()).isEqualTo(10);
     }
 

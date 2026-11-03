@@ -17,7 +17,6 @@ describe('Pages de la maquette', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it.each([
-    ['/impression-cartes', 'Impression et remise'],
     ['/abis', 'Transactions ABIS'],
     ['/idps', 'Ordres d’impression'],
     ['/authentifications', 'Requêtes d’authentification'],
@@ -31,16 +30,81 @@ describe('Pages de la maquette', () => {
     expect(screen.queryByText(/pas encore raccordée|non disponible|indisponible/i)).not.toBeInTheDocument();
   });
 
-  it('Vue d’ensemble : étapes d’enrôlement de l’API, autres étapes à 0', async () => {
+  it('Impression des cartes : chiffres de l’API, annulées parmi les demandes, attente et centres', async () => {
+    simulerApi();
+    afficher('/impression-cartes');
+
+    const bloc = within(await screen.findByRole('region', { name: 'Impression et remise' }));
+    expect(await bloc.findByText(/^4\s643\s568$/)).toBeInTheDocument();
+    expect(bloc.getByText(/76,0\s% des 6\s107\s359 cartes expédiées/)).toBeInTheDocument();
+    expect(bloc.getByText(/hors ligne · 197\s370 en ligne · 32 par le support/)).toBeInTheDocument();
+    const demandes = within(bloc.getByRole('group', { name: 'Demandes' }));
+    expect(demandes.getByText(/^693$/)).toBeInTheDocument();
+    expect(
+      await demandes.findByText('Parmi les demandes : photo 643, sexe 36, nom 10, personnalisation 4'),
+    ).toBeInTheDocument();
+    expect(demandes.getByText('Dernière reçue le 07/01/2026')).toBeInTheDocument();
+    expect(within(bloc.getByRole('group', { name: 'Cartes' })).getByText(/^31 jours$/)).toBeInTheDocument();
+
+    const rejets = within(screen.getByRole('region', { name: 'Rejetées et annulées par semaine' }));
+    expect(
+      await rejets.findByText('Sur ces 12 semaines : 1 demande rejetée, 12 annulées.'),
+    ).toBeInTheDocument();
+    const attente = within(screen.getByRole('region', { name: 'Depuis quand ces cartes attendent' }));
+    expect(await attente.findByText(/83,3\s% des cartes à remettre/)).toBeInTheDocument();
+    const centres = within(screen.getByRole('region', { name: 'Top des centres' }));
+    expect(await centres.findByText('EPP Doumassesse')).toBeInTheDocument();
+  });
+
+  it('Impression des cartes : régions, alerte au-delà de la moitié, puis préfectures de la région choisie', async () => {
+    const appels = simulerApi();
+    afficher('/impression-cartes');
+    const utilisateur = userEvent.setup();
+
+    const geo = within(await screen.findByRole('region', { name: 'Cartes à remettre par région' }));
+    const savanes = await geo.findByRole('row', { name: /Savanes/ });
+    expect(within(savanes).getByRole('img', { name: /plus de la moitié/ })).toBeInTheDocument();
+    expect(within(savanes).getByText(/55,4\s%/)).toBeInTheDocument();
+    await utilisateur.click(within(savanes).getByRole('button', { name: /Savanes/ }));
+    expect(await screen.findByRole('rowheader', { name: 'Tône' })).toBeInTheDocument();
+    expect(
+      appels.some((u) => u.pathname.endsWith('/cartes/territoire') && u.searchParams.get('zone') === 'SAV'),
+    ).toBe(true);
+  });
+
+  it('Impression des cartes : sans réponse de l’API, mise en page gardée et chiffres à 0', async () => {
+    simulerApi({
+      '/cartes/impression': undefined,
+      '/cartes/annulations': undefined,
+      '/cartes/semaines': undefined,
+      '/cartes/territoire': undefined,
+      '/cartes/attente': undefined,
+      '/cartes/centres': undefined,
+    });
+    afficher('/impression-cartes');
+
+    const bloc = within(await screen.findByRole('region', { name: 'Impression et remise' }));
+    expect(bloc.getAllByText('0').length).toBeGreaterThanOrEqual(2);
+    expect(bloc.getByText('Parmi les demandes')).toBeInTheDocument();
+    expect(screen.queryByText(/pas encore raccordée|non disponible|indisponible/i)).not.toBeInTheDocument();
+  });
+
+  it('Vue d’ensemble : étapes d’enrôlement et des cartes de l’API, part des inscrits avec carte', async () => {
     simulerApi();
     afficher('/');
 
     const parcours = within(
       await screen.findByRole('region', { name: 'De la pré-inscription à la carte en main' }),
     );
-    expect(await parcours.findByText('3 278 239'.replace(/\s/g, ' '))).toBeInTheDocument();
+    expect(await parcours.findByText(/^3\s278\s239$/)).toBeInTheDocument();
     expect(parcours.getByText('Pré-inscriptions')).toBeInTheDocument();
+    expect(await parcours.findByText(/^6\s195\s305$/)).toBeInTheDocument();
+    expect(parcours.getByText(/^6\s107\s359$/)).toBeInTheDocument();
+    expect(parcours.getAllByText(/^4\s643\s568$/).length).toBeGreaterThanOrEqual(1);
     const regions = within(screen.getByRole('region', { name: 'Le parcours par région' }));
+    const savanes = await regions.findByRole('row', { name: /Savanes/ });
+    // Savanes : 188 796 cartes remises pour 450 239 inscriptions, moins de la moitié (en gras).
+    expect(await within(savanes).findByText(/^41,9\s%$/, { selector: 'strong' })).toBeInTheDocument();
     expect(await regions.findByRole('rowheader', { name: 'Grand Lomé' })).toBeInTheDocument();
   });
 

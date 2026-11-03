@@ -483,3 +483,142 @@ export async function simulerEnrolement(page: Page) {
     });
   });
 }
+
+/** API simulée de la page Impression des cartes (lot 8c) : chiffres publiés le 03/11/2026, semaines de la maquette. */
+const ligneCartes = (code: string, nom: string, niveau: string, expediees: number, remises: number) => ({
+  code,
+  nom,
+  niveau,
+  horsReferentiel: false,
+  ouvrable: niveau === 'region',
+  expediees,
+  remises,
+  aRemettre: expediees - remises,
+});
+
+const territoireCartes = (perimetre: string, zone: string | null, lignes: ReturnType<typeof ligneCartes>[]) => ({
+  perimetre,
+  zone,
+  niveau: zone ? 'region' : null,
+  ascendants: [],
+  expediees: lignes.reduce((t, l) => t + l.expediees, 0),
+  remises: lignes.reduce((t, l) => t + l.remises, 0),
+  aRemettre: lignes.reduce((t, l) => t + l.aRemettre, 0),
+  lignes,
+});
+
+const CARTES_NATIONAL = territoireCartes('Ensemble du Togo', null, [
+  ligneCartes('SAV', 'Savanes', 'region', 423590, 188796),
+  ligneCartes('KAR', 'Kara', 'region', 362000, 290000),
+  ligneCartes('CEN', 'Centrale', 'region', 292000, 230000),
+  ligneCartes('PLA', 'Plateaux', 'region', 563000, 440000),
+  ligneCartes('MAR', 'Maritime', 'region', 486000, 380000),
+  ligneCartes('GLO', 'Grand Lomé', 'region', 975000, 760000),
+]);
+
+const CARTES_KARA = territoireCartes('Kara', 'KAR', [
+  ligneCartes('KAR-01', 'Kéran', 'prefecture', 26000, 20000),
+  ligneCartes('KAR-02', 'Doufelgou', 'prefecture', 43000, 35000),
+  ligneCartes('KAR-03', 'Binah', 'prefecture', 47000, 38000),
+  ligneCartes('KAR-04', 'Dankpen', 'prefecture', 34000, 25000),
+  ligneCartes('KAR-05', 'Kozah', 'prefecture', 124000, 102000),
+  ligneCartes('KAR-06', 'Assoli', 'prefecture', 22000, 18000),
+  ligneCartes('KAR-07', 'Bassar', 'prefecture', 66000, 52000),
+]);
+
+export async function simulerCartes(page: Page) {
+  await page.route('**/api/v1/cartes/impression*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        disponible: true,
+        demandes: 6195305,
+        envoyees: 6192991,
+        enAttente: 2306,
+        rejetees: 8,
+        nonClassees: 0,
+        annulees: 693,
+        derniereRejetee: '2026-01-07',
+        expediees: 6107359,
+        remises: 4643568,
+        remisesHorsLigne: 4446166,
+        remisesEnLigne: 197370,
+        remisesSupport: 32,
+        remisesAutre: 0,
+        aRemettre: 1463791,
+        delaiMedianJours: 31,
+      },
+    }),
+  );
+  await page.route('**/api/v1/cartes/annulations*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        total: 693,
+        motifs: [
+          { code: 'CANCEL_PHOTO', libelle: 'Photo à reprendre', demandes: 643 },
+          { code: 'CANCEL_SEX', libelle: 'Sexe à corriger', demandes: 36 },
+          { code: 'CANCEL_NAME', libelle: 'Nom à corriger', demandes: 10 },
+          { code: 'PERSONALIZATION_MANAGER_REPORTED_ERROR', libelle: 'Erreur signalée', demandes: 4 },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/v1/cartes/semaines*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        semaines: LUNDIS.map((lundi, i) => ({
+          lundi,
+          dansPeriode: true,
+          demandes: [34000, 35000, 32000, 34000, 31000, 35000, 40000, 39000, 38000, 25000, 21000, 29428][i],
+          expediees: [35000, 34500, 34000, 33000, 32000, 33000, 38500, 39000, 41000, 24500, 20000, 29019][i],
+          rejetees: [0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 0, 1][i],
+          annulees: [3, 1, 4, 2, 0, 5, 2, 1, 3, 0, 2, 1][i],
+        })),
+      },
+    }),
+  );
+  await page.route('**/api/v1/cartes/territoire*', (route) =>
+    route.fulfill({
+      json: new URL(route.request().url()).searchParams.get('zone') === 'KAR' ? CARTES_KARA : CARTES_NATIONAL,
+    }),
+  );
+  await page.route('**/api/v1/cartes/attente*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        calculeLe: '2026-01-14',
+        aRemettre: 1463791,
+        tranches: [
+          { code: 'moins_30j', depuisJours: 0, avantJours: 30, cartes: 121430 },
+          { code: '30_90j', depuisJours: 30, avantJours: 90, cartes: 61748 },
+          { code: '90_180j', depuisJours: 90, avantJours: 180, cartes: 61014 },
+          { code: 'plus_180j', depuisJours: 180, avantJours: null, cartes: 1219599 },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/v1/cartes/centres*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        centres: [
+          ['10011', 'EPP Doumassesse I G/B', 'Golfe', 'Grand Lomé', 31289, 44370],
+          ['10012', 'CEG Baguida Centre', 'Golfe', 'Grand Lomé', 11818, 16033],
+          ['10013', 'EPP Gbetsogbe', 'Golfe', 'Grand Lomé', 9584, 12115],
+          ['10014', 'Lycée Nassablé', 'Tône', 'Savanes', 6599, 10097],
+          ['10015', 'Hedzranawoe (Marché)', 'Golfe', 'Grand Lomé', 6208, 9100],
+        ].map(([code, nom, prefecture, region, remises, expediees], i) => ({
+          rang: i + 1,
+          code,
+          nom,
+          prefecture,
+          region,
+          remises,
+          expediees,
+        })),
+      },
+    }),
+  );
+}

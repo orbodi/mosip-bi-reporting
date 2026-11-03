@@ -79,7 +79,7 @@ class CartesServiceTest {
 
         when(repository.derniereDonnee()).thenReturn(Optional.of(LocalDate.parse("2026-01-14")));
         when(repository.demandesParSemaine(any(), any(), isNull()))
-                .thenReturn(Map.of(LocalDate.parse("2026-01-05"), new long[] {230, 3}));
+                .thenReturn(Map.of(LocalDate.parse("2026-01-05"), new long[] {230, 3, 2}));
         when(repository.expedieesParSemaine(any(), any(), isNull()))
                 .thenReturn(Map.of(LocalDate.parse("2026-01-05"), 200L));
 
@@ -88,7 +88,7 @@ class CartesServiceTest {
         assertThat(s.semaines().getFirst().lundi()).isEqualTo("2025-10-20");
         assertThat(s.semaines().getFirst().demandes()).isZero();
         assertThat(s.semaines().getLast())
-                .isEqualTo(new ImpressionsParSemaine.Semaine(LocalDate.parse("2026-01-05"), true, 230, 200, 3));
+                .isEqualTo(new ImpressionsParSemaine.Semaine(LocalDate.parse("2026-01-05"), true, 230, 200, 3, 2));
     }
 
     @Test
