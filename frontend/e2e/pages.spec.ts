@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { simulerCartes, simulerEnrolement } from './api';
+import { simulerAuthentifications, simulerCartes, simulerEnrolement } from './api';
 
 const META = {
   application: 'BI Reporting ANID',
@@ -48,6 +48,7 @@ test.beforeEach(async ({ page }) => {
   );
   await simulerEnrolement(page);
   await simulerCartes(page);
+  await simulerAuthentifications(page);
 });
 
 /** Les sept pages de la maquette : titre, premier bloc, accessibilité et capture (skill /verif-visuelle). */
@@ -70,7 +71,7 @@ const PAGES = [
   {
     chemin: '/authentifications',
     titre: 'Authentifications',
-    bloc: 'Requêtes d’authentification',
+    bloc: 'Requêtes d’authentification des usagers',
     maquette: 'Usage',
   },
   {

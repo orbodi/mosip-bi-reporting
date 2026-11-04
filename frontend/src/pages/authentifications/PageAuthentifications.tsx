@@ -1,3 +1,11 @@
+import {
+  useCausesEchec,
+  usePaquets,
+  usePartenaires,
+  useSemainesAuthentification,
+  useTypesAuthentification,
+  useUsagers,
+} from '../../api/authentifications';
 import { GraphiqueHebdo } from '../../composants/blocs/GraphiqueHebdo';
 import { Drapeau } from '../../composants/blocs/Icone';
 import { CarteIndicateur, GrandChiffre } from '../../composants/blocs/Indicateur';
@@ -5,43 +13,98 @@ import { Panneau } from '../../composants/blocs/Panneau';
 import { Jauge, Legende, Repartition } from '../../composants/blocs/Repartition';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
-import { INCONNUE, semainesVides } from '../../lib/blocsVides';
-import { nf, pct, semaineFr } from '../../lib/format';
-import { useFinPeriode, usePlagePeriode } from '../../lib/usePlagePeriode';
+import {
+  alerteEchec,
+  chiffresPaquets,
+  chiffresUsagers,
+  desRequetes,
+  detailOtp,
+  detailPartenaires,
+  lignesAppelants,
+  lignesCauses,
+  lignesTypes,
+  pastillePartenaires,
+  semainesAuthentification,
+  type LigneCause,
+} from '../../lib/authentifications';
+import { dateFr, nf, part, pct, semaineFr } from '../../lib/format';
+import { useFinPeriode, usePlageApi } from '../../lib/usePlagePeriode';
 import type { DefinitionPage } from '../pages';
+import './authentifications.css';
 
-const TYPES = ['Biométrique', 'Code à usage unique', 'Démographique', 'Combinée'];
-/** Causes d'échec de la maquette, du plus fréquent au moins fréquent (codes d'erreur IDA à regrouper). */
-const CAUSES = [
-  'Empreinte non concordante',
-  'Qualité de capture insuffisante',
-  'NIU ou identifiant virtuel invalide ou inactif',
-  'Code OTP expiré ou erroné',
-  'Autres causes',
-];
+/** Classement des causes d'échec d'un périmètre (maquette : rang, motif, jauge, nombre et part). */
+function Causes({ titre, lignes, total }: { titre: string; lignes: LigneCause[]; total: number }) {
+  const max = Math.max(...lignes.map((l) => (Number.isFinite(l.echecs) ? l.echecs : 0)), 1);
+  return (
+    <table className="classement">
+      <caption className="visuellement-cache">{titre}</caption>
+      <tbody>
+        {lignes.map((c, i) => (
+          <tr key={c.code}>
+            <td className="classement__rang">{i + 1}</td>
+            <th scope="row">
+              <span className="classement__nom">{c.libelle}</span>
+            </th>
+            <td className="erreur__jauge">
+              <Jauge valeur={c.echecs} max={max} couleur="rouge" />
+            </td>
+            <td>
+              <span className="classement__valeur chiffre">{nf(c.echecs)}</span>
+              <span className="classement__detail">{pct(part(c.echecs, total))}</span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 /**
- * Authentifications (maquette/pages/Usage.dc.html). Base mosip_ida pas encore raccordée : mise en page de la
- * maquette, indicateurs à 0 (décision du 20/10/2026). Les causes d'échec (A-CAUSE) restent à définir avec les codes
- * d'erreur IDA.
+ * Authentifications (maquette/pages/Usage.dc.html, adaptée le 04/11/2026), lot 9 : ida.auth_transaction et
+ * ida.otp_transaction (GET /api/v1/authentifications/…). Deux périmètres jamais additionnés (option A, 03/11/2026) :
+ * les usagers (partenaires, portail du résident, USSD) en haut ; les vérifications biométriques du traitement des
+ * paquets dans le dernier bloc. Pas de territoire : tout est national.
  */
 export function PageAuthentifications({ page }: { page: DefinitionPage }) {
+  const { plage, prete, choix } = usePlageApi(page.source);
   const fin = useFinPeriode(page.source);
-  const { choix } = usePlagePeriode(page.source);
+
+  const usagers = useUsagers(plage, prete);
+  const types = useTypesAuthentification(plage, prete);
+  const causesUsagers = useCausesEchec('usagers', plage, prete);
+  const partenaires = usePartenaires(plage, prete);
+  const semainesApi = useSemainesAuthentification(plage, prete);
+  const paquets = usePaquets(plage, prete);
+  const causesPaquets = useCausesEchec('paquets', plage, prete);
+
+  const c = chiffresUsagers(usagers.data);
+  const lignes = lignesTypes(types.data);
+  const echecsUsagers = causesUsagers.data?.echecs ?? Number.NaN;
+  const appelants = lignesAppelants(partenaires.data);
+  const semaines = semainesAuthentification(semainesApi.data, fin);
+  const p = chiffresPaquets(paquets.data);
+  const echecsPaquets = causesPaquets.data?.echecs ?? Number.NaN;
+  const somme = (cle: 'requetes' | 'reussies' | 'demandesOtp') => appelants.reduce((t, a) => t + a[cle], 0);
 
   return (
     <>
       <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
       <div className="contenu page-m">
-        <Panneau id="titre-requetes" titre="Requêtes d’authentification" coins sansMarge>
+        <Panneau
+          id="titre-requetes"
+          titre="Requêtes d’authentification des usagers"
+          sousTitre="Partenaires, portail du résident et USSD."
+          coins
+          sansMarge
+        >
           <div className="duo">
             <div className="duo__principal">
-              <GrandChiffre valeur={nf(INCONNUE)} detail="requêtes de vérification d’identité reçues" />
+              <GrandChiffre valeur={nf(c.requetes)} detail="requêtes de vérification d’identité reçues" />
               <Repartition
                 libelle="Requêtes réussies et échouées"
                 parts={[
-                  { libelle: 'Réussies', valeur: INCONNUE, couleur: 'serie-1' },
-                  { libelle: 'Échouées', valeur: INCONNUE, couleur: 'rouge' },
+                  { libelle: 'Réussies', valeur: c.reussies, couleur: 'serie-1' },
+                  { libelle: 'Échouées', valeur: c.echouees, couleur: 'rouge' },
                 ]}
               />
               <Legende
@@ -50,44 +113,48 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                   { libelle: 'Échouées', couleur: 'rouge' },
                 ]}
               />
+              <p className="note-m">
+                Les demandes de code OTP ({nf(c.demandesOtp)}) ne sont pas des authentifications : elles sont
+                comptées à part, dans la carte « Code à usage unique ».
+              </p>
             </div>
             <div className="duo__cartes">
               <div className="cartes-m cartes-m--3">
                 <CarteIndicateur
                   icone="personneOk"
                   nom="Réussies"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des requêtes`}
+                  valeur={nf(c.reussies)}
+                  detail={desRequetes(c.reussies, c)}
                 />
                 <CarteIndicateur
                   icone="croix"
                   nom="Échouées"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des requêtes`}
+                  valeur={nf(c.echouees)}
+                  detail={desRequetes(c.echouees, c)}
                 />
                 <CarteIndicateur
                   icone="empreinte"
                   nom="Biométriques"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des requêtes`}
+                  valeur={nf(c.biometriques)}
+                  detail={desRequetes(c.biometriques, c)}
                 />
                 <CarteIndicateur
                   icone="telephone"
                   nom="Code à usage unique"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des requêtes`}
+                  valeur={nf(c.otp)}
+                  detail={detailOtp(c)}
                 />
                 <CarteIndicateur
                   icone="carteId"
                   nom="Démographiques et combinées"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des requêtes`}
+                  valeur={nf(c.demographiquesEtCombinees)}
+                  detail={desRequetes(c.demographiquesEtCombinees, c)}
                 />
                 <CarteIndicateur
                   icone="immeuble"
                   nom="Partenaires raccordés"
-                  valeur={nf(INCONNUE)}
-                  detail={`${pct(INCONNUE)} des requêtes`}
+                  valeur={nf(c.partenairesRaccordes)}
+                  detail={detailPartenaires(c)}
                 />
               </div>
             </div>
@@ -98,7 +165,7 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
           <Panneau
             id="titre-types-auth"
             titre="Par type d’authentification"
-            sousTitre="Requêtes et échecs pour chaque type."
+            sousTitre="Requêtes et échecs des usagers pour chaque type."
           >
             <div
               className="tableau-m-defile"
@@ -120,65 +187,117 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {TYPES.map((t) => (
-                    <tr key={t}>
-                      <th scope="row">{t}</th>
-                      <td>{nf(INCONNUE)}</td>
-                      <td>{pct(INCONNUE)}</td>
-                      <td>{nf(INCONNUE)}</td>
-                      <td>{pct(INCONNUE)}</td>
-                    </tr>
-                  ))}
+                  {lignes.map((t) => {
+                    const taux = part(t.echecs, t.requetes);
+                    return (
+                      <tr key={t.code}>
+                        <th scope="row">{t.libelle}</th>
+                        <td>{nf(t.requetes)}</td>
+                        <td>{pct(part(t.requetes, c.requetes))}</td>
+                        <td>{nf(t.echecs)}</td>
+                        <td>
+                          {alerteEchec(taux) && <Drapeau libelle="Alerte : taux d’échec de 50 % ou plus" />}
+                          <strong>{Number.isFinite(t.requetes) && t.requetes === 0 ? '—' : pct(taux)}</strong>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   <tr className="total">
                     <th scope="row">Total</th>
-                    <td>{nf(INCONNUE)}</td>
-                    <td>{pct(INCONNUE)}</td>
-                    <td>{nf(INCONNUE)}</td>
-                    <td>{pct(INCONNUE)}</td>
+                    <td>{nf(c.requetes)}</td>
+                    <td>{pct(part(c.requetes, c.requetes))}</td>
+                    <td>{nf(c.echouees)}</td>
+                    <td>{pct(part(c.echouees, c.requetes))}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="note-m">
               <Drapeau />
-              Taux d’échec de 50 % ou plus. Codes MOSIP des types : BIO, OTP, DEMO et MULTIPLE.
+              Taux d’échec de 50 % ou plus. Codes MOSIP : FINGERPRINT-AUTH, IRIS-AUTH, FACE-AUTH, OTP-AUTH,
+              DEMO-AUTH ; l’eKYC par code (KYC-AUTH) compte avec le code à usage unique.
             </p>
           </Panneau>
           <Panneau
             id="titre-causes"
             titre="Causes des échecs"
-            sousTitre={`${nf(INCONNUE)} échecs, du plus fréquent au moins fréquent.`}
+            sousTitre={`${nf(echecsUsagers)} échecs des usagers, du plus fréquent au moins fréquent.`}
           >
-            <table className="classement">
-              <caption className="visuellement-cache">Causes des échecs</caption>
-              <tbody>
-                {CAUSES.map((c, i) => (
-                  <tr key={c}>
-                    <td className="classement__rang">{i + 1}</td>
-                    <th scope="row">
-                      <span className="classement__nom">{c}</span>
-                    </th>
-                    <td className="erreur__jauge">
-                      <Jauge valeur={INCONNUE} max={1} couleur="rouge" />
-                    </td>
-                    <td>
-                      <span className="classement__valeur chiffre">{nf(INCONNUE)}</span>
-                      <span className="classement__detail">{pct(INCONNUE)}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Causes
+              titre="Causes des échecs des usagers"
+              lignes={lignesCauses('usagers', causesUsagers.data)}
+              total={echecsUsagers}
+            />
           </Panneau>
         </div>
+
+        <Panneau
+          id="titre-partenaires"
+          titre="Partenaires et canaux"
+          sousTitre="Qui envoie les requêtes d’authentification des usagers, du plus actif au moins actif."
+          pastille={<span className="pastille-portee">{pastillePartenaires(partenaires.data)}</span>}
+        >
+          <div
+            className="tableau-m-defile"
+            tabIndex={0}
+            role="group"
+            aria-label="Tableau des partenaires, défilable horizontalement"
+          >
+            <table className="tableau-m tableau-partenaires">
+              <caption className="visuellement-cache">Requêtes par partenaire et par canal</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Partenaire ou canal</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Requêtes</th>
+                  <th scope="col">Part</th>
+                  <th scope="col">Réussies</th>
+                  <th scope="col">Taux d’échec</th>
+                  <th scope="col">Codes OTP demandés</th>
+                  <th scope="col">Dernière requête</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appelants.map((a) => (
+                  <tr key={a.cle}>
+                    <th scope="row">{a.type === 'Partenaire' ? <strong>{a.nom}</strong> : a.nom}</th>
+                    <td>{a.type}</td>
+                    <td>{nf(a.requetes)}</td>
+                    <td>{pct(part(a.requetes, c.requetes))}</td>
+                    <td>{nf(a.reussies)}</td>
+                    <td>
+                      <strong>{a.requetes === 0 ? '—' : pct(part(a.requetes - a.reussies, a.requetes))}</strong>
+                    </td>
+                    <td>{nf(a.demandesOtp)}</td>
+                    <td>{a.derniereRequete ? dateFr(a.derniereRequete) : '—'}</td>
+                  </tr>
+                ))}
+                <tr className="total">
+                  <th scope="row">Total</th>
+                  <td />
+                  <td>{nf(somme('requetes'))}</td>
+                  <td>{pct(part(somme('requetes'), somme('requetes')))}</td>
+                  <td>{nf(somme('reussies'))}</td>
+                  <td>{pct(part(somme('requetes') - somme('reussies'), somme('requetes')))}</td>
+                  <td>{nf(somme('demandesOtp'))}</td>
+                  <td />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="note-m">
+            Un partenaire est « raccordé » s’il a envoyé au moins une requête ou une demande de code sur la période.
+            Nom tel que déclaré dans MOSIP (organisations, jamais de personne).
+          </p>
+        </Panneau>
 
         <Panneau
           id="titre-requetes-semaine"
           titre="Requêtes par semaine"
           sousTitre={
             choix === 'tout'
-              ? '12 dernières semaines complètes.'
-              : '12 semaines complètes jusqu’à la fin de la période.'
+              ? 'Usagers, 12 dernières semaines complètes.'
+              : 'Usagers, 12 semaines complètes jusqu’à la fin de la période.'
           }
           aside={
             <Legende
@@ -190,17 +309,65 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
           }
         >
           <GraphiqueHebdo
-            semaines={semainesVides(fin, ['reussies', 'echouees'])}
+            semaines={semaines}
             hauteur={260}
-            libelle="Requêtes réussies et échouées par semaine"
+            etiquettes
+            libelle="Requêtes réussies et échouées des usagers par semaine"
             series={[
-              { cle: 'reussies', libelle: 'Réussies', couleur: 'serie-1', type: 'pile' },
-              { cle: 'echouees', libelle: 'Échouées', couleur: 'rouge', type: 'pile' },
+              { cle: 'reussies', libelle: 'Réussies', couleur: 'serie-1', type: 'barre' },
+              { cle: 'echouees', libelle: 'Échouées', couleur: 'rouge', type: 'barre' },
             ]}
             lecture={(s) =>
-              `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.reussies)} réussies, ${nf(s.valeurs.echouees)} échouées.`
+              `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.reussies + s.valeurs.echouees)} requêtes, ${nf(s.valeurs.reussies)} réussies et ${nf(s.valeurs.echouees)} échouées.`
             }
           />
+        </Panneau>
+
+        <Panneau
+          id="titre-paquets"
+          titre="Vérifications biométriques du traitement des paquets"
+          sousTitre="Contrôles faits par MOSIP lui-même pendant le traitement des inscriptions. Ce ne sont pas des demandes d’usagers : jamais additionnés aux requêtes ci-dessus."
+          pastille={<span className="pastille-portee">Ensemble du Togo</span>}
+          sansMarge
+        >
+          <div className="duo">
+            <div className="duo__principal">
+              <GrandChiffre valeur={nf(p.verifications)} detail="vérifications biométriques" />
+              <Repartition
+                libelle="Vérifications réussies et échouées"
+                parts={[
+                  { libelle: 'Réussies', valeur: p.reussies, couleur: 'serie-1' },
+                  { libelle: 'Échouées', valeur: p.echouees, couleur: 'rouge' },
+                ]}
+              />
+              <Legende
+                elements={[
+                  {
+                    libelle: 'Réussies',
+                    couleur: 'serie-1',
+                    note: `${nf(p.reussies)} (${pct(part(p.reussies, p.verifications))})`,
+                  },
+                  {
+                    libelle: 'Échouées',
+                    couleur: 'rouge',
+                    note: `${nf(p.echouees)} (${pct(part(p.echouees, p.verifications))})`,
+                  },
+                ]}
+              />
+              <p className="note-m authentifications__encart">
+                À rapprocher du Devenir des inscriptions (page Enrôlement) : motif « vérification biométrique non
+                concordante ».
+              </p>
+            </div>
+            <div className="duo__cartes">
+              <p className="authentifications__groupe">Causes des échecs</p>
+              <Causes
+                titre="Causes des échecs des vérifications du traitement des paquets"
+                lignes={lignesCauses('paquets', causesPaquets.data)}
+                total={echecsPaquets}
+              />
+            </div>
+          </div>
         </Panneau>
       </div>
     </>

@@ -626,3 +626,110 @@ export async function simulerCartes(page: Page) {
     }),
   );
 }
+
+/** Page Authentifications (lot 9c) : chiffres du relevé du 03/11/2026 sur 30 jours. */
+export async function simulerAuthentifications(page: Page) {
+  await page.route('**/api/v1/authentifications/usagers*', (route) =>
+    route.fulfill({
+      json: {
+        perimetre: 'Ensemble du Togo',
+        disponible: true,
+        requetes: 2186,
+        reussies: 1538,
+        echouees: 648,
+        autresStatuts: 0,
+        biometriques: 1,
+        otp: 1955,
+        demographiquesEtCombinees: 0,
+        sansMode: 230,
+        nonClassees: 0,
+        partenairesRaccordes: 1,
+        requetesPartenaires: 1645,
+        partenaires: ['Atos'],
+        demandesOtp: 2732,
+        demandesOtpEnvoyees: 2380,
+        codesOtp: 83873,
+        codesOtpUtilises: 50781,
+      },
+    }),
+  );
+  await page.route('**/api/v1/authentifications/types*', (route) =>
+    route.fulfill({
+      json: {
+        types: [
+          { code: 'biometrique', requetes: 1, echecs: 1 },
+          { code: 'otp', requetes: 1955, echecs: 417 },
+          { code: 'demographique', requetes: 0, echecs: 0 },
+          { code: 'combinee', requetes: 0, echecs: 0 },
+          { code: 'sans_mode', requetes: 230, echecs: 230 },
+          { code: 'non_classe', requetes: 0, echecs: 0 },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/v1/authentifications/causes*', (route) =>
+    route.fulfill({
+      json: new URL(route.request().url()).searchParams.get('perimetre') === 'paquets'
+        ? {
+            perimetre: 'paquets',
+            echecs: 144898,
+            motifs: [
+              { code: 'BIO_NON_CONCORDANTE', libelle: 'Biométrie non concordante', echecs: 106076 },
+              { code: 'BIO_ABSENTE', libelle: "Biométrie absente du dossier d'authentification", echecs: 21151 },
+              { code: 'NIU_ABSENT', libelle: "NIU absent de la base d'authentification", echecs: 17637 },
+              { code: 'MODALITE_VERROUILLEE', libelle: 'Modalité verrouillée par le résident', echecs: 34 },
+            ],
+          }
+        : {
+            perimetre: 'usagers',
+            echecs: 648,
+            motifs: [
+              { code: 'OTP_REFUSE', libelle: 'Code OTP ou eKYC refusé', echecs: 417 },
+              { code: 'SANS_MODE', libelle: "Aucun mode d'authentification demandé", echecs: 230 },
+              { code: 'AUTRE', libelle: 'Motif non répertorié', echecs: 1 },
+            ],
+          },
+    }),
+  );
+  await page.route('**/api/v1/authentifications/partenaires*', (route) =>
+    route.fulfill({
+      json: {
+        partenairesRaccordes: 1,
+        appelants: [
+          {
+            canal: 'partenaire',
+            nom: 'Atos',
+            requetes: 1645,
+            reussies: 1142,
+            demandesOtp: 2159,
+            derniereRequete: '2026-01-14',
+          },
+          {
+            canal: 'portail',
+            nom: 'Portail du résident',
+            requetes: 517,
+            reussies: 377,
+            demandesOtp: 560,
+            derniereRequete: '2026-01-14',
+          },
+          { canal: 'ussd', nom: 'USSD', requetes: 24, reussies: 19, demandesOtp: 13, derniereRequete: '2026-01-12' },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/v1/authentifications/semaines*', (route) =>
+    route.fulfill({
+      json: {
+        semaines: Array.from({ length: 12 }, (_, i) => {
+          const lundi = new Date(Date.UTC(2025, 9, 20 + 7 * i)).toISOString().slice(0, 10);
+          return { lundi, dansPeriode: true, reussies: 360 + 5 * i, echouees: 150 + 2 * i };
+        }),
+      },
+    }),
+  );
+  await page.route('**/api/v1/authentifications/paquets*', (route) =>
+    route.fulfill({
+      json: { disponible: true, verifications: 170151, reussies: 25253, echouees: 144898, autresStatuts: 0 },
+    }),
+  );
+}

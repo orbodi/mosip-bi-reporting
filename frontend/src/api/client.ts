@@ -40,6 +40,14 @@ export type TopCentresCartes = components['schemas']['TopCentresCartes'];
 export type CentreCartes = components['schemas']['CentreCartes'];
 export type AnnulationsParMotif = components['schemas']['AnnulationsParMotif'];
 export type MotifAnnulation = components['schemas']['MotifAnnulation'];
+export type RequetesUsagers = components['schemas']['RequetesUsagers'];
+export type TypesAuthentification = components['schemas']['TypesAuthentification'];
+export type CausesEchec = components['schemas']['CausesEchec'];
+export type MotifEchecAuthentification = components['schemas']['MotifEchecAuthentification'];
+export type PartenairesEtCanaux = components['schemas']['PartenairesEtCanaux'];
+export type AppelantAuthentification = components['schemas']['AppelantAuthentification'];
+export type AuthentificationsParSemaine = components['schemas']['AuthentificationsParSemaine'];
+export type VerificationsPaquets = components['schemas']['VerificationsPaquets'];
 
 /**
  * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la

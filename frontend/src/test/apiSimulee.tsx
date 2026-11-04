@@ -674,6 +674,75 @@ const CENTRES_CARTES = {
   ],
 };
 
+/** Authentifications (lot 9c) : chiffres du relevé du 03/11/2026 sur 30 jours (maquette validée le 04/11/2026). */
+export const USAGERS_AUTH = {
+  perimetre: 'Ensemble du Togo',
+  disponible: true,
+  requetes: 2186,
+  reussies: 1538,
+  echouees: 648,
+  autresStatuts: 0,
+  biometriques: 1,
+  otp: 1955,
+  demographiquesEtCombinees: 0,
+  sansMode: 230,
+  nonClassees: 0,
+  partenairesRaccordes: 1,
+  requetesPartenaires: 1645,
+  partenaires: ['Atos'],
+  demandesOtp: 2732,
+  demandesOtpEnvoyees: 2380,
+  codesOtp: 83873,
+  codesOtpUtilises: 50781,
+};
+
+const TYPES_AUTH = {
+  types: [
+    { code: 'biometrique', requetes: 1, echecs: 1 },
+    { code: 'otp', requetes: 1955, echecs: 417 },
+    { code: 'demographique', requetes: 0, echecs: 0 },
+    { code: 'combinee', requetes: 0, echecs: 0 },
+    { code: 'sans_mode', requetes: 230, echecs: 230 },
+    { code: 'non_classe', requetes: 0, echecs: 0 },
+  ],
+};
+
+const CAUSES_USAGERS = {
+  perimetre: 'usagers',
+  echecs: 648,
+  motifs: [
+    { code: 'OTP_REFUSE', libelle: 'Code OTP ou eKYC refusé', echecs: 417 },
+    { code: 'SANS_MODE', libelle: "Aucun mode d'authentification demandé", echecs: 230 },
+    { code: 'AUTRE', libelle: 'Motif non répertorié', echecs: 1 },
+  ],
+};
+
+const CAUSES_PAQUETS = {
+  perimetre: 'paquets',
+  echecs: 144898,
+  motifs: [
+    { code: 'BIO_NON_CONCORDANTE', libelle: 'Biométrie non concordante', echecs: 106076 },
+    { code: 'BIO_ABSENTE', libelle: "Biométrie absente du dossier d'authentification", echecs: 21151 },
+    { code: 'NIU_ABSENT', libelle: "NIU absent de la base d'authentification", echecs: 17637 },
+    { code: 'MODALITE_VERROUILLEE', libelle: 'Modalité verrouillée par le résident', echecs: 34 },
+  ],
+};
+
+const PARTENAIRES_AUTH = {
+  partenairesRaccordes: 1,
+  appelants: [
+    { canal: 'partenaire', nom: 'Atos', requetes: 1645, reussies: 1142, demandesOtp: 2159, derniereRequete: '2026-01-14' },
+    { canal: 'portail', nom: 'Portail du résident', requetes: 517, reussies: 377, demandesOtp: 560, derniereRequete: '2026-01-14' },
+    { canal: 'ussd', nom: 'USSD', requetes: 24, reussies: 19, demandesOtp: 13, derniereRequete: '2026-01-12' },
+  ],
+};
+
+const SEMAINES_AUTH = {
+  semaines: LUNDIS.map((lundi, i) => ({ lundi, dansPeriode: true, reussies: 360 + i, echouees: 150 + i })),
+};
+
+const PAQUETS_AUTH = { disponible: true, verifications: 170151, reussies: 25253, echouees: 144898, autresStatuts: 0 };
+
 /** Valeur renvoyée, ou calculée depuis l'adresse et la requête (corps d'un POST) ; undefined répond 404. */
 type Reponse = unknown | ((url: URL, init?: RequestInit) => unknown);
 
@@ -712,6 +781,13 @@ const PAR_DEFAUT: Record<string, Reponse> = {
     url.searchParams.get('zone') === 'SAV' ? CARTES_SAVANES : CARTES_NATIONAL,
   '/cartes/attente': ATTENTE,
   '/cartes/centres': CENTRES_CARTES,
+  '/authentifications/usagers': USAGERS_AUTH,
+  '/authentifications/types': TYPES_AUTH,
+  '/authentifications/causes': (url: URL) =>
+    url.searchParams.get('perimetre') === 'paquets' ? CAUSES_PAQUETS : CAUSES_USAGERS,
+  '/authentifications/partenaires': PARTENAIRES_AUTH,
+  '/authentifications/semaines': SEMAINES_AUTH,
+  '/authentifications/paquets': PAQUETS_AUTH,
   '/enrolement/age-sexe': (url: URL) =>
     url.searchParams.get('zone') === 'SAV'
       ? {

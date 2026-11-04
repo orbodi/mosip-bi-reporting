@@ -831,5 +831,126 @@ export interface components {
       /** Format: int64 */
       demandes: number;
     };
+    RequetesUsagers: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      disponible: boolean;
+      /** Format: int64 */
+      requetes?: number | null;
+      /** Format: int64 */
+      reussies?: number | null;
+      /** Format: int64 */
+      echouees?: number | null;
+      /** Format: int64 */
+      autresStatuts?: number | null;
+      /** Format: int64 */
+      biometriques?: number | null;
+      /** Format: int64 */
+      otp?: number | null;
+      /** Format: int64 */
+      demographiquesEtCombinees?: number | null;
+      /** Format: int64 */
+      sansMode?: number | null;
+      /** Format: int64 */
+      nonClassees?: number | null;
+      /** Format: int64 */
+      partenairesRaccordes?: number | null;
+      /** Format: int64 */
+      requetesPartenaires?: number | null;
+      partenaires: string[];
+      /** Format: int64 */
+      demandesOtp?: number | null;
+      /** Format: int64 */
+      demandesOtpEnvoyees?: number | null;
+      /** Format: int64 */
+      codesOtp?: number | null;
+      /** Format: int64 */
+      codesOtpUtilises?: number | null;
+    };
+    TypesAuthentification: {
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      types: components['schemas']['TypeAuthentification'][];
+    };
+    TypeAuthentification: {
+      code: string;
+      /** Format: int64 */
+      requetes: number;
+      /** Format: int64 */
+      echecs: number;
+    };
+    CausesEchec: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      /** Format: int64 */
+      echecs: number;
+      motifs: components['schemas']['MotifEchecAuthentification'][];
+    };
+    MotifEchecAuthentification: {
+      code: string;
+      libelle: string;
+      /** Format: int64 */
+      echecs: number;
+    };
+    PartenairesEtCanaux: {
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      /** Format: int64 */
+      partenairesRaccordes: number;
+      appelants: components['schemas']['AppelantAuthentification'][];
+    };
+    AppelantAuthentification: {
+      canal: string;
+      nom: string;
+      /** Format: int64 */
+      requetes: number;
+      /** Format: int64 */
+      reussies: number;
+      /** Format: int64 */
+      demandesOtp: number;
+      /** Format: date */
+      derniereRequete?: string | null;
+    };
+    AuthentificationsParSemaine: {
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      semaines: components['schemas']['SemaineAuthentification'][];
+    };
+    SemaineAuthentification: {
+      /** Format: date */
+      lundi: string;
+      dansPeriode: boolean;
+      /** Format: int64 */
+      reussies: number;
+      /** Format: int64 */
+      echouees: number;
+    };
+    VerificationsPaquets: {
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      disponible: boolean;
+      /** Format: int64 */
+      verifications?: number | null;
+      /** Format: int64 */
+      reussies?: number | null;
+      /** Format: int64 */
+      echouees?: number | null;
+      /** Format: int64 */
+      autresStatuts?: number | null;
+    };
   };
 }

@@ -19,7 +19,6 @@ describe('Pages de la maquette', () => {
   it.each([
     ['/abis', 'Transactions ABIS'],
     ['/idps', 'Ordres d’impression'],
-    ['/authentifications', 'Requêtes d’authentification'],
   ])('%s : mise en page de la maquette, indicateurs à 0, sans note de source', async (chemin, bloc) => {
     simulerApi();
     afficher(chemin);
@@ -90,6 +89,63 @@ describe('Pages de la maquette', () => {
     expect(bloc.getAllByText('0').length).toBeGreaterThanOrEqual(2);
     // Annulées et erreurs d'envoi à l'IDPS, sans motif ni date tant que l'API ne répond pas.
     expect(bloc.getAllByText('Parmi les demandes')).toHaveLength(2);
+    expect(screen.queryByText(/pas encore raccordée|non disponible|indisponible/i)).not.toBeInTheDocument();
+  });
+
+  it('Authentifications : usagers, types, causes, partenaires et paquets depuis l’API, jamais additionnés', async () => {
+    simulerApi();
+    afficher('/authentifications');
+
+    const usagers = within(
+      await screen.findByRole('region', { name: 'Requêtes d’authentification des usagers' }),
+    );
+    expect(await usagers.findByText(/^2\s186$/)).toBeInTheDocument();
+    expect(usagers.getByText(/^Atos, 75,3\s% des requêtes$/)).toBeInTheDocument();
+    expect(usagers.getByText(/2\s380 codes envoyés, 60,5\s% utilisés$/)).toBeInTheDocument();
+    expect(usagers.getByText(/Les demandes de code OTP \(2\s732\)/)).toBeInTheDocument();
+
+    const types = within(screen.getByRole('region', { name: 'Par type d’authentification' }));
+    const lignes = await types.findAllByRole('row');
+    expect(lignes[1]).toHaveTextContent(/^Code à usage unique/);
+    expect(types.getAllByRole('img', { name: 'Alerte : taux d’échec de 50 % ou plus' })).toHaveLength(2);
+
+    const causes = within(screen.getByRole('region', { name: 'Causes des échecs' }));
+    expect(await causes.findByText('Aucun mode d’authentification demandé')).toBeInTheDocument();
+
+    const partenaires = within(screen.getByRole('region', { name: 'Partenaires et canaux' }));
+    expect(await partenaires.findByRole('row', { name: /Atos Partenaire 1\s645/ })).toBeInTheDocument();
+    expect(partenaires.getByText('1 partenaire raccordé')).toBeInTheDocument();
+    // Le code MOSIP de l'appelant n'est jamais affiché (décision du 04/11/2026).
+    expect(screen.queryByText(/AU-ANID|mosip-resident-client/)).not.toBeInTheDocument();
+
+    const paquets = within(
+      screen.getByRole('region', { name: 'Vérifications biométriques du traitement des paquets' }),
+    );
+    expect(await paquets.findByText(/^170\s151$/)).toBeInTheDocument();
+    expect(paquets.getByText('NIU absent de la base d’authentification')).toBeInTheDocument();
+    expect(paquets.getByText('Ensemble du Togo')).toBeInTheDocument();
+  });
+
+  it('Authentifications : sans réponse de l’API, mise en page gardée et chiffres à 0', async () => {
+    simulerApi({
+      '/authentifications/usagers': undefined,
+      '/authentifications/types': undefined,
+      '/authentifications/causes': undefined,
+      '/authentifications/partenaires': undefined,
+      '/authentifications/semaines': undefined,
+      '/authentifications/paquets': undefined,
+    });
+    afficher('/authentifications');
+
+    const usagers = within(
+      await screen.findByRole('region', { name: 'Requêtes d’authentification des usagers' }),
+    );
+    expect(usagers.getAllByText('0').length).toBeGreaterThanOrEqual(2);
+    const paquets = within(
+      screen.getByRole('region', { name: 'Vérifications biométriques du traitement des paquets' }),
+    );
+    expect(paquets.getByText('Biométrie non concordante')).toBeInTheDocument();
+    expect(screen.getByText('0 partenaire raccordé')).toBeInTheDocument();
     expect(screen.queryByText(/pas encore raccordée|non disponible|indisponible/i)).not.toBeInTheDocument();
   });
 

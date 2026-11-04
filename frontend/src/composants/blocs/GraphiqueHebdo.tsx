@@ -27,6 +27,11 @@ interface Props {
   ton?: 'bleu' | 'rouge';
   /** Étiquettes de mois plutôt que de semaines. */
   axeMois?: boolean;
+  /**
+   * Chiffre au-dessus de chaque barre (page Authentifications, maquette du 04/11/2026). Les étiquettes qui se
+   * chevauchent sont masquées (petits écrans) : la lecture de la semaine et le tableau donnent tous les chiffres.
+   */
+  etiquettes?: boolean;
 }
 
 const MOIS = [
@@ -56,6 +61,7 @@ export function GraphiqueHebdo({
   hauteur = 240,
   ton = 'bleu',
   axeMois,
+  etiquettes,
 }: Props) {
   const [survol, setSurvol] = useState<number | null>(null);
   const derniere = semaines.length - 1;
@@ -114,6 +120,19 @@ export function GraphiqueHebdo({
           type: 'bar',
           stack: x.type === 'pile' ? 'pile' : undefined,
           barMaxWidth: 28,
+          ...(etiquettes && x.type === 'barre'
+            ? {
+                label: {
+                  show: true,
+                  position: 'top',
+                  color: jeton('--encre'),
+                  fontSize: 12,
+                  fontWeight: 600,
+                  formatter: (p: { value: number | null }) => (p.value === null ? '' : nf(p.value)),
+                },
+                labelLayout: { hideOverlap: true },
+              }
+            : {}),
           data: semaines.map((s, i) => ({
             value: valeur(s.valeurs[x.cle]),
             itemStyle: { color: couleur, opacity: i === active ? 1 : 0.85 },
@@ -122,7 +141,7 @@ export function GraphiqueHebdo({
         };
       }),
     };
-  }, [semaines, series, active, axeMois]);
+  }, [semaines, series, active, axeMois, etiquettes]);
 
   if (semaines.length === 0) return <p className="texte-2">Aucune semaine sur la période.</p>;
 

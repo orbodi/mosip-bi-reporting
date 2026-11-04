@@ -5,9 +5,11 @@
 import { BarChart, LineChart, MapChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import * as echarts from 'echarts/core';
+import { LabelLayout } from 'echarts/features';
 import { SVGRenderer } from 'echarts/renderers';
 
-echarts.use([BarChart, LineChart, MapChart, GridComponent, TooltipComponent, SVGRenderer]);
+// LabelLayout : masque les chiffres de barres qui se chevauchent (GraphiqueHebdo, option etiquettes).
+echarts.use([BarChart, LineChart, MapChart, GridComponent, TooltipComponent, LabelLayout, SVGRenderer]);
 
 export { echarts };
 export type { ECharts, EChartsCoreOption } from 'echarts/core';
