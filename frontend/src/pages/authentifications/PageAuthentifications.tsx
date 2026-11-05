@@ -158,66 +158,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
         </Panneau>
 
         <Panneau
-          id="titre-types-auth"
-          titre="Par type d’authentification"
-          sousTitre="Requêtes et échecs des usagers pour chaque type."
-        >
-          <div
-            className="tableau-m-defile"
-            tabIndex={0}
-            role="group"
-            aria-label="Tableau, défilable horizontalement"
-          >
-            <table className="tableau-m">
-              <caption className="visuellement-cache">
-                Requêtes et échecs par type d’authentification
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Type</th>
-                  <th scope="col">Requêtes</th>
-                  <th scope="col">Échecs</th>
-                  <th scope="col">Taux d’échec</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lignes.map((t) => {
-                  const taux = part(t.echecs, t.requetes);
-                  return (
-                    <tr key={t.code}>
-                      <th scope="row">{t.libelle}</th>
-                      <td>{nf(t.requetes)}</td>
-                      <td>{nf(t.echecs)}</td>
-                      <td>
-                        {alerteEchec(taux) && <Drapeau libelle="Alerte : taux d’échec de 50 % ou plus" />}
-                        <strong>{Number.isFinite(t.requetes) && t.requetes === 0 ? '—' : pct(taux)}</strong>
-                      </td>
-                    </tr>
-                  );
-                })}
-                <tr className="total">
-                  <th scope="row">Total</th>
-                  <td>{nf(c.requetes)}</td>
-                  <td>{nf(c.echouees)}</td>
-                  <td>{pct(part(c.echouees, c.requetes))}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Panneau>
-        <Panneau
-          id="titre-causes"
-          titre="Causes des échecs"
-          sousTitre={`${nf(echecsUsagers)} échecs des usagers, du plus fréquent au moins fréquent.`}
-        >
-          <Causes
-            titre="Causes des échecs des usagers"
-            lignes={lignesCauses('usagers', causesUsagers.data)}
-            total={echecsUsagers}
-          />
-        </Panneau>
-
-        <Panneau
           id="titre-partenaires"
           titre="Partenaires et canaux"
           pastille={<span className="pastille-portee">{pastillePartenaires(partenaires.data)}</span>}
@@ -296,6 +236,66 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
             lecture={(s) =>
               `Semaine ${semaineFr(s.lundi)} : ${nf(s.valeurs.reussies + s.valeurs.echouees)} requêtes, ${nf(s.valeurs.reussies)} réussies et ${nf(s.valeurs.echouees)} échouées.`
             }
+          />
+        </Panneau>
+
+        <Panneau
+          id="titre-types-auth"
+          titre="Par type d’authentification"
+          sousTitre="Requêtes et échecs des usagers pour chaque type."
+        >
+          <div
+            className="tableau-m-defile"
+            tabIndex={0}
+            role="group"
+            aria-label="Tableau, défilable horizontalement"
+          >
+            <table className="tableau-m">
+              <caption className="visuellement-cache">
+                Requêtes et échecs par type d’authentification
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Type</th>
+                  <th scope="col">Requêtes</th>
+                  <th scope="col">Échecs</th>
+                  <th scope="col">Taux d’échec</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lignes.map((t) => {
+                  const taux = part(t.echecs, t.requetes);
+                  return (
+                    <tr key={t.code}>
+                      <th scope="row">{t.libelle}</th>
+                      <td>{nf(t.requetes)}</td>
+                      <td>{nf(t.echecs)}</td>
+                      <td>
+                        {alerteEchec(taux) && <Drapeau libelle="Alerte : taux d’échec de 50 % ou plus" />}
+                        <strong>{Number.isFinite(t.requetes) && t.requetes === 0 ? '—' : pct(taux)}</strong>
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="total">
+                  <th scope="row">Total</th>
+                  <td>{nf(c.requetes)}</td>
+                  <td>{nf(c.echouees)}</td>
+                  <td>{pct(part(c.echouees, c.requetes))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Panneau>
+        <Panneau
+          id="titre-causes"
+          titre="Causes des échecs"
+          sousTitre={`${nf(echecsUsagers)} échecs des usagers, du plus fréquent au moins fréquent.`}
+        >
+          <Causes
+            titre="Causes des échecs des usagers"
+            lignes={lignesCauses('usagers', causesUsagers.data)}
+            total={echecsUsagers}
           />
         </Panneau>
 
