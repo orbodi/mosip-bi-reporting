@@ -80,7 +80,6 @@ export const SOURCES: SourceExploration[] = [
     cle: 'auth',
     libelle: 'Authentifications',
     fraicheur: 'authentifications',
-    note: 'Les requêtes d’authentification ne portent pas la région du demandeur.',
     indicateurs: [
       { cle: 'req', libelle: 'Requêtes', dimensions: ['taut', 'part'], territoire: false },
       { cle: 'ok', libelle: 'Requêtes réussies', dimensions: ['taut', 'part'], territoire: false },
