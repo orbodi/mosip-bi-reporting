@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { afficher, simulerApi } from '../test/apiSimulee';
@@ -184,6 +184,41 @@ describe('Pages de la maquette', () => {
       appels.some((u) => u.pathname.endsWith('/territoire') && u.searchParams.get('zone') === 'SAV'),
     ).toBe(true);
     expect(await screen.findByRole('rowheader', { name: 'Tône' })).toBeInTheDocument();
+  });
+
+  it('Exploration : période personnalisée, un jour précis ou un intervalle, erreur si la fin précède le début', async () => {
+    const appels = simulerApi();
+    afficher('/exploration');
+    const utilisateur = userEvent.setup();
+
+    await screen.findByRole('region', { name: 'Inscriptions par région' });
+    await utilisateur.click(boutonChoix('Période'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Personnalisée…' }));
+    expect(screen.getByText(/laissez « Au » vide pour un seul jour/)).toBeInTheDocument();
+
+    // Un jour précis : seulement « Du ».
+    fireEvent.change(screen.getByLabelText('Du'), { target: { value: '2026-01-02' } });
+    await waitFor(() =>
+      expect(
+        appels.some(
+          (u) =>
+            u.pathname.endsWith('/territoire') &&
+            u.searchParams.get('du') === '2026-01-02' &&
+            u.searchParams.get('au') === '2026-01-02',
+        ),
+      ).toBe(true),
+    );
+    expect(screen.getByText(/· le 02\/01\/2026 ·/)).toBeInTheDocument();
+
+    // Un intervalle, puis une fin avant le début : message, pas de nouvel appel.
+    fireEvent.change(screen.getByLabelText('Au'), { target: { value: '2026-01-10' } });
+    await waitFor(() =>
+      expect(appels.some((u) => u.searchParams.get('du') === '2026-01-02' && u.searchParams.get('au') === '2026-01-10')).toBe(true),
+    );
+    expect(screen.getByText(/· du 02\/01\/2026 au 10\/01\/2026 ·/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Du'), { target: { value: '2026-01-12' } });
+    expect(await screen.findByRole('alert')).toHaveTextContent('La date de fin doit suivre la date de début.');
+    expect(appels.some((u) => u.searchParams.get('du') === '2026-01-12')).toBe(false);
   });
 
   it('Exploration : descend jusqu’aux communes, listes en cascade et pré-inscriptions', async () => {

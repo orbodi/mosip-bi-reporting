@@ -11,6 +11,15 @@ import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { nf, part, pct } from '../../lib/format';
 import { paginer, type TaillePage } from '../../lib/pagination';
+import {
+  PERSONNALISEE,
+  datesPersonnalisees,
+  erreurPersonnalisee,
+  estPersonnalisee,
+  libellePersonnalisee,
+  periodePersonnalisee,
+  plageExploration,
+} from '../../lib/periodeExploration';
 import { useFiltreRegion } from '../../lib/useFiltreRegion';
 import type { DefinitionPage } from '../pages';
 import {
@@ -118,15 +127,6 @@ function moisEntre(debut: string, fin: string): string[] {
   return out;
 }
 
-function plageDe(periode: string): { du: string; au: string } | undefined {
-  if (periode.startsWith('A:')) return { du: `${periode.slice(2)}-01-01`, au: `${periode.slice(2)}-12-31` };
-  if (periode.startsWith('M:')) {
-    const [a, m] = periode.slice(2).split('-').map(Number);
-    return { du: `${periode.slice(2)}-01`, au: new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10) };
-  }
-  return undefined;
-}
-
 /** Fichier CSV (séparateur « ; », nombres bruts) téléchargé par le navigateur. */
 function telechargerCsv(nom: string, lignes: string[][]) {
   const texte = lignes
@@ -190,6 +190,18 @@ function Explorateur() {
       ? moisEntre(fraicheur.premiereDonnee.slice(0, 7), fraicheur.derniereDonnee.slice(0, 7))
       : [];
   const annees = [...new Set(mois.map((m) => m.slice(0, 4)))];
+  // Période personnalisée (05/11/2026) : dates bornées aux données de la source ; erreur affichée sous les champs.
+  const bornes =
+    fraicheur?.premiereDonnee && fraicheur.derniereDonnee
+      ? { du: fraicheur.premiereDonnee.slice(0, 10), au: fraicheur.derniereDonnee.slice(0, 10) }
+      : undefined;
+  const perso = estPersonnalisee(periode);
+  const datesPerso = datesPersonnalisees(periode);
+  const erreurPerso = perso ? erreurPersonnalisee(periode, bornes) : undefined;
+  const plage = plageExploration(periode, bornes);
+  // Mois et années de la période choisie (lignes des ventilations « Mois » et « Année »).
+  const moisPeriode = plage ? mois.filter((m) => m >= plage.du.slice(0, 7) && m <= plage.au.slice(0, 7)) : mois;
+  const anneesPeriode = [...new Set(moisPeriode.map((m) => m.slice(0, 4)))];
 
   const listes = useListesTerritoire(chemin);
   // Options du niveau k : régions, puis sous-zones de ce niveau dans la zone choisie au-dessus (ordre alphabétique).
@@ -208,7 +220,9 @@ function Explorateur() {
 
   const optionsPar: OptionChoix[] = [
     ...(territoireOk && niveauSuivant ? [{ id: 'sous', libelle: niveauSuivant.libelle }] : []),
-    ...(!periode.startsWith('A:') && !periode.startsWith('M:') ? [{ id: 'annee', libelle: 'Année' }] : []),
+    ...(!periode.startsWith('A:') && !periode.startsWith('M:') && (!perso || anneesPeriode.length > 1)
+      ? [{ id: 'annee', libelle: 'Année' }]
+      : []),
     ...(!periode.startsWith('M:') ? [{ id: 'mois', libelle: 'Mois' }] : []),
     ...dimensionsCommunes
       .filter((d) => !filtres[d] && DIMENSIONS[d].valeurs.length)
@@ -219,10 +233,11 @@ function Explorateur() {
   const modeEffectif: Mode = mode === 'pf' && choisis.length < 2 ? 'n' : mode;
 
   const nomsChemin = chemin.map((_, k) => nomDe(k));
-  const plage = plageDe(periode);
-  // Données réelles : Enrôlement, sans filtre de profil ni de type, par sous-zone de la zone choisie, ou total.
+  // Données réelles : Enrôlement, sans filtre de profil ni de type, par sous-zone de la zone choisie, ou total ;
+  // jamais sur une période personnalisée incomplète ou invalide.
   const reel =
     cleSource === 'enrol' &&
+    !erreurPerso &&
     Object.values(filtres).every((v) => !v) &&
     (parEffectif === 'sous' || parEffectif === 'total');
   const territoire = useTerritoire(plage, zoneChoisie, reel);
@@ -256,10 +271,9 @@ function Explorateur() {
         ouvrable: !!NIVEAUX_TERRITOIRE[chemin.length + 1],
       }));
     }
-    if (parEffectif === 'annee') return annees.map((a) => ({ id: a, libelle: a, valeurs: inconnues() }));
+    if (parEffectif === 'annee') return anneesPeriode.map((a) => ({ id: a, libelle: a, valeurs: inconnues() }));
     if (parEffectif === 'mois') {
-      const liste = periode.startsWith('A:') ? mois.filter((m) => m.startsWith(periode.slice(2))) : mois;
-      return liste.map((m) => ({ id: m, libelle: libelleMois(m), valeurs: inconnues() }));
+      return moisPeriode.map((m) => ({ id: m, libelle: libelleMois(m), valeurs: inconnues() }));
     }
     const dim = DIMENSIONS[parEffectif as CleDimension];
     return dim ? dim.valeurs.map((v) => ({ id: v, libelle: v, valeurs: inconnues() })) : [];
@@ -289,9 +303,11 @@ function Explorateur() {
       ? mois.length
         ? `de ${moisCourt(mois[0])} à ${moisCourt(mois[mois.length - 1])}`
         : 'Toute la période'
-      : periode.startsWith('A:')
-        ? periode.slice(2)
-        : libelleMois(periode.slice(2));
+      : perso
+        ? libellePersonnalisee(periode)
+        : periode.startsWith('A:')
+          ? periode.slice(2)
+          : libelleMois(periode.slice(2));
 
   const choisirSource = (cle: string) => {
     const s = SOURCES.find((x) => x.cle === cle) ?? SOURCES[0];
@@ -343,8 +359,11 @@ function Explorateur() {
               <div className="xp-grille">
                 <ChampChoix
                   libelle="Période"
-                  valeur={periode}
-                  options={[{ id: 'tout', libelle: 'Toute la période' }]}
+                  valeur={perso ? PERSONNALISEE : periode}
+                  options={[
+                    { id: 'tout', libelle: 'Toute la période' },
+                    { id: PERSONNALISEE, libelle: 'Personnalisée…' },
+                  ]}
                   groupes={[
                     { titre: 'Années', options: annees.map((a) => ({ id: `A:${a}`, libelle: a })) },
                     {
@@ -352,8 +371,49 @@ function Explorateur() {
                       options: [...mois].reverse().map((m) => ({ id: `M:${m}`, libelle: libelleMois(m) })),
                     },
                   ]}
-                  onChange={setPeriode}
+                  onChange={(v) =>
+                    setPeriode(v === PERSONNALISEE ? (perso ? periode : periodePersonnalisee('', '')) : v)
+                  }
                 />
+                {perso && (
+                  <>
+                    <label className="xp-champ">
+                      <span className="champ-choix__libelle">Du</span>
+                      <input
+                        type="date"
+                        className="xp-date"
+                        value={datesPerso.du}
+                        min={bornes?.du}
+                        max={bornes?.au}
+                        aria-invalid={!!erreurPerso && !!datesPerso.du}
+                        aria-describedby={erreurPerso && datesPerso.du ? `xp-erreur-${s.cle}` : undefined}
+                        onChange={(e) => setPeriode(periodePersonnalisee(e.target.value, datesPerso.au))}
+                      />
+                    </label>
+                    <label className="xp-champ">
+                      <span className="champ-choix__libelle">Au</span>
+                      <input
+                        type="date"
+                        className="xp-date"
+                        value={datesPerso.au}
+                        min={datesPerso.du || bornes?.du}
+                        max={bornes?.au}
+                        aria-invalid={!!erreurPerso && !!datesPerso.au}
+                        aria-describedby={erreurPerso && datesPerso.du ? `xp-erreur-${s.cle}` : undefined}
+                        onChange={(e) => setPeriode(periodePersonnalisee(datesPerso.du, e.target.value))}
+                      />
+                    </label>
+                    {!datesPerso.du ? (
+                      <p className="xp-aide">Choisissez la date de début ; laissez « Au » vide pour un seul jour.</p>
+                    ) : (
+                      erreurPerso && (
+                        <p id={`xp-erreur-${s.cle}`} className="xp-erreur" role="alert">
+                          {erreurPerso}
+                        </p>
+                      )
+                    )}
+                  </>
+                )}
                 {dimensionsSource.map((d) => {
                   const applicable = choisis.some((i) => i.dimensions.includes(d));
                   const dim = DIMENSIONS[d];

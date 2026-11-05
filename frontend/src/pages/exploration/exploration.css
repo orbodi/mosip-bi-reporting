@@ -207,3 +207,34 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Période personnalisée (05/11/2026) : champs de date natifs, à la hauteur des listes de choix. */
+.xp-date {
+  height: 40px;
+  padding: 0 var(--e-3);
+  border: 1px solid var(--bord-champ);
+  border-radius: var(--r-m);
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+  font-size: var(--t-m);
+}
+.xp-date:focus-visible {
+  outline: 2px solid var(--bleu);
+  outline-offset: 1px;
+}
+.xp-date[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.xp-aide,
+.xp-erreur {
+  grid-column: 1 / -1;
+  margin: calc(-1 * var(--e-2)) 0 0;
+  font-size: var(--t-xs);
+}
+.xp-aide {
+  color: var(--encre-2);
+}
+.xp-erreur {
+  color: var(--danger);
+}
