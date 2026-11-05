@@ -227,7 +227,9 @@ describe('Pages de la maquette', () => {
     const utilisateur = userEvent.setup();
 
     await utilisateur.click(await screen.findByRole('tab', { name: /Authentifications/ }));
-    expect(await screen.findByText(/^2\s186$/)).toBeInTheDocument();
+    // Par mois (ventilation par défaut de l'onglet) : lignes de l'API ; 2 186 au grand chiffre et à la ligne Total.
+    expect(await screen.findByRole('rowheader', { name: 'décembre 2025' })).toBeInTheDocument();
+    expect(screen.getAllByText(/^2\s186$/)).toHaveLength(2);
 
     // Ventilation par partenaire : noms lus dans les données, sans code MOSIP.
     await utilisateur.click(boutonChoix('Afficher par'));
