@@ -193,7 +193,7 @@ describe('Pages de la maquette', () => {
 
     await screen.findByRole('region', { name: 'Inscriptions par région' });
     await utilisateur.click(boutonChoix('Période'));
-    await utilisateur.click(await screen.findByRole('option', { name: 'Personnalisée…' }));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Personnalisée' }));
     expect(screen.getByText(/laissez « Au » vide pour un seul jour/)).toBeInTheDocument();
 
     // Un jour précis : seulement « Du ».

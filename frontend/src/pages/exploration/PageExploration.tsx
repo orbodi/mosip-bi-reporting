@@ -362,7 +362,7 @@ function Explorateur() {
                   valeur={perso ? PERSONNALISEE : periode}
                   options={[
                     { id: 'tout', libelle: 'Toute la période' },
-                    { id: PERSONNALISEE, libelle: 'Personnalisée…' },
+                    { id: PERSONNALISEE, libelle: 'Personnalisée' },
                   ]}
                   groupes={[
                     { titre: 'Années', options: annees.map((a) => ({ id: `A:${a}`, libelle: a })) },
