@@ -182,8 +182,10 @@ public class AuthentificationsRepository {
             "appelant", "f.appelant");
 
     /** Filtres de l'Exploration sur un fait d'alias f ; un filtre null n'est pas appliqué. */
+    // Commence par une parenthèse, comme PERIODE : Java retire l'espace de fin de « where """ + … » (bloc de texte),
+    // et « where(…) » reste du SQL valide.
     private static final String FILTRES_EXPLORATION = """
-            f.perimetre = :perimetre
+            (f.perimetre = :perimetre)
             and (cast(:type as text) is null or f.type = cast(:type as text))
             and (cast(:motif as text) is null or f.motif = cast(:motif as text))
             and (cast(:appelant as text) is null or f.appelant = cast(:appelant as text))
