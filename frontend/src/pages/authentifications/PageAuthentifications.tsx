@@ -175,7 +175,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                   <th scope="col">Partenaire ou canal</th>
                   <th scope="col">Type</th>
                   <th scope="col">Requêtes</th>
-                  <th scope="col">Part</th>
                   <th scope="col">Réussies</th>
                   <th scope="col">Taux d’échec</th>
                   <th scope="col">Codes OTP demandés</th>
@@ -188,7 +187,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                     <th scope="row">{a.type === 'Partenaire' ? <strong>{a.nom}</strong> : a.nom}</th>
                     <td>{a.type}</td>
                     <td>{nf(a.requetes)}</td>
-                    <td>{pct(part(a.requetes, c.requetes))}</td>
                     <td>{nf(a.reussies)}</td>
                     <td>
                       <strong>{a.requetes === 0 ? '—' : pct(part(a.requetes - a.reussies, a.requetes))}</strong>
@@ -201,7 +199,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                   <th scope="row">Total</th>
                   <td />
                   <td>{nf(somme('requetes'))}</td>
-                  <td>{pct(part(somme('requetes'), somme('requetes')))}</td>
                   <td>{nf(somme('reussies'))}</td>
                   <td>{pct(part(somme('requetes') - somme('reussies'), somme('requetes')))}</td>
                   <td>{nf(somme('demandesOtp'))}</td>
