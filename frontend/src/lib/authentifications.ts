@@ -55,7 +55,7 @@ export function chiffresUsagers(api?: RequetesUsagers): ChiffresUsagers {
 export const desRequetes = (n: number, c: ChiffresUsagers) => `${pct(part(n, c.requetes))} des requêtes`;
 
 /**
- * Détail de la carte « Code à usage unique » : « 89,4 % des requêtes ; 2 380 codes envoyés, 60,5 % utilisés ». Les
+ * Détail de la carte « Code OTP » : « 89,4 % des requêtes ; 2 380 codes envoyés, 60,5 % utilisés ». Les
  * codes envoyés sont les demandes acceptées par IDA ; la part utilisée vient de ida.otp_transaction (tous appelants).
  */
 export function detailOtp(c: ChiffresUsagers): string {
@@ -74,7 +74,7 @@ export function detailPartenaires(c: ChiffresUsagers): string {
 /** Libellés des types d'authentification (codes de l'API), dans l'ordre de la maquette. */
 export const TYPES_AUTHENTIFICATION = [
   { code: 'biometrique', libelle: 'Biométrique' },
-  { code: 'otp', libelle: 'Code à usage unique' },
+  { code: 'otp', libelle: 'Code OTP' },
   { code: 'demographique', libelle: 'Démographique' },
   { code: 'combinee', libelle: 'Combinée' },
   { code: 'sans_mode', libelle: 'Sans mode d’authentification' },

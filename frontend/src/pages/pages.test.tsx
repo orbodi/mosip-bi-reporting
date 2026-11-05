@@ -105,7 +105,7 @@ describe('Pages de la maquette', () => {
 
     const types = within(screen.getByRole('region', { name: 'Par type d’authentification' }));
     const lignes = await types.findAllByRole('row');
-    expect(lignes[1]).toHaveTextContent(/^Code à usage unique/);
+    expect(lignes[1]).toHaveTextContent(/^Code OTP/);
     expect(types.getAllByRole('img', { name: 'Alerte : taux d’échec de 50 % ou plus' })).toHaveLength(2);
 
     const causes = within(screen.getByRole('region', { name: 'Causes des échecs' }));

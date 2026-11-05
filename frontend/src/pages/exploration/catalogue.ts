@@ -122,7 +122,7 @@ export const DIMENSIONS: Record<CleDimension, { libelle: string; tous: string; v
   taut: {
     libelle: 'Type d’authentification',
     tous: 'Tous',
-    valeurs: ['Biométrique', 'Code à usage unique', 'Démographique', 'Combinée'],
+    valeurs: ['Biométrique', 'Code OTP', 'Démographique', 'Combinée'],
   },
   cause: { libelle: 'Cause d’échec', tous: 'Toutes', valeurs: [] },
   part: { libelle: 'Partenaire', tous: 'Tous', valeurs: [] },

@@ -43,7 +43,7 @@ describe('Authentifications', () => {
     expect(Number.isNaN(chiffresUsagers(undefined).otp)).toBe(true);
   });
 
-  it('carte du code à usage unique : part des requêtes, codes envoyés et part utilisée', () => {
+  it('carte du code OTP : part des requêtes, codes envoyés et part utilisée', () => {
     expect(detailOtp(chiffresUsagers(USAGERS))).toMatch(
       /^89,4\s% des requêtes ; 2\s380 codes envoyés, 60,5\s% utilisés$/,
     );
@@ -72,7 +72,7 @@ describe('Authentifications', () => {
       ],
     };
     expect(lignesTypes(api).map((l) => l.libelle)).toEqual([
-      'Code à usage unique',
+      'Code OTP',
       'Sans mode d’authentification',
       'Biométrique',
       'Démographique',
