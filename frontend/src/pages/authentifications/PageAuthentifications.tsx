@@ -66,7 +66,7 @@ function Causes({ titre, lignes, total }: { titre: string; lignes: LigneCause[];
  * paquets dans le dernier bloc. Pas de territoire : tout est national.
  */
 export function PageAuthentifications({ page }: { page: DefinitionPage }) {
-  const { plage, prete, choix } = usePlageApi(page.source);
+  const { plage, prete } = usePlageApi(page.source);
   const fin = useFinPeriode(page.source);
 
   const usagers = useUsagers(plage, prete);
@@ -113,10 +113,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                   { libelle: 'Échouées', couleur: 'rouge' },
                 ]}
               />
-              <p className="note-m">
-                Les demandes de code OTP ({nf(c.demandesOtp)}) ne sont pas des authentifications : elles sont
-                comptées à part, dans la carte « Code à usage unique ».
-              </p>
             </div>
             <div className="duo__cartes">
               <div className="cartes-m cartes-m--3">
@@ -212,11 +208,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                 </tbody>
               </table>
             </div>
-            <p className="note-m">
-              <Drapeau />
-              Taux d’échec de 50 % ou plus. Codes MOSIP : FINGERPRINT-AUTH, IRIS-AUTH, FACE-AUTH, OTP-AUTH,
-              DEMO-AUTH ; l’eKYC par code (KYC-AUTH) compte avec le code à usage unique.
-            </p>
           </Panneau>
           <Panneau
             id="titre-causes"
@@ -234,7 +225,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
         <Panneau
           id="titre-partenaires"
           titre="Partenaires et canaux"
-          sousTitre="Qui envoie les requêtes d’authentification des usagers, du plus actif au moins actif."
           pastille={<span className="pastille-portee">{pastillePartenaires(partenaires.data)}</span>}
         >
           <div
@@ -285,20 +275,11 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
               </tbody>
             </table>
           </div>
-          <p className="note-m">
-            Un partenaire est « raccordé » s’il a envoyé au moins une requête ou une demande de code sur la période.
-            Nom tel que déclaré dans MOSIP (organisations, jamais de personne).
-          </p>
         </Panneau>
 
         <Panneau
           id="titre-requetes-semaine"
           titre="Requêtes par semaine"
-          sousTitre={
-            choix === 'tout'
-              ? 'Usagers, 12 dernières semaines complètes.'
-              : 'Usagers, 12 semaines complètes jusqu’à la fin de la période.'
-          }
           aside={
             <Legende
               elements={[
@@ -326,7 +307,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
         <Panneau
           id="titre-paquets"
           titre="Vérifications biométriques du traitement des paquets"
-          sousTitre="Contrôles faits par MOSIP lui-même pendant le traitement des inscriptions. Ce ne sont pas des demandes d’usagers : jamais additionnés aux requêtes ci-dessus."
           pastille={<span className="pastille-portee">Ensemble du Togo</span>}
           sansMarge
         >
@@ -354,10 +334,6 @@ export function PageAuthentifications({ page }: { page: DefinitionPage }) {
                   },
                 ]}
               />
-              <p className="note-m authentifications__encart">
-                À rapprocher du Devenir des inscriptions (page Enrôlement) : motif « vérification biométrique non
-                concordante ».
-              </p>
             </div>
             <div className="duo__cartes">
               <p className="authentifications__groupe">Causes des échecs</p>

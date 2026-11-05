@@ -1,11 +1,4 @@
 /* Page Authentifications (lot 9c, maquette validée le 04/11/2026). */
-.authentifications__encart {
-  margin-top: var(--e-4);
-  padding: var(--e-3) var(--e-4);
-  border-radius: var(--r-m);
-  background: var(--bleu-clair);
-  color: var(--encre);
-}
 .authentifications__groupe {
   margin: 0 0 var(--e-2);
   color: var(--encre-2);

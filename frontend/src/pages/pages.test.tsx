@@ -102,7 +102,6 @@ describe('Pages de la maquette', () => {
     expect(await usagers.findByText(/^2\s186$/)).toBeInTheDocument();
     expect(usagers.getByText(/^Atos, 75,3\s% des requêtes$/)).toBeInTheDocument();
     expect(usagers.getByText(/2\s380 codes envoyés, 60,5\s% utilisés$/)).toBeInTheDocument();
-    expect(usagers.getByText(/Les demandes de code OTP \(2\s732\)/)).toBeInTheDocument();
 
     const types = within(screen.getByRole('region', { name: 'Par type d’authentification' }));
     const lignes = await types.findAllByRole('row');
