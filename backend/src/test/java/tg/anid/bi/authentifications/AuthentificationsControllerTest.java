@@ -67,6 +67,23 @@ class AuthentificationsControllerTest {
     }
 
     @Test
+    void renvoieLExplorationEtRefuseUneVentilationInconnue() throws Exception {
+        when(service.exploration(eq("paquets"), isNull(), isNull(), isNull(), isNull(), isNull(), eq("mois")))
+                .thenReturn(new ExplorationAuthentifications("paquets", null, null, "mois", List.of(
+                        new ExplorationAuthentifications.Ligne("2026-10", "2026-10",
+                                new ExplorationAuthentifications.Chiffres(700, 100, 600))),
+                        new ExplorationAuthentifications.Chiffres(700, 100, 600),
+                        new ExplorationAuthentifications.Valeurs(List.of("biometrique"), List.of(),
+                                List.of("Traitement des paquets"))));
+
+        mvc.perform(get("/api/v1/authentifications/exploration").param("perimetre", "paquets").param("par", "mois"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lignes[0].cle").value("2026-10"))
+                .andExpect(jsonPath("$.total.echouees").value(600))
+                .andExpect(jsonPath("$.valeurs.appelants[0]").value("Traitement des paquets"));
+    }
+
+    @Test
     void uneRequeteInvalideRepond400() throws Exception {
         when(service.usagers(eq(LocalDate.parse("2026-10-31")), eq(LocalDate.parse("2026-10-01"))))
                 .thenThrow(new RequeteInvalide("La date « du » doit précéder la date « au »."));

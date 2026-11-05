@@ -5,6 +5,7 @@ import {
   lireApi,
   type AuthentificationsParSemaine,
   type CausesEchec,
+  type ExplorationAuthentifications,
   type PartenairesEtCanaux,
   type RequetesUsagers,
   type TypesAuthentification,
@@ -60,4 +61,22 @@ export function useSemainesAuthentification(plage: Plage | undefined, active = t
 /** Vérifications biométriques du traitement des paquets (bloc à part). */
 export function usePaquets(plage: Plage | undefined, active = true) {
   return useBlocAuthentifications<VerificationsPaquets>('paquets', plage, active);
+}
+
+/** Paramètres de l'onglet Authentifications de l'Exploration (filtres facultatifs, une ventilation). */
+export interface ParametresExploration {
+  perimetre: 'usagers' | 'paquets';
+  type?: string;
+  motif?: string;
+  appelant?: string;
+  par: 'annee' | 'mois' | 'type' | 'motif' | 'appelant' | 'total';
+}
+
+/** Onglet Authentifications de l'Exploration : lignes de la ventilation, total et valeurs des filtres. */
+export function useExplorationAuthentifications(
+  plage: Plage | undefined,
+  parametres: ParametresExploration,
+  active = true,
+) {
+  return useBlocAuthentifications<ExplorationAuthentifications>('exploration', plage, active, { ...parametres });
 }

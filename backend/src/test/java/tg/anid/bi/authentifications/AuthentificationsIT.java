@@ -166,6 +166,41 @@ class AuthentificationsIT {
     }
 
     @Test
+    void explorationParMoisParMotifEtFiltres() {
+        ExplorationAuthentifications parMois = service.exploration(null, null, null, null, null, null, "mois");
+
+        assertThat(parMois.perimetre()).isEqualTo("usagers");
+        assertThat(parMois.lignes()).extracting(ExplorationAuthentifications.Ligne::cle)
+                .containsExactly("2025-12", "2026-01");
+        assertThat(parMois.lignes().stream().mapToLong(l -> l.chiffres().requetes()).sum())
+                .isEqualTo(parMois.total().requetes());
+        assertThat(parMois.total().requetes()).isEqualTo(58);
+        assertThat(parMois.valeurs().appelants()).containsExactly("Atos", "Portail du résident", "USSD");
+        assertThat(parMois.valeurs().motifs()).extracting(CausesEchec.Motif::code)
+                .containsExactly("OTP_REFUSE", "SANS_MODE", "AUTRE");
+
+        // Par motif : seulement les échouées, avec leur libellé.
+        ExplorationAuthentifications parMotif = service.exploration(null, null, null, null, null, null, "motif");
+        assertThat(parMotif.lignes()).extracting(ExplorationAuthentifications.Ligne::libelle)
+                .containsExactly("Code OTP ou eKYC refusé", "Aucun mode d'authentification demandé",
+                        "Motif non répertorié");
+
+        // Filtres : un partenaire et un type, sur une période d'un jour.
+        LocalDate jour = LocalDate.parse("2026-01-05");
+        ExplorationAuthentifications filtre = service.exploration("usagers", jour, jour, "otp", null, "Atos", "total");
+        assertThat(filtre.lignes()).isEmpty();
+        assertThat(filtre.total()).isEqualTo(new ExplorationAuthentifications.Chiffres(38, 30, 8));
+
+        // Les paquets restent à part.
+        ExplorationAuthentifications paquets = service.exploration("paquets", null, null, null, null, null, "appelant");
+        assertThat(paquets.lignes()).extracting(ExplorationAuthentifications.Ligne::cle)
+                .containsExactly("Traitement des paquets");
+        assertThat(paquets.total().requetes()).isEqualTo(700);
+        assertThatThrownBy(() -> service.exploration(null, null, null, null, null, null, "zone"))
+                .isInstanceOf(tg.anid.bi.commun.RequeteInvalide.class);
+    }
+
+    @Test
     void contraintesDuContrat() {
         // Une échouée a un motif ; une réussie n'en a pas.
         assertThatThrownBy(() -> jdbc.sql("""

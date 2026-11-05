@@ -3,6 +3,7 @@ package tg.anid.bi.authentifications;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -71,5 +72,18 @@ public class AuthentificationsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au) {
         return service.paquets(du, au);
+    }
+
+    /** Onglet Authentifications de l'Exploration : filtres facultatifs, une ventilation (total par défaut). */
+    @GetMapping("/exploration")
+    public ExplorationAuthentifications exploration(
+            @RequestParam(required = false) @Pattern(regexp = "usagers|paquets") String perimetre,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            @RequestParam(required = false) @Pattern(regexp = "[a-z_]{1,20}") String type,
+            @RequestParam(required = false) @Pattern(regexp = "[A-Z_]{1,40}") String motif,
+            @RequestParam(required = false) @Size(max = 128) String appelant,
+            @RequestParam(required = false) @Pattern(regexp = "annee|mois|type|motif|appelant|total") String par) {
+        return service.exploration(perimetre, du, au, type, motif, appelant, par);
     }
 }

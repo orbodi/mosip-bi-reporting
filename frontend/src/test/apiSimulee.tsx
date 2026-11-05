@@ -788,6 +788,36 @@ const PAR_DEFAUT: Record<string, Reponse> = {
   '/authentifications/partenaires': PARTENAIRES_AUTH,
   '/authentifications/semaines': SEMAINES_AUTH,
   '/authentifications/paquets': PAQUETS_AUTH,
+  '/authentifications/exploration': (url: URL) => {
+    const paquets = url.searchParams.get('perimetre') === 'paquets';
+    const par = url.searchParams.get('par') ?? 'total';
+    const chiffres = (requetes: number, reussies: number) => ({ requetes, reussies, echouees: requetes - reussies });
+    const lignes =
+      par === 'mois'
+        ? [
+            { cle: '2025-12', libelle: '2025-12', chiffres: chiffres(1200, 700) },
+            { cle: '2026-01', libelle: '2026-01', chiffres: chiffres(986, 838) },
+          ]
+        : par === 'appelant'
+          ? paquets
+            ? [{ cle: 'Traitement des paquets', libelle: 'Traitement des paquets', chiffres: chiffres(170151, 25253) }]
+            : [
+                { cle: 'Atos', libelle: 'Atos', chiffres: chiffres(1645, 1142) },
+                { cle: 'Portail du résident', libelle: 'Portail du résident', chiffres: chiffres(517, 377) },
+              ]
+          : [];
+    return {
+      perimetre: paquets ? 'paquets' : 'usagers',
+      par,
+      lignes,
+      total: paquets ? chiffres(170151, 25253) : chiffres(2186, 1538),
+      valeurs: {
+        types: paquets ? ['biometrique'] : ['biometrique', 'otp', 'sans_mode'],
+        motifs: paquets ? CAUSES_PAQUETS.motifs : CAUSES_USAGERS.motifs,
+        appelants: paquets ? ['Traitement des paquets'] : ['Atos', 'Portail du résident', 'USSD'],
+      },
+    };
+  },
   '/enrolement/age-sexe': (url: URL) =>
     url.searchParams.get('zone') === 'SAV'
       ? {

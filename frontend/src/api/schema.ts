@@ -937,6 +937,35 @@ export interface components {
       /** Format: int64 */
       echouees: number;
     };
+    ExplorationAuthentifications: {
+      perimetre: string;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      par: string;
+      lignes: components['schemas']['LigneExplorationAuthentification'][];
+      total: components['schemas']['ChiffresExplorationAuthentification'];
+      valeurs: components['schemas']['ValeursExplorationAuthentification'];
+    };
+    LigneExplorationAuthentification: {
+      cle: string;
+      libelle: string;
+      chiffres: components['schemas']['ChiffresExplorationAuthentification'];
+    };
+    ChiffresExplorationAuthentification: {
+      /** Format: int64 */
+      requetes: number;
+      /** Format: int64 */
+      reussies: number;
+      /** Format: int64 */
+      echouees: number;
+    };
+    ValeursExplorationAuthentification: {
+      types: string[];
+      motifs: components['schemas']['MotifEchecAuthentification'][];
+      appelants: string[];
+    };
     VerificationsPaquets: {
       /** Format: date */
       du?: string | null;

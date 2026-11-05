@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import type { LigneZone, Territoire } from '../../api/client';
+import { useExplorationAuthentifications, type ParametresExploration } from '../../api/authentifications';
 import { useTerritoire } from '../../api/enrolement';
 import { useMeta } from '../../api/meta';
 import { ChampChoix, type OptionChoix } from '../../composants/blocs/ChampChoix';
@@ -9,6 +10,7 @@ import { GrandChiffre } from '../../composants/blocs/Indicateur';
 import { Pagination } from '../../composants/blocs/Pagination';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
+import { TYPES_AUTHENTIFICATION } from '../../lib/authentifications';
 import { nf, part, pct } from '../../lib/format';
 import { paginer, type TaillePage } from '../../lib/pagination';
 import {
@@ -95,6 +97,27 @@ const CHAMP_ENROLEMENT: Record<string, ChampsEnrolement> = {
   pre: 'preinscriptions',
 };
 
+/** Authentifications (05/11/2026) : colonnes de l'API Exploration et ventilations correspondantes. */
+const CHAMP_AUTH: Record<string, 'requetes' | 'reussies' | 'echouees'> = {
+  req: 'requetes',
+  ok: 'reussies',
+  ko: 'echouees',
+};
+const PAR_AUTH: Record<string, ParametresExploration['par']> = {
+  annee: 'annee',
+  mois: 'mois',
+  taut: 'type',
+  cause: 'motif',
+  part: 'appelant',
+};
+const PERIMETRES_AUTH: OptionChoix[] = [
+  { id: 'usagers', libelle: 'Usagers' },
+  { id: 'paquets', libelle: 'Traitement des paquets' },
+];
+const libelleType = (code: string) => TYPES_AUTHENTIFICATION.find((t) => t.code === code)?.libelle ?? code;
+// Le catalogue des motifs du pipeline écrit l'apostrophe droite.
+const apostrophe = (texte: string) => texte.replace(/'/g, '’');
+
 /** Ordre alphabétique français des listes de zones (« Éthiopie » après « Dapaong », pas à la fin). */
 const ordreFr = new Intl.Collator('fr', { sensitivity: 'base' });
 
@@ -166,6 +189,8 @@ function Explorateur() {
   const [indicateurs, setIndicateurs] = useState<string[]>([source.indicateurs[0].cle]);
   const [periode, setPeriode] = useState('tout');
   const [filtres, setFiltres] = useState<Partial<Record<CleDimension, string>>>({});
+  // Authentifications : usagers ou traitement des paquets, jamais additionnés (option A, 03/11/2026).
+  const [perimetreAuth, setPerimetreAuth] = useState<ParametresExploration['perimetre']>('usagers');
   // Zones choisies, de la région vers le centre : chemin[k] est le code choisi au niveau NIVEAUX_TERRITOIRE[k].
   const [chemin, setChemin] = useState<string[]>([]);
   const [par, setPar] = useState<string>('sous');
@@ -218,6 +243,23 @@ function Explorateur() {
   const choisirNiveau = (k: number, code: string) =>
     setChemin(code ? [...chemin.slice(0, k), code] : chemin.slice(0, k));
 
+  // Valeurs des filtres de l'onglet Authentifications, lues dans les données (toute la durée du périmètre).
+  const auth = cleSource === 'auth';
+  const valeursAuth = useExplorationAuthentifications(undefined, { perimetre: perimetreAuth, par: 'total' }, auth)
+    .data?.valeurs;
+  const optionsDimension = (d: CleDimension): OptionChoix[] => {
+    if (auth && d === 'taut') {
+      const codes = valeursAuth?.types ?? TYPES_AUTHENTIFICATION.map((x) => x.code).filter((c) => c !== 'non_classe');
+      return codes.map((c) => ({ id: c, libelle: libelleType(c) }));
+    }
+    if (auth && d === 'cause') {
+      return (valeursAuth?.motifs ?? []).map((m) => ({ id: m.code, libelle: apostrophe(m.libelle) }));
+    }
+    if (auth && d === 'part') return (valeursAuth?.appelants ?? []).map((a) => ({ id: a, libelle: a }));
+    return DIMENSIONS[d].valeurs.map((v) => ({ id: v, libelle: v }));
+  };
+  const libelleFiltre = (d: CleDimension, v: string) => optionsDimension(d).find((o) => o.id === v)?.libelle ?? v;
+
   const optionsPar: OptionChoix[] = [
     ...(territoireOk && niveauSuivant ? [{ id: 'sous', libelle: niveauSuivant.libelle }] : []),
     ...(!periode.startsWith('A:') && !periode.startsWith('M:') && (!perso || anneesPeriode.length > 1)
@@ -225,7 +267,7 @@ function Explorateur() {
       : []),
     ...(!periode.startsWith('M:') ? [{ id: 'mois', libelle: 'Mois' }] : []),
     ...dimensionsCommunes
-      .filter((d) => !filtres[d] && DIMENSIONS[d].valeurs.length)
+      .filter((d) => !filtres[d] && optionsDimension(d).length)
       .map((d) => ({ id: d, libelle: DIMENSIONS[d].libelle })),
     { id: 'total', libelle: 'Total seul' },
   ];
@@ -252,8 +294,34 @@ function Explorateur() {
     !!NIVEAUX_TERRITOIRE[chemin.length + 1] &&
     (l.ouvrable ?? l.niveau !== 'centre');
 
+  // Authentifications : une requête par ventilation et filtres ; jamais sur une période personnalisée invalide.
+  const exploAuth = useExplorationAuthentifications(
+    plage,
+    {
+      perimetre: perimetreAuth,
+      type: filtres.taut,
+      motif: filtres.cause,
+      appelant: filtres.part,
+      par: PAR_AUTH[parEffectif] ?? 'total',
+    },
+    auth && !erreurPerso,
+  ).data;
+  const libelleLigneAuth = (cle: string, libelle: string) =>
+    parEffectif === 'mois'
+      ? libelleMois(cle)
+      : parEffectif === 'taut'
+        ? libelleType(cle)
+        : apostrophe(libelle);
+
   const lignes = ((): { id: string; libelle: string; valeurs: number[]; ouvrable?: boolean }[] => {
     if (parEffectif === 'total') return [];
+    if (auth && exploAuth) {
+      return exploAuth.lignes.map((l) => ({
+        id: l.cle,
+        libelle: libelleLigneAuth(l.cle, l.libelle),
+        valeurs: choisis.map((i) => l.chiffres[CHAMP_AUTH[i.cle]] ?? Number.NaN),
+      }));
+    }
     if (lignesApi && parEffectif === 'sous') {
       return lignesApi.map((l) => ({
         id: l.code,
@@ -279,9 +347,14 @@ function Explorateur() {
     return dim ? dim.valeurs.map((v) => ({ id: v, libelle: v, valeurs: inconnues() })) : [];
   })();
 
-  const totaux = reel && territoire.data ? valeursDe(territoire.data) : choisis.map(() => Number.NaN);
+  const totaux =
+    auth && exploAuth
+      ? choisis.map((i) => exploAuth.total[CHAMP_AUTH[i.cle]] ?? Number.NaN)
+      : reel && territoire.data
+        ? valeursDe(territoire.data)
+        : choisis.map(() => Number.NaN);
   // La page revient à 1 quand les lignes changent (autre zone, autre ventilation) : clé des lignes affichées.
-  const cleLignes = `${cleSource}|${parEffectif}|${chemin.join('/')}|${periode}`;
+  const cleLignes = `${cleSource}|${parEffectif}|${chemin.join('/')}|${periode}|${perimetreAuth}`;
   const [clePage, setClePage] = useState(cleLignes);
   const tranche = paginer(lignes, clePage === cleLignes ? page : 0, taille);
   const allerPage = (p: number) => {
@@ -297,7 +370,13 @@ function Explorateur() {
 
   const libellePar = optionsPar.find((o) => o.id === parEffectif)?.libelle ?? '';
   const titreResultat = `${choisis.map((i) => i.libelle).join(', ')}${parEffectif !== 'total' ? ` par ${libellePar.toLowerCase()}` : ''}`;
-  const filtresDecrits = [...Object.values(filtres).filter(Boolean), ...nomsChemin];
+  const filtresDecrits = [
+    ...(auth ? [PERIMETRES_AUTH.find((o) => o.id === perimetreAuth)?.libelle ?? ''] : []),
+    ...(Object.entries(filtres) as [CleDimension, string | undefined][])
+      .filter(([, v]) => !!v)
+      .map(([d, v]) => libelleFiltre(d, v as string)),
+    ...nomsChemin,
+  ];
   const libellePeriode =
     periode === 'tout'
       ? mois.length
@@ -314,6 +393,7 @@ function Explorateur() {
     setCleSource(s.cle);
     setIndicateurs([s.indicateurs[0].cle]);
     setFiltres({});
+    setPerimetreAuth('usagers');
     setChemin([]);
     setPar(s.indicateurs[0].territoire ? 'sous' : 'mois');
     setMode('n');
@@ -414,19 +494,29 @@ function Explorateur() {
                     )}
                   </>
                 )}
+                {s.cle === 'auth' && (
+                  <ChampChoix
+                    libelle="Périmètre"
+                    valeur={perimetreAuth}
+                    options={PERIMETRES_AUTH}
+                    onChange={(v) => {
+                      // Les motifs et les appelants diffèrent d'un périmètre à l'autre.
+                      setPerimetreAuth(v as ParametresExploration['perimetre']);
+                      setFiltres({});
+                    }}
+                  />
+                )}
                 {dimensionsSource.map((d) => {
                   const applicable = choisis.some((i) => i.dimensions.includes(d));
                   const dim = DIMENSIONS[d];
+                  const options = optionsDimension(d);
                   return (
                     <ChampChoix
                       key={d}
                       libelle={dim.libelle}
                       valeur={filtres[d] ?? ''}
-                      options={[
-                        { id: '', libelle: dim.tous },
-                        ...dim.valeurs.map((v) => ({ id: v, libelle: v })),
-                      ]}
-                      desactive={!applicable || dim.valeurs.length === 0}
+                      options={[{ id: '', libelle: dim.tous }, ...options]}
+                      desactive={!applicable || options.length === 0}
                       raison={
                         !applicable
                           ? 'Sans objet pour les indicateurs choisis'

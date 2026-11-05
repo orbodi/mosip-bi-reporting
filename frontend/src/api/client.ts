@@ -48,6 +48,7 @@ export type PartenairesEtCanaux = components['schemas']['PartenairesEtCanaux'];
 export type AppelantAuthentification = components['schemas']['AppelantAuthentification'];
 export type AuthentificationsParSemaine = components['schemas']['AuthentificationsParSemaine'];
 export type VerificationsPaquets = components['schemas']['VerificationsPaquets'];
+export type ExplorationAuthentifications = components['schemas']['ExplorationAuthentifications'];
 
 /**
  * Relecture automatique des données alimentées en temps réel (pipeline CDC de l'enrôlement) : de l'ordre de la

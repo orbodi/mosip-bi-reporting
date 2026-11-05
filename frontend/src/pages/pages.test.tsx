@@ -221,6 +221,34 @@ describe('Pages de la maquette', () => {
     expect(appels.some((u) => u.searchParams.get('du') === '2026-01-12')).toBe(false);
   });
 
+  it('Exploration : authentifications depuis l’API, usagers ou traitement des paquets, filtres lus dans les données', async () => {
+    const appels = simulerApi();
+    afficher('/exploration');
+    const utilisateur = userEvent.setup();
+
+    await utilisateur.click(await screen.findByRole('tab', { name: /Authentifications/ }));
+    expect(await screen.findByText(/^2\s186$/)).toBeInTheDocument();
+
+    // Ventilation par partenaire : noms lus dans les données, sans code MOSIP.
+    await utilisateur.click(boutonChoix('Afficher par'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Partenaire' }));
+    expect(await screen.findByRole('rowheader', { name: 'Atos' })).toBeInTheDocument();
+    expect(
+      appels.some((u) => u.pathname.endsWith('/exploration') && u.searchParams.get('par') === 'appelant'),
+    ).toBe(true);
+
+    // Le filtre Partenaire se remplit depuis les données.
+    await utilisateur.click(boutonChoix('Partenaire'));
+    expect(await screen.findByRole('option', { name: 'Portail du résident' })).toBeInTheDocument();
+    await utilisateur.keyboard('{Escape}');
+
+    // Traitement des paquets : jamais additionné aux usagers.
+    await utilisateur.click(boutonChoix('Périmètre'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Traitement des paquets' }));
+    expect(await screen.findByRole('rowheader', { name: 'Traitement des paquets' })).toBeInTheDocument();
+    expect((await screen.findAllByText(/^170\s151$/)).length).toBeGreaterThanOrEqual(1);
+  });
+
   it('Exploration : descend jusqu’aux communes, listes en cascade et pré-inscriptions', async () => {
     const appels = simulerApi();
     afficher('/exploration');

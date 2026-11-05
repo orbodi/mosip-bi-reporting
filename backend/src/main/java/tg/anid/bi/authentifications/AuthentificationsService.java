@@ -122,6 +122,35 @@ public class AuthentificationsService {
         return new VerificationsPaquets(du, au, true, t.requetes(), t.reussies(), t.echouees(), t.autresStatuts());
     }
 
+    /**
+     * Onglet Authentifications de l'Exploration : un périmètre (usagers par défaut), filtres facultatifs, une
+     * ventilation (total par défaut).
+     */
+    public ExplorationAuthentifications exploration(String perimetre, LocalDate du, LocalDate au, String type,
+                                                    String motif, String appelant, String par) {
+        verifierOrdre(du, au);
+        String p = perimetre == null || perimetre.isBlank() ? AuthentificationsRepository.USAGERS : perimetre;
+        if (!AuthentificationsRepository.USAGERS.equals(p) && !AuthentificationsRepository.PAQUETS.equals(p)) {
+            throw new RequeteInvalide("Le périmètre vaut « usagers » ou « paquets ».");
+        }
+        String v = par == null || par.isBlank() ? "total" : par;
+        if (!"total".equals(v) && !AuthentificationsRepository.VENTILATIONS.containsKey(v)) {
+            throw new RequeteInvalide("Ventilation inconnue : annee, mois, type, motif, appelant ou total.");
+        }
+        String t = vide(type);
+        String m = vide(motif);
+        String a = vide(appelant);
+        List<ExplorationAuthentifications.Ligne> lignes = "total".equals(v)
+                ? List.of()
+                : repository.lignesExploration(p, du, au, t, m, a, v);
+        return new ExplorationAuthentifications(p, du, au, v, lignes, repository.totalExploration(p, du, au, t, m, a),
+                repository.valeursExploration(p));
+    }
+
+    private static String vide(String valeur) {
+        return valeur == null || valeur.isBlank() ? null : valeur;
+    }
+
     private static void verifierOrdre(LocalDate du, LocalDate au) {
         if (du != null && au != null && du.isAfter(au)) {
             throw new RequeteInvalide("La date « du » doit précéder la date « au ».");
