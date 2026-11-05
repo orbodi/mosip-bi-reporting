@@ -223,10 +223,9 @@ public class AuthentificationsRepository {
             throw new IllegalArgumentException("Ventilation inconnue : " + par);
         }
         String ordre = "annee".equals(par) || "mois".equals(par) ? "1" : "3 desc, 1";
-        return jdbc.sql("select " + cle + """
-                         as cle,
-                               coalesce(min(r.libelle), min(""" + cle + """
-                        )) as libelle,
+        // Clé insérée hors des blocs de texte : Java en retire les espaces de début et de fin de ligne.
+        String colonnes = "select " + cle + " as cle, coalesce(min(r.libelle), min(" + cle + ")) as libelle,\n";
+        return jdbc.sql(colonnes + """
                                sum(f.authentifications) as requetes,
                                coalesce(sum(f.authentifications) filter (where f.statut = 'reussie'), 0) as reussies,
                                coalesce(sum(f.authentifications) filter (where f.statut = 'echouee'), 0) as echouees
