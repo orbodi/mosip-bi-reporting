@@ -5,6 +5,7 @@ import {
   lireApi,
   type AnnulationsParMotif,
   type CartesEnAttente,
+  type ExplorationCartes,
   type ImpressionRemise,
   type ImpressionsParSemaine,
   type TerritoireCartes,
@@ -15,8 +16,14 @@ import {
  * Lecture d'un bloc de la page Impression des cartes (GET /api/v1/cartes/…), relue comme les autres pages : le
  * pipeline publie toutes les 5 minutes. Sans plage, l'API prend toutes les données ; sans zone, tout le Togo.
  */
-function useBlocCartes<T>(ressource: string, plage: Plage | undefined, active: boolean, zone?: string) {
-  const parametres = { du: plage?.du, au: plage?.au, zone };
+function useBlocCartes<T>(
+  ressource: string,
+  plage: Plage | undefined,
+  active: boolean,
+  zone?: string,
+  autres: Record<string, string | undefined> = {},
+) {
+  const parametres = { du: plage?.du, au: plage?.au, zone, ...autres };
   return useQuery({
     queryKey: ['cartes', ressource, parametres],
     queryFn: () => lireApi<T>(`/cartes/${ressource}`, parametres),
@@ -54,4 +61,17 @@ export function useTopCentresCartes(plage: Plage | undefined, active = true) {
 /** Commandes annulées par motif (parmi les demandes). */
 export function useAnnulations(plage: Plage | undefined, active = true) {
   return useBlocCartes<AnnulationsParMotif>('annulations', plage, active);
+}
+
+/** Ventilation de l'onglet Impression des cartes de l'Exploration. */
+export type ParCartes = 'sous' | 'annee' | 'mois' | 'total';
+
+/** Onglet Impression des cartes de l'Exploration : totaux de la zone et lignes de la ventilation. */
+export function useExplorationCartes(
+  plage: Plage | undefined,
+  zone: string | undefined,
+  par: ParCartes,
+  active = true,
+) {
+  return useBlocCartes<ExplorationCartes>('exploration', plage, active, zone, { par });
 }

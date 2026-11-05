@@ -34,6 +34,7 @@ export type ImpressionsParSemaine = components['schemas']['ImpressionsParSemaine
 export type SemaineImpression = components['schemas']['SemaineImpression'];
 export type TerritoireCartes = components['schemas']['TerritoireCartes'];
 export type LigneZoneCartes = components['schemas']['LigneZoneCartes'];
+export type ExplorationCartes = components['schemas']['ExplorationCartes'];
 export type CartesEnAttente = components['schemas']['CartesEnAttente'];
 export type TrancheAttente = components['schemas']['TrancheAttente'];
 export type TopCentresCartes = components['schemas']['TopCentresCartes'];

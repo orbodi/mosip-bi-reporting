@@ -781,6 +781,47 @@ const PAR_DEFAUT: Record<string, Reponse> = {
     url.searchParams.get('zone') === 'SAV' ? CARTES_SAVANES : CARTES_NATIONAL,
   '/cartes/attente': ATTENTE,
   '/cartes/centres': CENTRES_CARTES,
+  '/cartes/exploration': (url: URL) => {
+    const zone = url.searchParams.get('zone');
+    const par = url.searchParams.get('par') ?? 'total';
+    const chiffres = (demandes: number, expediees: number, remises: number) => ({
+      demandes,
+      expediees,
+      remises,
+      aRemettre: expediees - remises,
+    });
+    const ligne = (cle: string, libelle: string, niveau: string | null, c: ReturnType<typeof chiffres>) => ({
+      cle,
+      libelle,
+      niveau,
+      horsReferentiel: cle === 'HORS_REFERENTIEL',
+      ouvrable: cle !== 'HORS_REFERENTIEL' && (niveau === 'region' || niveau === 'prefecture'),
+      chiffres: c,
+    });
+    const savanes = zone === 'SAV';
+    const lignes =
+      par === 'sous'
+        ? savanes
+          ? [ligne('SAV-02', 'Tône', 'prefecture', chiffres(1200, 1000, 800))]
+          : [
+              ligne('SAV', 'Savanes', 'region', chiffres(1200, 1000, 800)),
+              ligne('GLO', 'Grand Lomé', 'region', chiffres(3300, 3100, 2500)),
+              ligne('HORS_REFERENTIEL', 'Hors référentiel', 'region', chiffres(10, 0, 0)),
+            ]
+        : par === 'mois'
+          ? [
+              ligne('2025-12', '2025-12', null, chiffres(1810, 1500, 1300)),
+              ligne('2026-01', '2026-01', null, chiffres(2700, 2600, 2000)),
+            ]
+          : [];
+    return {
+      perimetre: savanes ? 'Savanes' : 'Ensemble du Togo',
+      zone,
+      par,
+      lignes,
+      total: savanes ? chiffres(1200, 1000, 800) : chiffres(4510, 4100, 3300),
+    };
+  },
   '/authentifications/usagers': USAGERS_AUTH,
   '/authentifications/types': TYPES_AUTH,
   '/authentifications/causes': (url: URL) =>

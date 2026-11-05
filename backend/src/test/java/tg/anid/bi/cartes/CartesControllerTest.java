@@ -83,4 +83,19 @@ class CartesControllerTest {
         mvc.perform(get("/api/v1/cartes/semaines").param("du", "2026-10-31").param("au", "2026-10-01"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void renvoieLExplorationParSousZone() throws Exception {
+        when(service.exploration(isNull(), isNull(), eq("KAR"), eq("sous"))).thenReturn(new ExplorationCartes("Kara",
+                "KAR", null, null, "sous", List.of(new ExplorationCartes.Ligne("KOZ", "Kozah", "prefecture", false,
+                        true, new ExplorationCartes.Chiffres(80, 70, 20, 50))),
+                new ExplorationCartes.Chiffres(80, 70, 20, 50)));
+
+        mvc.perform(get("/api/v1/cartes/exploration").param("zone", "KAR").param("par", "sous"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lignes[0].cle").value("KOZ"))
+                .andExpect(jsonPath("$.lignes[0].ouvrable").value(true))
+                .andExpect(jsonPath("$.lignes[0].chiffres.aRemettre").value(50))
+                .andExpect(jsonPath("$.total.demandes").value(80));
+    }
 }

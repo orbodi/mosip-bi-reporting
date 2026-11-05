@@ -77,4 +77,17 @@ public class CartesController {
             @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone) {
         return service.annulations(du, au, zone);
     }
+
+    /**
+     * Onglet Impression des cartes de l'Exploration : demandes, cartes expédiées, remises et à remettre de la zone,
+     * par sous-zone directe, par année ou par mois ({@code par} : sous, annee, mois ou total).
+     */
+    @GetMapping("/exploration")
+    public ExplorationCartes exploration(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            @RequestParam(required = false) @Pattern(regexp = "[A-Za-z0-9_-]{1,40}") String zone,
+            @RequestParam(required = false) @Pattern(regexp = "sous|annee|mois|total") String par) {
+        return service.exploration(du, au, zone, par);
+    }
 }

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
+import tg.anid.bi.commun.RequeteInvalide;
 import tg.anid.bi.commun.RessourceIntrouvable;
 import tg.anid.bi.enrolement.EnrolementRepository;
 
@@ -234,5 +235,52 @@ class CartesIT {
         assertThat(a.total()).isEqualTo(service.impression(null, null, null).annulees());
         assertThat(a.motifs()).extracting(AnnulationsParMotif.Motif::code)
                 .containsExactly("CANCEL_PHOTO", "CANCEL_SEX");
+    }
+
+    @Test
+    void explorationParSousZoneLignesEgalesAuxTotauxAvecLesCentresHorsReferentiel() {
+        ExplorationCartes e = service.exploration(null, null, null, "sous");
+        ImpressionRemise i = service.impression(null, null, null);
+
+        assertThat(e.perimetre()).isEqualTo("Ensemble du Togo");
+        assertThat(e.total()).isEqualTo(new ExplorationCartes.Chiffres(i.demandes(), i.expediees(), i.remises(),
+                i.aRemettre()));
+        // Les 10 demandes du centre non référencé gardent leur ligne : somme des lignes = total.
+        assertThat(e.lignes()).extracting(ExplorationCartes.Ligne::cle)
+                .containsExactly("SAV", "KAR", "CEN", "PLA", "MAR", "GLO", "HORS_REFERENTIEL");
+        assertThat(e.lignes().getLast().horsReferentiel()).isTrue();
+        assertThat(e.lignes().getLast().ouvrable()).isFalse();
+        assertThat(e.lignes().stream().mapToLong(l -> l.chiffres().demandes()).sum()).isEqualTo(240);
+        assertThat(e.lignes().stream().mapToLong(l -> l.chiffres().expediees()).sum()).isEqualTo(210);
+        assertThat(e.lignes().getFirst().chiffres()).isEqualTo(new ExplorationCartes.Chiffres(150, 130, 100, 30));
+        assertThat(e.lignes()).allSatisfy(l -> assertThat(l.chiffres().remises() + l.chiffres().aRemettre())
+                .isEqualTo(l.chiffres().expediees()));
+    }
+
+    @Test
+    void explorationParMoisParAnneeEtDansUneRegion() {
+        ExplorationCartes parMois = service.exploration(null, null, null, "mois");
+        assertThat(parMois.lignes()).extracting(ExplorationCartes.Ligne::cle)
+                .containsExactly("2025-06", "2025-12", "2026-01");
+        assertThat(parMois.lignes().getFirst().chiffres()).isEqualTo(new ExplorationCartes.Chiffres(0, 10, 0, 10));
+        assertThat(parMois.lignes().getLast().chiffres()).isEqualTo(new ExplorationCartes.Chiffres(230, 200, 120, 80));
+
+        ExplorationCartes parAnnee = service.exploration(null, null, null, "annee");
+        assertThat(parAnnee.lignes()).extracting(ExplorationCartes.Ligne::cle).containsExactly("2025", "2026");
+        assertThat(parAnnee.lignes().stream().mapToLong(l -> l.chiffres().aRemettre()).sum())
+                .isEqualTo(parAnnee.total().aRemettre()).isEqualTo(90);
+
+        ExplorationCartes kara = service.exploration(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"),
+                "KAR", "sous");
+        assertThat(kara.perimetre()).isEqualTo("Kara");
+        assertThat(kara.total()).isEqualTo(new ExplorationCartes.Chiffres(80, 70, 20, 50));
+        assertThat(kara.lignes()).allSatisfy(l -> assertThat(l.niveau()).isEqualTo("prefecture"));
+        assertThat(kara.lignes().stream().mapToLong(l -> l.chiffres().expediees()).sum()).isEqualTo(70);
+
+        assertThat(service.exploration(null, null, "KAR", "total").lignes()).isEmpty();
+        assertThatThrownBy(() -> service.exploration(null, null, null, "sexe"))
+                .isInstanceOf(RequeteInvalide.class);
+        assertThatThrownBy(() -> service.exploration(null, null, "INCONNUE", "sous"))
+                .isInstanceOf(RessourceIntrouvable.class);
     }
 }

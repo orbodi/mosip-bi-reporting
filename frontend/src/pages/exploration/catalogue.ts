@@ -41,11 +41,12 @@ export const SOURCES: SourceExploration[] = [
     cle: 'cartes',
     libelle: 'Impression des cartes',
     fraicheur: 'cartes',
+    // Les faits d'impression ne portent ni sexe, ni âge, ni type de demande (05/11/2026) : territoire et période.
     indicateurs: [
-      { cle: 'dem', libelle: 'Demandes d’impression', dimensions: PROFIL, territoire: true },
-      { cle: 'exp', libelle: 'Cartes imprimées et expédiées', dimensions: PROFIL, territoire: true },
-      { cle: 'rem', libelle: 'Cartes remises', dimensions: PROFIL, territoire: true },
-      { cle: 'arem', libelle: 'Cartes à remettre', dimensions: PROFIL, territoire: true },
+      { cle: 'dem', libelle: 'Demandes d’impression', dimensions: [], territoire: true },
+      { cle: 'exp', libelle: 'Cartes imprimées et expédiées', dimensions: [], territoire: true },
+      { cle: 'rem', libelle: 'Cartes remises', dimensions: [], territoire: true },
+      { cle: 'arem', libelle: 'Cartes à remettre', dimensions: [], territoire: true },
     ],
   },
   {

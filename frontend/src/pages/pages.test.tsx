@@ -251,6 +251,41 @@ describe('Pages de la maquette', () => {
     expect((await screen.findAllByText(/^170\s151$/)).length).toBeGreaterThanOrEqual(1);
   });
 
+  it('Exploration : impression des cartes depuis l’API, par région, par préfecture puis par mois', async () => {
+    const appels = simulerApi();
+    afficher('/exploration');
+    const utilisateur = userEvent.setup();
+
+    await utilisateur.click(await screen.findByRole('tab', { name: /Impression des cartes/ }));
+    // Pas de filtre de profil : les faits d'impression n'en portent pas.
+    expect(screen.queryByText('Sexe', { selector: '.champ-choix__libelle' })).not.toBeInTheDocument();
+    // Par région : lignes de l'API, centres hors référentiel compris ; 4 510 au grand chiffre et à la ligne Total.
+    const resultat = within(await screen.findByRole('region', { name: 'Demandes d’impression par région' }));
+    expect(await resultat.findByRole('rowheader', { name: 'Hors référentiel' })).toBeInTheDocument();
+    expect(resultat.getAllByText(/^4\s510$/)).toHaveLength(2);
+
+    // Descente dans les Savanes : préfectures de la région.
+    await utilisateur.click(resultat.getByRole('button', { name: /Savanes/ }));
+    expect(await screen.findByRole('rowheader', { name: /Tône/ })).toBeInTheDocument();
+    expect(
+      appels.some(
+        (u) =>
+          u.pathname.endsWith('/cartes/exploration') &&
+          u.searchParams.get('zone') === 'SAV' &&
+          u.searchParams.get('par') === 'sous',
+      ),
+    ).toBe(true);
+
+    // Par mois, sur toute la zone choisie.
+    await utilisateur.click(boutonChoix('Afficher par'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Mois' }));
+    await waitFor(() =>
+      expect(
+        appels.some((u) => u.pathname.endsWith('/cartes/exploration') && u.searchParams.get('par') === 'mois'),
+      ).toBe(true),
+    );
+  });
+
   it('Exploration : descend jusqu’aux communes, listes en cascade et pré-inscriptions', async () => {
     const appels = simulerApi();
     afficher('/exploration');

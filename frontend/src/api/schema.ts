@@ -778,6 +778,35 @@ export interface components {
       /** Format: int64 */
       aRemettre: number;
     };
+    ExplorationCartes: {
+      perimetre: string;
+      zone?: string | null;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      par: string;
+      lignes: components['schemas']['LigneExplorationCartes'][];
+      total: components['schemas']['ChiffresExplorationCartes'];
+    };
+    LigneExplorationCartes: {
+      cle: string;
+      libelle: string;
+      niveau?: string | null;
+      horsReferentiel: boolean;
+      ouvrable: boolean;
+      chiffres: components['schemas']['ChiffresExplorationCartes'];
+    };
+    ChiffresExplorationCartes: {
+      /** Format: int64 */
+      demandes: number;
+      /** Format: int64 */
+      expediees: number;
+      /** Format: int64 */
+      remises: number;
+      /** Format: int64 */
+      aRemettre: number;
+    };
     CartesEnAttente: {
       perimetre: string;
       /** Format: date */

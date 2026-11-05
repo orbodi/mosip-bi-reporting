@@ -142,4 +142,29 @@ class CartesServiceTest {
                 .extracting(TopCentresCartes.CentreClasse::rang).containsExactly(1, 2);
         assertThat(service.annulations(null, null, null).total()).isEqualTo(679);
     }
+
+    @Test
+    void explorationLitLaVentilationDemandeeEtLesTotauxDeLaZone() {
+        when(zones.nomZone("SAV")).thenReturn(Optional.of("Savanes"));
+        when(repository.demandes(isNull(), isNull(), eq("SAV"))).thenReturn(
+                new CartesRepository.TotauxDemandes(150, 145, 4, 1, 0, 2, null, 0, null));
+        when(repository.cartes(isNull(), isNull(), eq("SAV"))).thenReturn(
+                new CartesRepository.TotauxCartes(130, 100, 90, 10, 0, 0, 30));
+        when(repository.lignesParTemps(isNull(), isNull(), eq("SAV"), eq("mois"))).thenReturn(List.of(
+                new ExplorationCartes.Ligne("2026-01", "2026-01", null, false, false,
+                        new ExplorationCartes.Chiffres(150, 130, 100, 30))));
+
+        ExplorationCartes e = service.exploration(null, null, "SAV", "mois");
+        assertThat(e.perimetre()).isEqualTo("Savanes");
+        assertThat(e.par()).isEqualTo("mois");
+        assertThat(e.total()).isEqualTo(new ExplorationCartes.Chiffres(150, 130, 100, 30));
+        assertThat(e.lignes()).hasSize(1);
+
+        ExplorationCartes total = service.exploration(null, null, "SAV", null);
+        assertThat(total.par()).isEqualTo("total");
+        assertThat(total.lignes()).isEmpty();
+        verify(repository, never()).lignesParSousZone(any(), any(), any());
+
+        assertThatThrownBy(() -> service.exploration(null, null, null, "zone")).isInstanceOf(RequeteInvalide.class);
+    }
 }

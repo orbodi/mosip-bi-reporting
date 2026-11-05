@@ -352,6 +352,117 @@ public class CartesRepository {
                 .list();
     }
 
+    /** Ventilations dans le temps de l'Exploration : format to_char de la clé (année, mois). */
+    static final Map<String, String> VENTILATIONS_TEMPS = Map.of("annee", "YYYY", "mois", "YYYY-MM");
+
+    /**
+     * Lignes de l'Exploration par année ou par mois ({@link #VENTILATIONS_TEMPS}), dans l'ordre du temps : demandes au
+     * mois de réception, cartes au mois d'expédition. Une période sans demande ni carte n'a pas de ligne.
+     */
+    public List<ExplorationCartes.Ligne> lignesParTemps(LocalDate du, LocalDate au, String zone, String par) {
+        String format = VENTILATIONS_TEMPS.get(par);
+        if (format == null) {
+            throw new IllegalArgumentException("Ventilation inconnue : " + par);
+        }
+        return jdbc.sql(AVEC_PERIMETRE + """
+                        , d as (
+                            select to_char(f.jour, cast(:format as text)) as cle, sum(f.demandes) as demandes
+                            from bi.fait_demande_impression_jour f
+                            where """ + FILTRE + """
+                            group by 1
+                        ),
+                        c as (
+                            select to_char(f.jour, cast(:format as text)) as cle, sum(f.expediees) as expediees,
+                                   sum(f.remises) as remises, sum(f.a_remettre) as a_remettre
+                            from bi.fait_carte_jour f
+                            where """ + FILTRE + """
+                            group by 1
+                        )
+                        select coalesce(d.cle, c.cle) as cle,
+                               coalesce(d.demandes, 0)   as demandes,
+                               coalesce(c.expediees, 0)  as expediees,
+                               coalesce(c.remises, 0)    as remises,
+                               coalesce(c.a_remettre, 0) as a_remettre
+                        from d full join c on c.cle = d.cle
+                        order by 1
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .param("zone", zone)
+                .param("format", format)
+                .query((rs, ligne) -> new ExplorationCartes.Ligne(rs.getString("cle"), rs.getString("cle"), null,
+                        false, false, new ExplorationCartes.Chiffres(rs.getLong("demandes"), rs.getLong("expediees"),
+                                rs.getLong("remises"), rs.getLong("a_remettre"))))
+                .list();
+    }
+
+    /**
+     * Lignes de l'Exploration par sous-zone directe de {@code zone} (les régions si {@code zone} est null), chiffres
+     * cumulés sur toute sa descendance, dans l'ordre du référentiel. La zone « hors référentiel » n'apparaît que si
+     * elle a des demandes ou des cartes.
+     */
+    public List<ExplorationCartes.Ligne> lignesParSousZone(LocalDate du, LocalDate au, String zone) {
+        return jdbc.sql("""
+                        with recursive
+                        enfants as (
+                            select z.id, z.code, z.nom, z.niveau, z.ordre,
+                                   exists (select 1 from bi.zone c where c.parent_id = z.id) as ouvrable
+                            from bi.zone z
+                            where (cast(:zone as text) is null and z.parent_id is null)
+                               or z.parent_id = (select r.id from bi.zone r where r.code = cast(:zone as text))
+                        ),
+                        descendance as (
+                            select e.id as enfant_id, e.id as zone_id from enfants e
+                            union all
+                            select d.enfant_id, z.id from bi.zone z join descendance d on z.parent_id = d.zone_id
+                        ),
+                        fd as (
+                            select f.centre_id, sum(f.demandes) as demandes
+                            from bi.fait_demande_impression_jour f
+                            where (cast(:du as date) is null or f.jour >= cast(:du as date))
+                              and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                            group by f.centre_id
+                        ),
+                        fc as (
+                            select f.centre_id, sum(f.expediees) as expediees, sum(f.remises) as remises,
+                                   sum(f.a_remettre) as a_remettre
+                            from bi.fait_carte_jour f
+                            where (cast(:du as date) is null or f.jour >= cast(:du as date))
+                              and (cast(:au as date) is null or f.jour <= cast(:au as date))
+                            group by f.centre_id
+                        )
+                        select e.code, e.nom, e.niveau, e.ouvrable,
+                               coalesce(sum(fd.demandes), 0)   as demandes,
+                               coalesce(sum(fc.expediees), 0)  as expediees,
+                               coalesce(sum(fc.remises), 0)    as remises,
+                               coalesce(sum(fc.a_remettre), 0) as a_remettre
+                        from enfants e
+                        join descendance d on d.enfant_id = e.id
+                        left join fd on fd.centre_id = d.zone_id
+                        left join fc on fc.centre_id = d.zone_id
+                        group by e.code, e.nom, e.niveau, e.ordre, e.ouvrable
+                        having e.code <> cast(:horsReferentiel as text)
+                            or coalesce(sum(fd.demandes), 0) + coalesce(sum(fc.expediees), 0) > 0
+                        order by e.ordre, e.nom
+                        """)
+                .param("du", du)
+                .param("au", au)
+                .param("zone", zone)
+                .param("horsReferentiel", ZONE_HORS_REFERENTIEL)
+                .query((rs, ligne) -> {
+                    boolean hors = ZONE_HORS_REFERENTIEL.equals(rs.getString("code"));
+                    return new ExplorationCartes.Ligne(
+                            rs.getString("code"),
+                            rs.getString("nom"),
+                            rs.getString("niveau"),
+                            hors,
+                            rs.getBoolean("ouvrable") && !hors,
+                            new ExplorationCartes.Chiffres(rs.getLong("demandes"), rs.getLong("expediees"),
+                                    rs.getLong("remises"), rs.getLong("a_remettre")));
+                })
+                .list();
+    }
+
     /** Commandes annulées par motif sur la période (jour de réception), de la plus fréquente à la moins fréquente. */
     public List<AnnulationsParMotif.Motif> annulationsParMotif(LocalDate du, LocalDate au, String zone) {
         return jdbc.sql(AVEC_PERIMETRE + """

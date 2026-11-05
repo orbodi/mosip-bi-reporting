@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import type { LigneZone, Territoire } from '../../api/client';
 import { useExplorationAuthentifications, type ParametresExploration } from '../../api/authentifications';
+import { useExplorationCartes, type ParCartes } from '../../api/cartes';
 import { useTerritoire } from '../../api/enrolement';
 import { useMeta } from '../../api/meta';
 import { ChampChoix, type OptionChoix } from '../../composants/blocs/ChampChoix';
@@ -110,6 +111,14 @@ const PAR_AUTH: Record<string, ParametresExploration['par']> = {
   cause: 'motif',
   part: 'appelant',
 };
+/** Impression des cartes (05/11/2026) : colonnes de l'API Exploration ; ventilations sous-zone, année, mois, total. */
+const CHAMP_CARTES: Record<string, 'demandes' | 'expediees' | 'remises' | 'aRemettre'> = {
+  dem: 'demandes',
+  exp: 'expediees',
+  rem: 'remises',
+  arem: 'aRemettre',
+};
+const PAR_CARTES: Partial<Record<string, ParCartes>> = { sous: 'sous', annee: 'annee', mois: 'mois' };
 const PERIMETRES_AUTH: OptionChoix[] = [
   { id: 'usagers', libelle: 'Usagers' },
   { id: 'paquets', libelle: 'Traitement des paquets' },
@@ -288,7 +297,7 @@ function Explorateur() {
   const valeursDe = (l?: Pick<LigneZone, ChampsEnrolement>) =>
     choisis.map((i) => (l && CHAMP_ENROLEMENT[i.cle] ? l[CHAMP_ENROLEMENT[i.cle]] : Number.NaN));
   // On ouvre une sous-zone du niveau attendu qui a elle-même des sous-zones (pas un centre rattaché plus haut).
-  const ouvrable = (l: LigneZone) =>
+  const ouvrable = (l: { niveau?: string | null; ouvrable?: boolean }) =>
     !!niveauSuivant &&
     l.niveau === niveauSuivant.cle &&
     !!NIVEAUX_TERRITOIRE[chemin.length + 1] &&
@@ -306,6 +315,15 @@ function Explorateur() {
     },
     auth && !erreurPerso,
   ).data;
+  // Impression des cartes : une requête par zone, période et ventilation ; on n'affiche que la réponse à la
+  // ventilation et à la zone en cours (pas les lignes de la précédente pendant le chargement).
+  const cartes = cleSource === 'cartes';
+  const parCartes = PAR_CARTES[parEffectif] ?? 'total';
+  const reponseCartes = useExplorationCartes(plage, zoneChoisie, parCartes, cartes && !erreurPerso).data;
+  const exploCartes =
+    cartes && reponseCartes?.par === parCartes && (reponseCartes.zone ?? undefined) === zoneChoisie
+      ? reponseCartes
+      : undefined;
   const libelleLigneAuth = (cle: string, libelle: string) =>
     parEffectif === 'mois'
       ? libelleMois(cle)
@@ -320,6 +338,14 @@ function Explorateur() {
         id: l.cle,
         libelle: libelleLigneAuth(l.cle, l.libelle),
         valeurs: choisis.map((i) => l.chiffres[CHAMP_AUTH[i.cle]] ?? Number.NaN),
+      }));
+    }
+    if (exploCartes) {
+      return exploCartes.lignes.map((l) => ({
+        id: l.cle,
+        libelle: parEffectif === 'mois' ? libelleMois(l.cle) : l.libelle,
+        valeurs: choisis.map((i) => l.chiffres[CHAMP_CARTES[i.cle]] ?? Number.NaN),
+        ouvrable: parEffectif === 'sous' && ouvrable(l),
       }));
     }
     if (lignesApi && parEffectif === 'sous') {
@@ -350,9 +376,11 @@ function Explorateur() {
   const totaux =
     auth && exploAuth
       ? choisis.map((i) => exploAuth.total[CHAMP_AUTH[i.cle]] ?? Number.NaN)
-      : reel && territoire.data
-        ? valeursDe(territoire.data)
-        : choisis.map(() => Number.NaN);
+      : exploCartes
+        ? choisis.map((i) => exploCartes.total[CHAMP_CARTES[i.cle]] ?? Number.NaN)
+        : reel && territoire.data
+          ? valeursDe(territoire.data)
+          : choisis.map(() => Number.NaN);
   // La page revient à 1 quand les lignes changent (autre zone, autre ventilation) : clé des lignes affichées.
   const cleLignes = `${cleSource}|${parEffectif}|${chemin.join('/')}|${periode}|${perimetreAuth}`;
   const [clePage, setClePage] = useState(cleLignes);

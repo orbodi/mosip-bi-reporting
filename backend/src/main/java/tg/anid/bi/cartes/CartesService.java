@@ -161,6 +161,29 @@ public class CartesService {
         return new AnnulationsParMotif(perimetre, du, au, total, motifs);
     }
 
+    /**
+     * Onglet Impression des cartes de l'Exploration : totaux de la zone et une ligne par sous-zone directe
+     * ({@code par} sous), par année ou par mois ; aucune ligne pour {@code par} total.
+     */
+    public ExplorationCartes exploration(LocalDate du, LocalDate au, String zoneDemandee, String par) {
+        verifierOrdre(du, au);
+        String zone = zone(zoneDemandee);
+        String perimetre = nomPerimetre(zone);
+        String v = par == null || par.isBlank() ? "total" : par;
+        if (!"total".equals(v) && !"sous".equals(v) && !CartesRepository.VENTILATIONS_TEMPS.containsKey(v)) {
+            throw new RequeteInvalide("Ventilation inconnue : sous, annee, mois ou total.");
+        }
+        List<ExplorationCartes.Ligne> lignes = switch (v) {
+            case "total" -> List.of();
+            case "sous" -> repository.lignesParSousZone(du, au, zone);
+            default -> repository.lignesParTemps(du, au, zone, v);
+        };
+        CartesRepository.TotauxDemandes d = repository.demandes(du, au, zone);
+        CartesRepository.TotauxCartes c = repository.cartes(du, au, zone);
+        return new ExplorationCartes(perimetre, zone, du, au, v, lignes,
+                new ExplorationCartes.Chiffres(d.demandes(), c.expediees(), c.remises(), c.aRemettre()));
+    }
+
     private static String zone(String zoneDemandee) {
         return zoneDemandee == null || zoneDemandee.isBlank() ? null : zoneDemandee;
     }
