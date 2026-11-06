@@ -627,8 +627,8 @@ function Explorateur() {
                   {nombreActifs > 0 && (
                     <>
                       {' '}
-                      <span className="xp-replier__nombre">{nombreActifs}</span>
-                      <span className="visuellement-cache"> choix actifs</span>
+                      <span className="xp-replier__nombre">{nombreActifs}</span>{' '}
+                      <span className="visuellement-cache">choix actifs</span>
                     </>
                   )}
                 </span>
