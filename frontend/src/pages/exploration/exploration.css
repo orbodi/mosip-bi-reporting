@@ -130,7 +130,6 @@
 }
 .xp-tableau {
   max-width: 900px;
-  margin-top: var(--e-4);
 }
 .xp-tableau .tableau-m th:first-child {
   min-width: 180px;
@@ -200,7 +199,7 @@
 }
 
 /* Lots A et B du 05/11/2026 (maquette maquette-exploration-AB) : indicateurs en pastilles, périmètre en deux
-   boutons, filtres actifs, copie du lien, chiffres par indicateur, tri, chargement. */
+   boutons, filtres actifs, copie du lien, tri, chargement ; tableau seul, sans grands chiffres, 06/11/2026). */
 .xp-haut {
   display: flex;
   flex-wrap: wrap;
@@ -335,12 +334,6 @@
   font: 600 var(--t-s) var(--police);
   text-decoration: underline;
   cursor: pointer;
-}
-.xp-chiffres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--e-4) 40px;
-  align-items: flex-end;
 }
 .xp-tri {
   display: inline-flex;

@@ -227,9 +227,9 @@ describe('Pages de la maquette', () => {
     const utilisateur = userEvent.setup();
 
     await utilisateur.click(await screen.findByRole('tab', { name: /Authentifications/ }));
-    // Par mois (ventilation par défaut de l'onglet) : lignes de l'API ; 2 186 au grand chiffre et à la ligne Total.
+    // Par mois (ventilation par défaut de l'onglet) : lignes de l'API ; 2 186 à la ligne Total (tableau seul).
     expect(await screen.findByRole('rowheader', { name: 'décembre 2025' })).toBeInTheDocument();
-    expect(screen.getAllByText(/^2\s186$/)).toHaveLength(2);
+    expect(screen.getAllByText(/^2\s186$/)).toHaveLength(1);
 
     // Ventilation par partenaire : noms lus dans les données, sans code MOSIP.
     await utilisateur.click(boutonChoix('Afficher par'));
@@ -260,10 +260,10 @@ describe('Pages de la maquette', () => {
     await utilisateur.click(await screen.findByRole('tab', { name: /Impression des cartes/ }));
     // Pas de filtre de profil : les faits d'impression n'en portent pas.
     expect(screen.queryByText('Sexe', { selector: '.champ-choix__libelle' })).not.toBeInTheDocument();
-    // Par région : lignes de l'API, centres hors référentiel compris ; 4 510 au grand chiffre et à la ligne Total.
+    // Par région : lignes de l'API, centres hors référentiel compris ; 4 510 à la ligne Total.
     const resultat = within(await screen.findByRole('region', { name: 'Demandes d’impression par région' }));
     expect(await resultat.findByRole('rowheader', { name: 'Hors référentiel' })).toBeInTheDocument();
-    expect(resultat.getAllByText(/^4\s510$/)).toHaveLength(2);
+    expect(resultat.getAllByText(/^4\s510$/)).toHaveLength(1);
 
     // Descente dans les Savanes : préfectures de la région.
     await utilisateur.click(resultat.getByRole('button', { name: /Savanes/ }));
@@ -333,8 +333,9 @@ describe('Pages de la maquette', () => {
       await screen.findByRole('region', { name: 'Inscriptions, NIU générés par préfecture' }),
     );
     await resultat.findByRole('rowheader', { name: /Tône/ });
-    // Un grand chiffre par indicateur choisi.
-    expect(resultat.getByText('NIU générés', { selector: '.grand-chiffre__unite' })).toBeInTheDocument();
+    // Tableau seul : une colonne par indicateur choisi, pas de grands chiffres au-dessus (06/11/2026).
+    expect(resultat.getByRole('columnheader', { name: 'NIU générés' })).toBeInTheDocument();
+    expect(document.querySelector('.xp-resultat .grand-chiffre')).toBeNull();
 
     // Sexe, âge et type de demande : grisés, raison au survol.
     expect(boutonChoix('Sexe')).toBeDisabled();

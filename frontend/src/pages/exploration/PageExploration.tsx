@@ -8,7 +8,6 @@ import { useTerritoire } from '../../api/enrolement';
 import { useMeta } from '../../api/meta';
 import { ChampChoix, type OptionChoix } from '../../composants/blocs/ChampChoix';
 import { Chevron } from '../../composants/blocs/Icone';
-import { GrandChiffre } from '../../composants/blocs/Indicateur';
 import { Pagination } from '../../composants/blocs/Pagination';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
@@ -131,9 +130,6 @@ const PERIMETRES_AUTH: OptionChoix[] = [
 const libelleType = (code: string) => TYPES_AUTHENTIFICATION.find((t) => t.code === code)?.libelle ?? code;
 // Le catalogue des motifs du pipeline écrit l'apostrophe droite.
 const apostrophe = (texte: string) => texte.replace(/'/g, '’');
-
-/** Libellé en minuscule dans une phrase, sauf un sigle (« inscriptions », mais « NIU générés »). */
-const minuscule = (t: string) => (/^[A-Z]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1));
 
 /** Ordre alphabétique français des listes de zones (« Éthiopie » après « Dapaong », pas à la fin). */
 const ordreFr = new Intl.Collator('fr', { sensitivity: 'base' });
@@ -867,69 +863,66 @@ function Explorateur() {
           ) : undefined
         }
       >
-        <div className="xp-chiffres">
-          {choisis.map((i, j) => (
-            <GrandChiffre
-              key={i.cle}
-              valeur={nf(totaux[j])}
-              unite={j === 0 ? `${minuscule(i.libelle)} au total` : minuscule(i.libelle)}
-              detail={
-                j > 0 && Number.isFinite(totaux[0]) && totaux[0] > 0
-                  ? `${pct(part(totaux[j], totaux[0]))} des ${minuscule(choisis[0].libelle)}`
-                  : undefined
-              }
-            />
-          ))}
-        </div>
-        {parEffectif !== 'total' && (
-          <div
-            className="tableau-m-defile xp-tableau"
-            tabIndex={0}
-            role="group"
-            aria-label="Tableau, défilable horizontalement"
-          >
-            <table className="tableau-m">
-              <caption className="visuellement-cache">{titreResultat}</caption>
-              <thead>
-                <tr>
-                  {enteteTriable('libelle', libellePar)}
-                  {choisis.map((i) => enteteTriable(i.cle, i.libelle))}
-                </tr>
-              </thead>
-              <tbody>
-                {tranche.lignes.map((l) => (
-                  <tr key={l.id}>
-                    <th scope="row">
-                      {l.ouvrable && territoireOk ? (
-                        <button
-                          type="button"
-                          className="bouton-zone"
-                          onClick={() => changer({ ...etat, chemin: [...chemin, l.id], par: undefined })}
-                        >
-                          {l.libelle}
-                          <Chevron />
-                        </button>
-                      ) : (
-                        l.libelle
-                      )}
+        {/* Tableau seul, sans chiffres au-dessus (06/11/2026) ; « Total seul » : la ligne Total uniquement. */}
+        <div
+          className="tableau-m-defile xp-tableau"
+          tabIndex={0}
+          role="group"
+          aria-label="Tableau, défilable horizontalement"
+        >
+          <table className="tableau-m">
+            <caption className="visuellement-cache">{titreResultat}</caption>
+            <thead>
+              <tr>
+                {parEffectif === 'total' ? (
+                  <th scope="col">Périmètre</th>
+                ) : (
+                  enteteTriable('libelle', libellePar)
+                )}
+                {choisis.map((i) =>
+                  parEffectif === 'total' ? (
+                    <th key={i.cle} scope="col">
+                      {i.libelle}
                     </th>
-                    {l.valeurs.map((v, j) => (
-                      <td key={j}>{cellule(v, j, l.valeurs)}</td>
-                    ))}
-                  </tr>
-                ))}
-                <tr className="total">
-                  <th scope="row">Total</th>
-                  {totaux.map((t, j) => (
-                    <td key={j}>
-                      {modeEffectif === 'pt' && Number.isFinite(t) ? pct(1) : cellule(t, j, totaux)}
-                    </td>
+                  ) : (
+                    enteteTriable(i.cle, i.libelle)
+                  ),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {tranche.lignes.map((l) => (
+                <tr key={l.id}>
+                  <th scope="row">
+                    {l.ouvrable && territoireOk ? (
+                      <button
+                        type="button"
+                        className="bouton-zone"
+                        onClick={() => changer({ ...etat, chemin: [...chemin, l.id], par: undefined })}
+                      >
+                        {l.libelle}
+                        <Chevron />
+                      </button>
+                    ) : (
+                      l.libelle
+                    )}
+                  </th>
+                  {l.valeurs.map((v, j) => (
+                    <td key={j}>{cellule(v, j, l.valeurs)}</td>
                   ))}
                 </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+              <tr className="total">
+                <th scope="row">Total</th>
+                {totaux.map((t, j) => (
+                  <td key={j}>
+                    {modeEffectif === 'pt' && Number.isFinite(t) ? pct(1) : cellule(t, j, totaux)}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
         {parEffectif !== 'total' && (
           <Pagination
             page={tranche.page}
