@@ -128,12 +128,8 @@
   color: var(--or-texte);
   font-size: var(--t-s);
 }
-/* Tableau : 900 px au moins (peu de colonnes), toute la largeur du panneau quand il y a beaucoup d'indicateurs ;
-   défilement horizontal seulement au-delà (06/11/2026). */
-.xp-tableau .tableau-m {
-  width: auto;
-  min-width: min(100%, 900px);
-}
+/* Tableau sur toute la largeur du panneau, quel que soit le nombre d'indicateurs (06/11/2026) ; défilement
+   horizontal seulement si les colonnes ne tiennent pas (téléphone). */
 .xp-tableau .tableau-m th:first-child {
   min-width: 180px;
 }
