@@ -565,7 +565,7 @@ function Explorateur() {
     const brut = (v: number, j: number, ligne: number[]) =>
       modeEffectif === 'n'
         ? String(Number.isFinite(v) ? v : 0)
-        : cellule(v, j, ligne).replace(/[  ]/g, ' ');
+        : cellule(v, j, ligne).replace(/[\u00a0\u202f]/g, ' ');
     telechargerCsv(`exploration-${cleSource}-${parEffectif}.csv`, [
       [libellePar || 'Total', ...choisis.map((i) => i.libelle)],
       ...lignesTriees.map((l) => [l.libelle, ...l.valeurs.map((v, j) => brut(v, j, l.valeurs))]),
