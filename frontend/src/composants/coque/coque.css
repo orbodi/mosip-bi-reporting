@@ -302,6 +302,17 @@
 .liste__option[data-selected] {
   font-weight: 600;
 }
+/* Option sans données (Exploration, 05/11/2026) : grisée, raison sous le libellé. */
+.liste__option[data-disabled] {
+  color: var(--encre-2);
+  cursor: not-allowed;
+}
+.liste__raison {
+  display: block;
+  color: var(--encre-2);
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
 .filtre-periode__dates {
   display: flex;
   flex-wrap: wrap;

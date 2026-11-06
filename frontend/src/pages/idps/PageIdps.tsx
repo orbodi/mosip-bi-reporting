@@ -27,7 +27,7 @@ export function PageIdps({ page }: { page: DefinitionPage }) {
 
   return (
     <>
-      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
+      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage source="idps" />} />
       <div className="contenu page-m">
         <Panneau
           id="titre-ordres"

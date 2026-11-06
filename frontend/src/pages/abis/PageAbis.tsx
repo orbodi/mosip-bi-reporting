@@ -107,7 +107,7 @@ function Score({
 export function PageAbis({ page }: { page: DefinitionPage }) {
   return (
     <>
-      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
+      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage source="abis" />} />
       <div className="contenu page-m">
         <Panneau
           id="titre-transactions"

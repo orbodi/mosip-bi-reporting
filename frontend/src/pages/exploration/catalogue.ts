@@ -17,6 +17,11 @@ export interface SourceExploration {
   /** Source de fraîcheur (bornes de la période). */
   fraicheur: CodeSource;
   note?: string;
+  /**
+   * Filtres et ventilations sans données dans l'Exploration (grisés, décision du 05/11/2026) : dimensions de filtre,
+   * et ventilations (« annee », « mois » ou une dimension) de « Afficher par ».
+   */
+  indisponibles?: { dimensions: CleDimension[]; ventilations: string[] };
   indicateurs: Indicateur[];
 }
 
@@ -27,6 +32,8 @@ export const SOURCES: SourceExploration[] = [
     cle: 'enrol',
     libelle: 'Enrôlement',
     fraicheur: 'enrolement',
+    // L'API Territoire ne donne ni profil, ni type de demande, ni détail dans le temps.
+    indisponibles: { dimensions: ['sexe', 'age', 'type'], ventilations: ['annee', 'mois', 'sexe', 'age', 'type'] },
     indicateurs: [
       { cle: 'ins', libelle: 'Inscriptions', dimensions: [...PROFIL, 'type'], territoire: true },
       { cle: 'niu', libelle: 'NIU générés', dimensions: PROFIL, territoire: true },
@@ -142,6 +149,9 @@ export const NIVEAUX_TERRITOIRE = [
   { cle: 'localite', libelle: 'Localité' },
   { cle: 'centre', libelle: 'Centre' },
 ] as const;
+
+/** Raison affichée au survol d'un filtre ou d'une ventilation sans données. */
+export const RAISON_INDISPONIBLE = 'Pas encore disponible dans l’Exploration';
 
 /** Nombre total d'indicateurs (25) affiché dans l'introduction. */
 export const NOMBRE_INDICATEURS = SOURCES.reduce((t, s) => t + s.indicateurs.length, 0);

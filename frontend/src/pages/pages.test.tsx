@@ -244,9 +244,10 @@ describe('Pages de la maquette', () => {
     expect(await screen.findByRole('option', { name: 'Portail du résident' })).toBeInTheDocument();
     await utilisateur.keyboard('{Escape}');
 
-    // Traitement des paquets : jamais additionné aux usagers.
-    await utilisateur.click(boutonChoix('Périmètre'));
-    await utilisateur.click(await screen.findByRole('option', { name: 'Traitement des paquets' }));
+    // Traitement des paquets : jamais additionné aux usagers (deux boutons, 05/11/2026).
+    const perimetre = within(screen.getByRole('group', { name: 'Périmètre' }));
+    expect(perimetre.getByRole('button', { name: 'Usagers' })).toHaveAttribute('aria-pressed', 'true');
+    await utilisateur.click(perimetre.getByRole('button', { name: 'Traitement des paquets' }));
     expect(await screen.findByRole('rowheader', { name: 'Traitement des paquets' })).toBeInTheDocument();
     expect((await screen.findAllByText(/^170\s151$/)).length).toBeGreaterThanOrEqual(1);
   });
@@ -291,8 +292,9 @@ describe('Pages de la maquette', () => {
     afficher('/exploration');
     const utilisateur = userEvent.setup();
 
-    // Sans région choisie, seule la liste des régions est ouverte.
-    await waitFor(() => expect(boutonChoix('Préfecture')).toBeDisabled());
+    // Sans région choisie, seule la liste des régions est affichée (territoire progressif, 05/11/2026).
+    await screen.findByRole('region', { name: 'Inscriptions par région' });
+    expect(screen.queryByText('Préfecture', { selector: '.champ-choix__libelle' })).not.toBeInTheDocument();
 
     let resultat = within(await screen.findByRole('region', { name: 'Inscriptions par région' }));
     await utilisateur.click(await resultat.findByRole('button', { name: /Savanes/ }));
@@ -307,20 +309,91 @@ describe('Pages de la maquette', () => {
     // Fil d'Ariane du résultat : Togo › Savanes › Tône.
     expect(resultat.getByRole('button', { name: 'Togo' })).toBeInTheDocument();
     expect(resultat.getByRole('button', { name: 'Savanes' })).toBeInTheDocument();
-    // Listes : préfecture et commune ouvertes (Tône choisie), canton fermé tant qu'aucune commune n'est choisie.
+    // Listes : préfecture et commune affichées (Tône choisie), canton absent tant qu'aucune commune n'est choisie.
     await waitFor(() => expect(boutonChoix('Préfecture')).toBeEnabled());
     await waitFor(() => expect(boutonChoix('Commune')).toBeEnabled());
-    expect(boutonChoix('Canton')).toBeDisabled();
+    expect(screen.queryByText('Canton', { selector: '.champ-choix__libelle' })).not.toBeInTheDocument();
 
-    // Pré-inscriptions : nouvel indicateur de l'Enrôlement, situé à la préfecture de résidence.
-    // La liste des indicateurs est dans un <details> : on l'ouvre comme le ferait un clic sur son résumé.
-    document.querySelector('details.xp-indicateurs')?.setAttribute('open', '');
-    const liste = within(screen.getByRole('group', { name: 'Indicateurs' }));
-    await utilisateur.click(liste.getByRole('checkbox', { name: 'Pré-inscriptions' }));
+    // Pré-inscriptions : nouvel indicateur de l'Enrôlement, situé à la préfecture de résidence (pastille, 05/11/2026).
+    const liste = within(screen.getByRole('group', { name: /Indicateurs/ }));
+    await utilisateur.click(liste.getByRole('button', { name: 'Pré-inscriptions' }));
     expect(await screen.findByRole('columnheader', { name: 'Pré-inscriptions' })).toBeInTheDocument();
     expect(screen.getByText(/ne sont situées qu’à la préfecture de résidence/)).toBeInTheDocument();
 
     await utilisateur.click(resultat.getByRole('button', { name: 'Savanes' }));
     expect(await screen.findByRole('rowheader', { name: 'Cinkassé' })).toBeInTheDocument();
+  });
+
+  it('Exploration : vue rouverte depuis l’adresse, choix sans données grisés, tri et filtres actifs', async () => {
+    simulerApi();
+    const routeur = afficher('/exploration?zones=SAV&indicateurs=ins,niu');
+    const utilisateur = userEvent.setup();
+
+    let resultat = within(
+      await screen.findByRole('region', { name: 'Inscriptions, NIU générés par préfecture' }),
+    );
+    await resultat.findByRole('rowheader', { name: /Tône/ });
+    // Un grand chiffre par indicateur choisi.
+    expect(resultat.getByText('NIU générés', { selector: '.grand-chiffre__unite' })).toBeInTheDocument();
+
+    // Sexe, âge et type de demande : grisés, raison au survol.
+    expect(boutonChoix('Sexe')).toBeDisabled();
+    expect(boutonChoix('Sexe').closest('[title]')).toHaveAttribute(
+      'title',
+      'Pas encore disponible dans l’Exploration',
+    );
+    // Afficher par : Mois grisé, avec sa raison.
+    await utilisateur.click(boutonChoix('Afficher par'));
+    expect(await screen.findByRole('option', { name: /^Mois/ })).toHaveAttribute('aria-disabled', 'true');
+    await utilisateur.keyboard('{Escape}');
+
+    // Tri par inscriptions, décroissant : Tône (186 239) passe devant Cinkassé ; le tri va dans l'adresse.
+    const premiereLigne = () => resultat.getAllByRole('rowheader')[0];
+    expect(premiereLigne()).toHaveTextContent('Cinkassé');
+    await utilisateur.click(resultat.getByRole('button', { name: 'Inscriptions' }));
+    await waitFor(() => expect(premiereLigne()).toHaveTextContent('Tône'));
+    expect(routeur.state.location.search).toMatchObject({ tri: 'ins:desc', zones: 'SAV' });
+
+    // Filtres actifs : la région se retire ; Réinitialiser revient aux inscriptions du Togo.
+    await utilisateur.click(screen.getByRole('button', { name: 'Retirer « Région : Savanes »' }));
+    resultat = within(await screen.findByRole('region', { name: 'Inscriptions, NIU générés par région' }));
+    await utilisateur.click(screen.getByRole('button', { name: 'Réinitialiser' }));
+    expect(await screen.findByRole('region', { name: 'Inscriptions par région' })).toBeInTheDocument();
+    await waitFor(() => expect(routeur.state.location.search.indicateurs).toBeUndefined());
+  });
+
+  it('Exploration : raccourci de période et période gardée en changeant de source', async () => {
+    const appels = simulerApi();
+    afficher('/exploration');
+    const utilisateur = userEvent.setup();
+
+    await screen.findByRole('region', { name: 'Inscriptions par région' });
+    await utilisateur.click(boutonChoix('Période'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Mois précédent' }));
+    // Compté jusqu'à la dernière donnée de l'enrôlement (14/01/2026) : décembre 2025.
+    await waitFor(() =>
+      expect(
+        appels.some(
+          (u) =>
+            u.pathname.endsWith('/territoire') &&
+            u.searchParams.get('du') === '2025-12-01' &&
+            u.searchParams.get('au') === '2025-12-31',
+        ),
+      ).toBe(true),
+    );
+    expect(screen.getByText('Mois précédent', { selector: '.xp-actif' })).toBeInTheDocument();
+
+    // Autre source : la période reste choisie.
+    await utilisateur.click(screen.getByRole('tab', { name: /Impression des cartes/ }));
+    expect(await screen.findByRole('region', { name: 'Demandes d’impression par région' })).toBeInTheDocument();
+    expect(screen.getByText('Mois précédent', { selector: '.xp-actif' })).toBeInTheDocument();
+  });
+
+  it('Exploration : le lien « Filtres détaillés » d’une page ouvre l’onglet de sa source', async () => {
+    simulerApi();
+    afficher('/authentifications');
+    const utilisateur = userEvent.setup();
+    await utilisateur.click(await screen.findByRole('link', { name: /Filtres détaillés dans l’Exploration/ }));
+    expect(await screen.findByRole('tab', { name: 'Authentifications', selected: true })).toBeInTheDocument();
   });
 });

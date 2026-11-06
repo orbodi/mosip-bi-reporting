@@ -3,7 +3,9 @@ import {
   datesPersonnalisees,
   erreurPersonnalisee,
   estPersonnalisee,
+  estRaccourci,
   libellePersonnalisee,
+  libelleRaccourci,
   periodePersonnalisee,
   plageExploration,
 } from './periodeExploration';
@@ -39,5 +41,22 @@ describe('Période de l’Exploration', () => {
       'Aucune donnée sur cette période : données du 01/01/2024 au 05/11/2026.',
     );
     expect(libellePersonnalisee(periodePersonnalisee('', ''))).toBe('Période personnalisée');
+  });
+
+  it('raccourcis : comptés jusqu’à la dernière donnée de la source', () => {
+    expect(estRaccourci('R:30j')).toBe(true);
+    expect(estRaccourci('A:2026')).toBe(false);
+    expect(plageExploration('R:30j', BORNES)).toEqual({ du: '2026-10-07', au: '2026-11-05' });
+    expect(plageExploration('R:mois', BORNES)).toEqual({ du: '2026-11-01', au: '2026-11-05' });
+    expect(plageExploration('R:moisprec', BORNES)).toEqual({ du: '2026-10-01', au: '2026-10-31' });
+    expect(plageExploration('R:annee', BORNES)).toEqual({ du: '2026-01-01', au: '2026-11-05' });
+    // En janvier, le mois précédent est décembre de l'année d'avant.
+    expect(plageExploration('R:moisprec', { du: '2024-01-01', au: '2026-01-14' })).toEqual({
+      du: '2025-12-01',
+      au: '2025-12-31',
+    });
+    expect(plageExploration('R:30j')).toBeUndefined();
+    expect(libelleRaccourci('R:moisprec', BORNES)).toBe('Mois précédent, du 01/10/2026 au 31/10/2026');
+    expect(libelleRaccourci('R:moisprec')).toBe('Mois précédent');
   });
 });

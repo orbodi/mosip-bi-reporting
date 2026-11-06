@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import logo from '../../assets/anid-logo.svg';
 import { useUtilisateur } from '../../auth/utilisateur';
+import { sansExploration } from '../../lib/filtresUrl';
 import { PAGES } from '../../pages/pages';
 
 function LiensNavigation({ classe }: { classe: string }) {
@@ -10,7 +11,7 @@ function LiensNavigation({ classe }: { classe: string }) {
         <Link
           key={page.chemin}
           to={page.chemin}
-          search={(precedent) => precedent}
+          search={sansExploration}
           activeOptions={{ exact: true, includeSearch: false }}
           className="en-tete__lien"
         >

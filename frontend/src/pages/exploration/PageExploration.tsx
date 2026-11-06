@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import type { LigneZone, Territoire } from '../../api/client';
 import { useExplorationAuthentifications, type ParametresExploration } from '../../api/authentifications';
@@ -12,14 +13,29 @@ import { Pagination } from '../../composants/blocs/Pagination';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { TYPES_AUTHENTIFICATION } from '../../lib/authentifications';
+import {
+  basculerIndicateur,
+  changerSource,
+  ecrireRecherche,
+  lireEtat,
+  reinitialiser,
+  trierLignes,
+  trierPar,
+  type EtatExploration,
+  type Mode,
+} from '../../lib/etatExploration';
+import type { FiltresUrl } from '../../lib/filtresUrl';
 import { nf, part, pct } from '../../lib/format';
 import { paginer, type TaillePage } from '../../lib/pagination';
 import {
   PERSONNALISEE,
+  RACCOURCIS,
   datesPersonnalisees,
   erreurPersonnalisee,
   estPersonnalisee,
+  estRaccourci,
   libellePersonnalisee,
+  libelleRaccourci,
   periodePersonnalisee,
   plageExploration,
 } from '../../lib/periodeExploration';
@@ -29,23 +45,12 @@ import {
   DIMENSIONS,
   NIVEAUX_TERRITOIRE,
   NOMBRE_INDICATEURS,
+  RAISON_INDISPONIBLE,
   SOURCES,
   type CleDimension,
-  type SourceExploration,
 } from './catalogue';
 import './exploration.css';
 
-type Mode = 'n' | 'pt' | 'pf';
-
-/** Texte des niveaux de territoire désactivés (maquette) : chaque niveau attend le choix du niveau au-dessus. */
-const VIDE_TERRITOIRE = [
-  'Toutes',
-  'Choisir la région',
-  'Choisir la préfecture',
-  'Choisir la commune',
-  'Choisir le canton',
-  'Choisir la localité',
-];
 /** Libellé « toutes les zones » de chaque niveau (région, préfecture, commune : Toutes ; canton, centre : Tous). */
 const TOUTES_ZONES = ['Toutes', 'Toutes', 'Toutes', 'Tous', 'Toutes', 'Tous'];
 const MOIS_COURT = [
@@ -127,6 +132,9 @@ const libelleType = (code: string) => TYPES_AUTHENTIFICATION.find((t) => t.code 
 // Le catalogue des motifs du pipeline écrit l'apostrophe droite.
 const apostrophe = (texte: string) => texte.replace(/'/g, '’');
 
+/** Libellé en minuscule dans une phrase, sauf un sigle (« inscriptions », mais « NIU générés »). */
+const minuscule = (t: string) => (/^[A-Z]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1));
+
 /** Ordre alphabétique français des listes de zones (« Éthiopie » après « Dapaong », pas à la fin). */
 const ordreFr = new Intl.Collator('fr', { sensitivity: 'base' });
 
@@ -173,9 +181,11 @@ function telechargerCsv(nom: string, lignes: string[][]) {
 }
 
 /**
- * Exploration des données (maquette/pages/Technique.dc.html) : 25 indicateurs de 5 sources, filtres, ventilation et
- * export CSV. Seule la source Enrôlement a une API : par sous-zone de la zone choisie, de la région au centre, sans
- * filtre de profil ; ailleurs le tableau garde sa forme, indicateurs à 0 (décision du 20/10/2026).
+ * Exploration des données (maquette/pages/Technique.dc.html ; lots A et B du 05/11/2026, maquette
+ * maquette-exploration-AB) : indicateurs de 5 sources, filtres, ventilation, tri et export CSV. Enrôlement (par
+ * territoire), Impression des cartes et Authentifications lisent l'API ; un filtre ou une ventilation sans données est
+ * grisé, avec sa raison. ABIS et IDPS gardent leur forme, indicateurs à 0 (décision du 20/10/2026). Tous les choix
+ * sont dans l'adresse (lib/etatExploration).
  */
 export function PageExploration({ page }: { page: DefinitionPage }) {
   return (
@@ -183,7 +193,7 @@ export function PageExploration({ page }: { page: DefinitionPage }) {
       <Bandeau
         titre={page.titre}
         source={page.source}
-        chapeau={`Les ${NOMBRE_INDICATEURS} indicateurs des cinq sources du BI : choisissez une source, filtrez, puis choisissez les indicateurs et ce qui s’affiche en lignes.`}
+        chapeau={`Les ${NOMBRE_INDICATEURS} indicateurs des cinq sources du BI : choisissez une source et les indicateurs, filtrez, puis choisissez ce qui s’affiche en lignes.`}
       />
       <div className="contenu page-m">
         <Explorateur />
@@ -192,21 +202,88 @@ export function PageExploration({ page }: { page: DefinitionPage }) {
   );
 }
 
+/**
+ * Champs Du et Au de la période personnalisée : saisie gardée ici (taper l'année passe par 0002, 0020…, l'adresse
+ * suit un instant plus tard), reportée dans l'adresse à chaque changement.
+ */
+function SaisieDates({
+  periode,
+  bornes,
+  invalide,
+  idErreur,
+  onChange,
+}: {
+  periode: string;
+  bornes?: { du: string; au: string };
+  invalide: boolean;
+  idErreur?: string;
+  onChange: (periode: string) => void;
+}) {
+  const [dates, setDates] = useState(() => datesPersonnalisees(periode));
+  const saisir = (du: string, au: string) => {
+    setDates({ du, au });
+    onChange(periodePersonnalisee(du, au));
+  };
+  return (
+    <>
+      <label className="xp-champ">
+        <span className="champ-choix__libelle">Du</span>
+        <input
+          type="date"
+          className="xp-date"
+          value={dates.du}
+          min={bornes?.du}
+          max={bornes?.au}
+          aria-invalid={invalide && !!dates.du}
+          aria-describedby={idErreur}
+          onChange={(e) => saisir(e.target.value, dates.au)}
+        />
+      </label>
+      <label className="xp-champ">
+        <span className="champ-choix__libelle">Au</span>
+        <input
+          type="date"
+          className="xp-date"
+          value={dates.au}
+          min={dates.du || bornes?.du}
+          max={bornes?.au}
+          aria-invalid={invalide && !!dates.au}
+          aria-describedby={idErreur}
+          onChange={(e) => saisir(dates.du, e.target.value)}
+        />
+      </label>
+    </>
+  );
+}
+
 function Explorateur() {
-  const [cleSource, setCleSource] = useState<SourceExploration['cle']>('enrol');
+  const recherche: FiltresUrl = useSearch({ strict: false });
+  const naviguer = useNavigate();
+  const etat = lireEtat(recherche);
+  // Champs de la période personnalisée : recréés quand la période change autrement que par leur saisie.
+  const [cleDates, setCleDates] = useState(0);
+  // Chaque choix réécrit l'adresse (sans nouvelle entrée d'historique : Retour quitte l'Exploration telle quelle).
+  const changer = (suivant: EtatExploration, depuisDates = false) => {
+    if (!depuisDates && suivant.periode !== etat.periode) setCleDates((c) => c + 1);
+    naviguer({
+      to: '.',
+      search: (precedent: FiltresUrl) => ({ ...precedent, ...ecrireRecherche(suivant) }),
+      replace: true,
+      resetScroll: false,
+    });
+  };
+
+  const { source: cleSource, indicateurs, periode, filtres, perimetre: perimetreAuth, chemin, mode } = etat;
   const source = SOURCES.find((s) => s.cle === cleSource) ?? SOURCES[0];
-  const [indicateurs, setIndicateurs] = useState<string[]>([source.indicateurs[0].cle]);
-  const [periode, setPeriode] = useState('tout');
-  const [filtres, setFiltres] = useState<Partial<Record<CleDimension, string>>>({});
-  // Authentifications : usagers ou traitement des paquets, jamais additionnés (option A, 03/11/2026).
-  const [perimetreAuth, setPerimetreAuth] = useState<ParametresExploration['perimetre']>('usagers');
-  // Zones choisies, de la région vers le centre : chemin[k] est le code choisi au niveau NIVEAUX_TERRITOIRE[k].
-  const [chemin, setChemin] = useState<string[]>([]);
-  const [par, setPar] = useState<string>('sous');
-  const [mode, setMode] = useState<Mode>('n');
   // Pagination du tableau (beaucoup de cantons, de localités ou de mois) ; l'export CSV garde toutes les lignes.
   const [taille, setTaille] = useState<TaillePage>(20);
   const [page, setPage] = useState(0);
+  const [lienCopie, setLienCopie] = useState(false);
+  useEffect(() => {
+    if (!lienCopie) return;
+    const minuteur = setTimeout(() => setLienCopie(false), 2500);
+    return () => clearTimeout(minuteur);
+  }, [lienCopie]);
 
   const { regions } = useFiltreRegion();
   const meta = useMeta();
@@ -218,21 +295,27 @@ function Explorateur() {
     source.indicateurs.some((i) => i.dimensions.includes(d)),
   );
   const dimensionsCommunes = dimensionsSource.filter((d) => choisis.every((i) => i.dimensions.includes(d)));
+  // Sans données dans l'Exploration (grisés, 05/11/2026) : profil et type de l'Enrôlement, mois et années.
+  const dimensionIndisponible = (d: CleDimension) => !!source.indisponibles?.dimensions.includes(d);
+  const ventilationIndisponible = (v: string) => !!source.indisponibles?.ventilations.includes(v);
 
   const mois =
     fraicheur?.premiereDonnee && fraicheur.derniereDonnee
       ? moisEntre(fraicheur.premiereDonnee.slice(0, 7), fraicheur.derniereDonnee.slice(0, 7))
       : [];
   const annees = [...new Set(mois.map((m) => m.slice(0, 4)))];
-  // Période personnalisée (05/11/2026) : dates bornées aux données de la source ; erreur affichée sous les champs.
+  // Période personnalisée et raccourcis (05/11/2026) : dates bornées aux données de la source.
   const bornes =
     fraicheur?.premiereDonnee && fraicheur.derniereDonnee
       ? { du: fraicheur.premiereDonnee.slice(0, 10), au: fraicheur.derniereDonnee.slice(0, 10) }
       : undefined;
   const perso = estPersonnalisee(periode);
+  const raccourci = estRaccourci(periode);
   const datesPerso = datesPersonnalisees(periode);
   const erreurPerso = perso ? erreurPersonnalisee(periode, bornes) : undefined;
   const plage = plageExploration(periode, bornes);
+  // Pas d'appel tant qu'une période n'est pas utilisable : personnalisée invalide, raccourci sans bornes connues.
+  const periodePrete = !erreurPerso && (!raccourci || !!plage);
   // Mois et années de la période choisie (lignes des ventilations « Mois » et « Année »).
   const moisPeriode = plage ? mois.filter((m) => m >= plage.du.slice(0, 7) && m <= plage.au.slice(0, 7)) : mois;
   const anneesPeriode = [...new Set(moisPeriode.map((m) => m.slice(0, 4)))];
@@ -249,8 +332,9 @@ function Explorateur() {
   const nomDe = (k: number) => optionsNiveau(k).find((o) => o.id === chemin[k])?.libelle ?? chemin[k];
   const zoneChoisie = chemin.at(-1);
   const niveauSuivant = NIVEAUX_TERRITOIRE[chemin.length];
+  const choisirChemin = (suivant: string[]) => changer({ ...etat, chemin: suivant });
   const choisirNiveau = (k: number, code: string) =>
-    setChemin(code ? [...chemin.slice(0, k), code] : chemin.slice(0, k));
+    choisirChemin(code ? [...chemin.slice(0, k), code] : chemin.slice(0, k));
 
   // Valeurs des filtres de l'onglet Authentifications, lues dans les données (toute la durée du périmètre).
   const auth = cleSource === 'auth';
@@ -268,29 +352,37 @@ function Explorateur() {
     return DIMENSIONS[d].valeurs.map((v) => ({ id: v, libelle: v }));
   };
   const libelleFiltre = (d: CleDimension, v: string) => optionsDimension(d).find((o) => o.id === v)?.libelle ?? v;
+  // Raison d'un filtre sans objet : l'indicateur qui l'ouvrirait, s'il n'y en a qu'un (« Requêtes échouées »).
+  const raisonSansObjet = (d: CleDimension) => {
+    const porteurs = source.indicateurs.filter((i) => i.dimensions.includes(d));
+    return porteurs.length === 1
+      ? `Choisissez l’indicateur « ${porteurs[0].libelle} »`
+      : 'Sans objet pour les indicateurs choisis';
+  };
 
+  const indisponible = (id: string, libelle: string): OptionChoix =>
+    ventilationIndisponible(id)
+      ? { id, libelle, desactive: true, raison: RAISON_INDISPONIBLE }
+      : { id, libelle };
   const optionsPar: OptionChoix[] = [
     ...(territoireOk && niveauSuivant ? [{ id: 'sous', libelle: niveauSuivant.libelle }] : []),
     ...(!periode.startsWith('A:') && !periode.startsWith('M:') && (!perso || anneesPeriode.length > 1)
-      ? [{ id: 'annee', libelle: 'Année' }]
+      ? [indisponible('annee', 'Année')]
       : []),
-    ...(!periode.startsWith('M:') ? [{ id: 'mois', libelle: 'Mois' }] : []),
+    ...(!periode.startsWith('M:') ? [indisponible('mois', 'Mois')] : []),
     ...dimensionsCommunes
       .filter((d) => !filtres[d] && optionsDimension(d).length)
-      .map((d) => ({ id: d, libelle: DIMENSIONS[d].libelle })),
+      .map((d) => indisponible(d, DIMENSIONS[d].libelle)),
     { id: 'total', libelle: 'Total seul' },
   ];
-  const parEffectif = optionsPar.some((o) => o.id === par) ? par : optionsPar[0].id;
+  const optionsParOuvertes = optionsPar.filter((o) => !o.desactive);
+  const par = etat.par ?? (source.indicateurs[0].territoire ? 'sous' : 'mois');
+  const parEffectif = optionsParOuvertes.some((o) => o.id === par) ? par : optionsParOuvertes[0].id;
   const modeEffectif: Mode = mode === 'pf' && choisis.length < 2 ? 'n' : mode;
 
   const nomsChemin = chemin.map((_, k) => nomDe(k));
-  // Données réelles : Enrôlement, sans filtre de profil ni de type, par sous-zone de la zone choisie, ou total ;
-  // jamais sur une période personnalisée incomplète ou invalide.
-  const reel =
-    cleSource === 'enrol' &&
-    !erreurPerso &&
-    Object.values(filtres).every((v) => !v) &&
-    (parEffectif === 'sous' || parEffectif === 'total');
+  // Données réelles de l'Enrôlement : par sous-zone de la zone choisie, ou total.
+  const reel = cleSource === 'enrol' && periodePrete && (parEffectif === 'sous' || parEffectif === 'total');
   const territoire = useTerritoire(plage, zoneChoisie, reel);
   const lignesApi = reel ? territoire.data?.lignes.filter((l) => !l.horsReferentiel) : undefined;
 
@@ -303,8 +395,8 @@ function Explorateur() {
     !!NIVEAUX_TERRITOIRE[chemin.length + 1] &&
     (l.ouvrable ?? l.niveau !== 'centre');
 
-  // Authentifications : une requête par ventilation et filtres ; jamais sur une période personnalisée invalide.
-  const exploAuth = useExplorationAuthentifications(
+  // Authentifications : une requête par ventilation et filtres ; jamais sur une période inutilisable.
+  const requeteAuth = useExplorationAuthentifications(
     plage,
     {
       perimetre: perimetreAuth,
@@ -313,17 +405,24 @@ function Explorateur() {
       appelant: filtres.part,
       par: PAR_AUTH[parEffectif] ?? 'total',
     },
-    auth && !erreurPerso,
-  ).data;
+    auth && periodePrete,
+  );
+  const exploAuth = requeteAuth.data;
   // Impression des cartes : une requête par zone, période et ventilation ; on n'affiche que la réponse à la
   // ventilation et à la zone en cours (pas les lignes de la précédente pendant le chargement).
   const cartes = cleSource === 'cartes';
   const parCartes = PAR_CARTES[parEffectif] ?? 'total';
-  const reponseCartes = useExplorationCartes(plage, zoneChoisie, parCartes, cartes && !erreurPerso).data;
+  const requeteCartes = useExplorationCartes(plage, zoneChoisie, parCartes, cartes && periodePrete);
+  const reponseCartes = requeteCartes.data;
   const exploCartes =
     cartes && reponseCartes?.par === parCartes && (reponseCartes.zone ?? undefined) === zoneChoisie
       ? reponseCartes
       : undefined;
+  // Chargement visible (05/11/2026) : les chiffres précédents restent affichés, en pâle, jusqu'à la réponse.
+  const enCours =
+    (reel && territoire.isFetching) ||
+    (auth && periodePrete && requeteAuth.isFetching) ||
+    (cartes && periodePrete && requeteCartes.isFetching);
   const libelleLigneAuth = (cle: string, libelle: string) =>
     parEffectif === 'mois'
       ? libelleMois(cle)
@@ -381,10 +480,16 @@ function Explorateur() {
         : reel && territoire.data
           ? valeursDe(territoire.data)
           : choisis.map(() => Number.NaN);
-  // La page revient à 1 quand les lignes changent (autre zone, autre ventilation) : clé des lignes affichées.
-  const cleLignes = `${cleSource}|${parEffectif}|${chemin.join('/')}|${periode}|${perimetreAuth}`;
+  // Tri au clic sur un titre de colonne (05/11/2026), avant la pagination.
+  const lignesTriees = trierLignes(
+    lignes,
+    etat.tri,
+    choisis.map((i) => i.cle),
+  );
+  // La page revient à 1 quand les lignes changent (autre zone, ventilation, période ou tri).
+  const cleLignes = `${cleSource}|${parEffectif}|${chemin.join('/')}|${periode}|${perimetreAuth}|${etat.tri?.colonne}:${etat.tri?.sens}`;
   const [clePage, setClePage] = useState(cleLignes);
-  const tranche = paginer(lignes, clePage === cleLignes ? page : 0, taille);
+  const tranche = paginer(lignesTriees, clePage === cleLignes ? page : 0, taille);
   const allerPage = (p: number) => {
     setClePage(cleLignes);
     setPage(p);
@@ -412,67 +517,163 @@ function Explorateur() {
         : 'Toute la période'
       : perso
         ? libellePersonnalisee(periode)
-        : periode.startsWith('A:')
-          ? periode.slice(2)
-          : libelleMois(periode.slice(2));
+        : raccourci
+          ? libelleRaccourci(periode, bornes)
+          : periode.startsWith('A:')
+            ? periode.slice(2)
+            : libelleMois(periode.slice(2));
+  // Pastille de la période : le nom court du raccourci, sinon le libellé de la période.
+  const pastillePeriode = raccourci
+    ? (RACCOURCIS.find((r) => r.id === periode)?.libelle ?? periode)
+    : perso
+      ? libellePersonnalisee(periode)
+      : libellePeriode;
 
-  const choisirSource = (cle: string) => {
-    const s = SOURCES.find((x) => x.cle === cle) ?? SOURCES[0];
-    setCleSource(s.cle);
-    setIndicateurs([s.indicateurs[0].cle]);
-    setFiltres({});
-    setPerimetreAuth('usagers');
-    setChemin([]);
-    setPar(s.indicateurs[0].territoire ? 'sous' : 'mois');
-    setMode('n');
-  };
+  // Filtres actifs (05/11/2026) : une pastille retirable par choix ; le périmètre des authentifications, sans ✕.
+  const actifs: { cle: string; libelle: string; retirer?: () => void }[] = [
+    ...(auth ? [{ cle: 'perimetre', libelle: PERIMETRES_AUTH.find((o) => o.id === perimetreAuth)?.libelle ?? '' }] : []),
+    ...(periode !== 'tout'
+      ? [{ cle: 'periode', libelle: pastillePeriode, retirer: () => changer({ ...etat, periode: 'tout' }) }]
+      : []),
+    ...(Object.entries(filtres) as [CleDimension, string | undefined][])
+      .filter(([, v]) => !!v)
+      .map(([d, v]) => ({
+        cle: d,
+        libelle: `${DIMENSIONS[d].libelle} : ${libelleFiltre(d, v as string)}`,
+        retirer: () => changer({ ...etat, filtres: { ...filtres, [d]: undefined } }),
+      })),
+    ...(chemin.length
+      ? [
+          {
+            cle: 'zone',
+            libelle: `${NIVEAUX_TERRITOIRE[chemin.length - 1].libelle} : ${nomsChemin[chemin.length - 1]}`,
+            retirer: () => choisirChemin(chemin.slice(0, -1)),
+          },
+        ]
+      : []),
+  ];
+  const aReinitialiser = actifs.some((a) => a.retirer) || indicateurs.length > 1 || !!etat.par || !!etat.tri;
 
-  const basculer = (cle: string) => {
-    if (indicateurs.includes(cle)) {
-      if (indicateurs.length > 1) setIndicateurs(indicateurs.filter((x) => x !== cle));
-    } else {
-      setIndicateurs(
-        source.indicateurs.map((i) => i.cle).filter((x) => x === cle || indicateurs.includes(x)),
-      );
-    }
+  const copierLien = () => {
+    navigator.clipboard
+      ?.writeText(window.location.href)
+      .then(() => setLienCopie(true))
+      .catch(() => undefined);
   };
 
   const exporter = () => {
     const brut = (v: number, j: number, ligne: number[]) =>
       modeEffectif === 'n'
         ? String(Number.isFinite(v) ? v : 0)
-        : cellule(v, j, ligne).replace(/[\u00a0\u202f]/g, ' ');
+        : cellule(v, j, ligne).replace(/[  ]/g, ' ');
     telechargerCsv(`exploration-${cleSource}-${parEffectif}.csv`, [
       [libellePar || 'Total', ...choisis.map((i) => i.libelle)],
-      ...lignes.map((l) => [l.libelle, ...l.valeurs.map((v, j) => brut(v, j, l.valeurs))]),
+      ...lignesTriees.map((l) => [l.libelle, ...l.valeurs.map((v, j) => brut(v, j, l.valeurs))]),
       ['Total', ...totaux.map((t, j) => brut(t, j, totaux))],
     ]);
   };
 
+  // Titre de colonne triable : bouton, sens annoncé par aria-sort.
+  const enteteTriable = (colonne: string, libelle: string) => {
+    const sens = etat.tri?.colonne === colonne ? etat.tri.sens : undefined;
+    return (
+      <th
+        key={colonne}
+        scope="col"
+        aria-sort={sens === 'asc' ? 'ascending' : sens === 'desc' ? 'descending' : undefined}
+      >
+        <button type="button" className="xp-tri" onClick={() => changer(trierPar(etat, colonne))}>
+          {libelle}
+          <span className="xp-tri__sens" aria-hidden="true">
+            {sens === 'asc' ? '↑' : sens === 'desc' ? '↓' : '↕'}
+          </span>
+        </button>
+      </th>
+    );
+  };
+
+  // Niveaux de territoire affichés (05/11/2026) : ceux déjà choisis et le suivant, s'il a des zones.
+  const niveauxAffiches = NIVEAUX_TERRITOIRE.map((n, k) => ({ n, k })).filter(
+    ({ k }) => k <= chemin.length && (k === 0 || !!chemin[k] || optionsNiveau(k).length > 0),
+  );
+
   return (
     <>
       <section className="panneau-m" aria-label="Choix des données">
-        <Tabs selectedKey={cleSource} onSelectionChange={(k) => choisirSource(String(k))}>
+        <Tabs
+          selectedKey={cleSource}
+          // Seulement sur un vrai changement d'onglet : une vue rouverte depuis un lien ne doit pas être remise à zéro.
+          onSelectionChange={(k) => String(k) !== cleSource && changer(changerSource(etat, String(k)))}
+        >
           <TabList aria-label="Sources" className="xp-onglets">
             {SOURCES.map((s) => (
               <Tab key={s.cle} id={s.cle} className="xp-onglet">
                 {s.libelle}
-                <span className="xp-onglet__nombre">{s.indicateurs.length}</span>
               </Tab>
             ))}
           </TabList>
           {SOURCES.map((s) => (
             <TabPanel key={s.cle} id={s.cle} className="panneau-m__corps">
-              <h2 className="xp-section">Filtres</h2>
+              <div className="xp-haut">
+                {s.cle === 'auth' && (
+                  <div className="xp-bloc">
+                    <h2 className="xp-section" id={`xp-perimetre-${s.cle}`}>
+                      Périmètre
+                    </h2>
+                    <div className="xp-segment" role="group" aria-labelledby={`xp-perimetre-${s.cle}`}>
+                      {PERIMETRES_AUTH.map((o) => (
+                        <button
+                          key={o.id}
+                          type="button"
+                          className="xp-segment__bouton"
+                          aria-pressed={perimetreAuth === o.id}
+                          // Les motifs et les appelants diffèrent d'un périmètre à l'autre.
+                          onClick={() =>
+                            perimetreAuth !== o.id &&
+                            changer({ ...etat, perimetre: o.id as EtatExploration['perimetre'], filtres: {} })
+                          }
+                        >
+                          {o.libelle}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="xp-bloc">
+                  <h2 className="xp-section" id={`xp-ind-${s.cle}`}>
+                    Indicateurs <span className="xp-section__aide">(un ou plusieurs)</span>
+                  </h2>
+                  <div className="xp-puces" role="group" aria-labelledby={`xp-ind-${s.cle}`}>
+                    {s.indicateurs.map((i) => (
+                      <button
+                        key={i.cle}
+                        type="button"
+                        className="xp-puce"
+                        aria-pressed={indicateurs.includes(i.cle)}
+                        onClick={() => changer(basculerIndicateur(etat, i.cle))}
+                      >
+                        {i.libelle}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="xp-filet" />
+              <h2 className="xp-section">Période et filtres</h2>
               <div className="xp-grille">
                 <ChampChoix
                   libelle="Période"
                   valeur={perso ? PERSONNALISEE : periode}
-                  options={[
-                    { id: 'tout', libelle: 'Toute la période' },
-                    { id: PERSONNALISEE, libelle: 'Personnalisée' },
-                  ]}
+                  options={[]}
                   groupes={[
+                    { titre: 'Raccourcis', options: RACCOURCIS.map((r) => ({ id: r.id, libelle: r.libelle })) },
+                    {
+                      titre: 'Autres',
+                      options: [
+                        { id: 'tout', libelle: 'Toute la période' },
+                        { id: PERSONNALISEE, libelle: 'Personnalisée' },
+                      ],
+                    },
                     { titre: 'Années', options: annees.map((a) => ({ id: `A:${a}`, libelle: a })) },
                     {
                       titre: 'Mois',
@@ -480,37 +681,22 @@ function Explorateur() {
                     },
                   ]}
                   onChange={(v) =>
-                    setPeriode(v === PERSONNALISEE ? (perso ? periode : periodePersonnalisee('', '')) : v)
+                    changer({
+                      ...etat,
+                      periode: v === PERSONNALISEE ? (perso ? periode : periodePersonnalisee('', '')) : v,
+                    })
                   }
                 />
                 {perso && (
                   <>
-                    <label className="xp-champ">
-                      <span className="champ-choix__libelle">Du</span>
-                      <input
-                        type="date"
-                        className="xp-date"
-                        value={datesPerso.du}
-                        min={bornes?.du}
-                        max={bornes?.au}
-                        aria-invalid={!!erreurPerso && !!datesPerso.du}
-                        aria-describedby={erreurPerso && datesPerso.du ? `xp-erreur-${s.cle}` : undefined}
-                        onChange={(e) => setPeriode(periodePersonnalisee(e.target.value, datesPerso.au))}
-                      />
-                    </label>
-                    <label className="xp-champ">
-                      <span className="champ-choix__libelle">Au</span>
-                      <input
-                        type="date"
-                        className="xp-date"
-                        value={datesPerso.au}
-                        min={datesPerso.du || bornes?.du}
-                        max={bornes?.au}
-                        aria-invalid={!!erreurPerso && !!datesPerso.au}
-                        aria-describedby={erreurPerso && datesPerso.du ? `xp-erreur-${s.cle}` : undefined}
-                        onChange={(e) => setPeriode(periodePersonnalisee(datesPerso.du, e.target.value))}
-                      />
-                    </label>
+                    <SaisieDates
+                      key={cleDates}
+                      periode={periode}
+                      bornes={bornes}
+                      invalide={!!erreurPerso}
+                      idErreur={erreurPerso && datesPerso.du ? `xp-erreur-${s.cle}` : undefined}
+                      onChange={(v) => changer({ ...etat, periode: v }, true)}
+                    />
                     {!datesPerso.du ? (
                       <p className="xp-aide">Choisissez la date de début ; laissez « Au » vide pour un seul jour.</p>
                     ) : (
@@ -522,101 +708,52 @@ function Explorateur() {
                     )}
                   </>
                 )}
-                {s.cle === 'auth' && (
-                  <ChampChoix
-                    libelle="Périmètre"
-                    valeur={perimetreAuth}
-                    options={PERIMETRES_AUTH}
-                    onChange={(v) => {
-                      // Les motifs et les appelants diffèrent d'un périmètre à l'autre.
-                      setPerimetreAuth(v as ParametresExploration['perimetre']);
-                      setFiltres({});
-                    }}
-                  />
-                )}
                 {dimensionsSource.map((d) => {
                   const applicable = choisis.some((i) => i.dimensions.includes(d));
                   const dim = DIMENSIONS[d];
                   const options = optionsDimension(d);
+                  const sansDonnees = dimensionIndisponible(d);
                   return (
                     <ChampChoix
                       key={d}
                       libelle={dim.libelle}
                       valeur={filtres[d] ?? ''}
                       options={[{ id: '', libelle: dim.tous }, ...options]}
-                      desactive={!applicable || options.length === 0}
+                      desactive={sansDonnees || !applicable || options.length === 0}
                       raison={
-                        !applicable
-                          ? 'Sans objet pour les indicateurs choisis'
-                          : 'Valeurs pas encore disponibles'
+                        sansDonnees
+                          ? RAISON_INDISPONIBLE
+                          : !applicable
+                            ? raisonSansObjet(d)
+                            : 'Valeurs pas encore disponibles'
                       }
-                      onChange={(v) => setFiltres((f) => ({ ...f, [d]: v || undefined }))}
+                      onChange={(v) => changer({ ...etat, filtres: { ...filtres, [d]: v || undefined } })}
                     />
                   );
                 })}
               </div>
               {s.indicateurs.some((i) => i.territoire) && (
                 <div className="xp-grille xp-grille--territoire">
-                  {NIVEAUX_TERRITOIRE.map((n, k) => {
-                    // Un niveau s'ouvre dès que le niveau au-dessus est choisi (la région : toujours).
-                    const ouvert = k === 0 || !!chemin[k - 1];
-                    const options = optionsNiveau(k);
-                    return (
-                      <ChampChoix
-                        key={n.cle}
-                        libelle={n.libelle}
-                        valeur={chemin[k] ?? ''}
-                        options={[
-                          { id: '', libelle: ouvert ? TOUTES_ZONES[k] : VIDE_TERRITOIRE[k] },
-                          ...(ouvert ? options : []),
-                        ]}
-                        desactive={!territoireOk || !ouvert || (k > 0 && options.length === 0)}
-                        raison={
-                          !territoireOk
-                            ? 'Un des indicateurs choisis ne se ventile pas par territoire'
-                            : !ouvert
-                              ? `${VIDE_TERRITOIRE[k]} d’abord`
-                              : 'Aucune zone de ce niveau dans la zone choisie'
-                        }
-                        onChange={(v) => choisirNiveau(k, v)}
-                      />
-                    );
-                  })}
+                  {niveauxAffiches.map(({ n, k }) => (
+                    <ChampChoix
+                      key={n.cle}
+                      libelle={n.libelle}
+                      valeur={chemin[k] ?? ''}
+                      options={[{ id: '', libelle: TOUTES_ZONES[k] }, ...optionsNiveau(k)]}
+                      desactive={!territoireOk}
+                      raison="Un des indicateurs choisis ne se ventile pas par territoire"
+                      onChange={(v) => choisirNiveau(k, v)}
+                    />
+                  ))}
                 </div>
               )}
               <div className="xp-filet" />
               <div className="xp-bas">
-                <div className="xp-champ">
-                  <span id={`xp-ind-${s.cle}`} className="champ-choix__libelle">
-                    Indicateurs
-                  </span>
-                  <details className="xp-indicateurs">
-                    <summary aria-labelledby={`xp-ind-${s.cle}`}>
-                      <span>
-                        {choisis[0]?.libelle}
-                        {choisis.length > 1 ? ` + ${choisis.length - 1}` : ''}
-                      </span>
-                      <Chevron bas taille={12} />
-                    </summary>
-                    <div className="xp-indicateurs__liste" role="group" aria-label="Indicateurs">
-                      {s.indicateurs.map((i) => (
-                        <label key={i.cle}>
-                          <input
-                            type="checkbox"
-                            checked={indicateurs.includes(i.cle)}
-                            onChange={() => basculer(i.cle)}
-                          />
-                          {i.libelle}
-                        </label>
-                      ))}
-                    </div>
-                  </details>
-                </div>
                 <ChampChoix
                   libelle="Afficher par"
                   valeur={parEffectif}
                   options={optionsPar}
-                  onChange={setPar}
+                  onChange={(v) => changer({ ...etat, par: v })}
                 />
                 <ChampChoix
                   libelle="Valeurs"
@@ -628,8 +765,15 @@ function Explorateur() {
                       ? [{ id: 'pf', libelle: `En % de « ${choisis[0].libelle} »` }]
                       : []),
                   ]}
-                  onChange={(v) => setMode(v as Mode)}
+                  onChange={(v) => changer({ ...etat, mode: v as Mode })}
                 />
+                <span className="xp-bas__vide" />
+                <button type="button" className="xp-lien" onClick={copierLien}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
+                    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+                  </svg>
+                  {lienCopie ? 'Lien copié' : 'Copier le lien'}
+                </button>
                 <button type="button" className="xp-csv" onClick={exporter}>
                   <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
                     <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
@@ -650,6 +794,33 @@ function Explorateur() {
                   ignorés.
                 </p>
               )}
+              {(actifs.length > 0 || aReinitialiser) && (
+                <div className="xp-actifs">
+                  <span>{actifs.length ? 'Filtres actifs :' : 'Aucun filtre actif.'}</span>
+                  <ul className="xp-actifs__liste">
+                    {actifs.map((a) => (
+                      <li key={a.cle} className="xp-actif">
+                        {a.libelle}
+                        {a.retirer && (
+                          <button
+                            type="button"
+                            className="xp-actif__retirer"
+                            aria-label={`Retirer « ${a.libelle} »`}
+                            onClick={a.retirer}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {aReinitialiser && (
+                    <button type="button" className="xp-reinitialiser" onClick={() => changer(reinitialiser(etat))}>
+                      Réinitialiser
+                    </button>
+                  )}
+                </div>
+              )}
             </TabPanel>
           ))}
         </Tabs>
@@ -659,10 +830,21 @@ function Explorateur() {
         id="titre-resultat"
         titre={titreResultat}
         sousTitre={`${source.libelle} · ${libellePeriode} · ${filtresDecrits.length ? filtresDecrits.join(' · ') : 'sans filtre'}.`}
+        className={enCours ? 'xp-resultat xp-resultat--maj' : 'xp-resultat'}
+        aside={
+          <p className="xp-chargement" role="status">
+            {enCours && (
+              <>
+                <span className="xp-chargement__roue" aria-hidden="true" />
+                Mise à jour des chiffres…
+              </>
+            )}
+          </p>
+        }
         surTitre={
           chemin.length ? (
             <span className="fil-ariane">
-              <button type="button" className="fil-ariane__lien" onClick={() => setChemin([])}>
+              <button type="button" className="fil-ariane__lien" onClick={() => choisirChemin([])}>
                 Togo
               </button>
               {nomsChemin.map((nom, k) => (
@@ -672,7 +854,7 @@ function Explorateur() {
                     <button
                       type="button"
                       className="fil-ariane__lien"
-                      onClick={() => setChemin(chemin.slice(0, k + 1))}
+                      onClick={() => choisirChemin(chemin.slice(0, k + 1))}
                     >
                       {nom}
                     </button>
@@ -685,7 +867,20 @@ function Explorateur() {
           ) : undefined
         }
       >
-        <GrandChiffre valeur={nf(totaux[0])} unite={`${choisis[0]?.libelle.toLowerCase()} au total`} />
+        <div className="xp-chiffres">
+          {choisis.map((i, j) => (
+            <GrandChiffre
+              key={i.cle}
+              valeur={nf(totaux[j])}
+              unite={j === 0 ? `${minuscule(i.libelle)} au total` : minuscule(i.libelle)}
+              detail={
+                j > 0 && Number.isFinite(totaux[0]) && totaux[0] > 0
+                  ? `${pct(part(totaux[j], totaux[0]))} des ${minuscule(choisis[0].libelle)}`
+                  : undefined
+              }
+            />
+          ))}
+        </div>
         {parEffectif !== 'total' && (
           <div
             className="tableau-m-defile xp-tableau"
@@ -697,12 +892,8 @@ function Explorateur() {
               <caption className="visuellement-cache">{titreResultat}</caption>
               <thead>
                 <tr>
-                  <th scope="col">{libellePar}</th>
-                  {choisis.map((i) => (
-                    <th key={i.cle} scope="col">
-                      {i.libelle}
-                    </th>
-                  ))}
+                  {enteteTriable('libelle', libellePar)}
+                  {choisis.map((i) => enteteTriable(i.cle, i.libelle))}
                 </tr>
               </thead>
               <tbody>
@@ -713,10 +904,7 @@ function Explorateur() {
                         <button
                           type="button"
                           className="bouton-zone"
-                          onClick={() => {
-                            setChemin([...chemin, l.id]);
-                            setPar('sous');
-                          }}
+                          onClick={() => changer({ ...etat, chemin: [...chemin, l.id], par: undefined })}
                         >
                           {l.libelle}
                           <Chevron />

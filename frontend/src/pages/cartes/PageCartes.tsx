@@ -106,7 +106,7 @@ export function PageCartes({ page }: { page: DefinitionPage }) {
 
   return (
     <>
-      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage />} />
+      <Bandeau titre={page.titre} source={page.source} filtres={<FiltresPage source="cartes" />} />
       <div className="contenu page-m">
         <Panneau id="titre-impression" titre="Impression et remise" coins sansMarge>
           <div className="impression">
