@@ -825,6 +825,9 @@ function Explorateur() {
       <Panneau
         id="titre-resultat"
         titre={titreResultat}
+        // Titre retiré de l'écran (06/11/2026) : les colonnes du tableau disent les indicateurs ; gardé pour les
+        // lecteurs d'écran, qui nomment ainsi le bloc des résultats.
+        titreCache
         sousTitre={`${source.libelle} · ${libellePeriode} · ${filtresDecrits.length ? filtresDecrits.join(' · ') : 'sans filtre'}.`}
         className={enCours ? 'xp-resultat xp-resultat--maj' : 'xp-resultat'}
         aside={

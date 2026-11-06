@@ -17,6 +17,8 @@ interface Props {
   /** Le contenu gère lui-même ses marges (blocs « grand chiffre + cartes »). */
   sansMarge?: boolean;
   sansFilet?: boolean;
+  /** Titre lu par les lecteurs d'écran mais pas affiché (Exploration : les colonnes disent déjà les indicateurs). */
+  titreCache?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -32,6 +34,7 @@ export function Panneau({
   coins,
   sansMarge,
   sansFilet,
+  titreCache,
   className = '',
   children,
 }: Props) {
@@ -49,7 +52,7 @@ export function Panneau({
         <div className="panneau-m__titres">
           {surTitre && <div className="panneau-m__sur-titre">{surTitre}</div>}
           <div className="panneau-m__ligne-titre">
-            <h2 id={id} className="panneau-m__titre">
+            <h2 id={id} className={titreCache ? 'visuellement-cache' : 'panneau-m__titre'}>
               {titre}
             </h2>
             {pastille}
