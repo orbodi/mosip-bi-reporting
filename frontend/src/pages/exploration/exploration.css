@@ -399,3 +399,66 @@ th[aria-sort] .xp-tri__sens {
   opacity: 0.55;
   transition: opacity 0.2s;
 }
+
+/* Lot D du 06/11/2026 (maquette maquette-exploration-D-390) : sur téléphone, choix repliés sous un bouton ; la
+   rangée des choix actifs rappelle les indicateurs. Au-delà de 700 px, rien ne change. */
+.xp-replier,
+.xp-actif--indicateurs {
+  display: none;
+}
+.xp-actifs--vide {
+  display: none;
+}
+@media (max-width: 700px) {
+  .xp-replier {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--e-4);
+    border: 1px solid var(--bleu);
+    border-radius: var(--r-pilule);
+    background: var(--surface);
+    color: var(--bleu);
+    font: 600 var(--t-m) var(--police);
+    cursor: pointer;
+  }
+  .xp-replier[aria-expanded='true'] .chevron {
+    transform: rotate(180deg);
+  }
+  .xp-replier:focus-visible {
+    outline: 2px solid var(--bleu);
+    outline-offset: 2px;
+  }
+  .xp-replier__nombre {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    margin-left: var(--e-2);
+    padding: 0 var(--e-1);
+    border-radius: var(--r-pilule);
+    background: var(--bleu);
+    color: var(--sur-bleu);
+    font-size: var(--t-xs);
+  }
+  .xp-choix {
+    margin-top: var(--e-5);
+  }
+  .xp-choix--replie {
+    display: none;
+  }
+  .xp-actifs,
+  .xp-actifs--vide {
+    display: flex;
+  }
+  .xp-actifs__titre {
+    display: none;
+  }
+  .xp-actif--indicateurs {
+    display: inline-flex;
+    padding-right: var(--e-3);
+  }
+}

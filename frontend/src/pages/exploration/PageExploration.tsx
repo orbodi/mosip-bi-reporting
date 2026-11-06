@@ -275,6 +275,8 @@ function Explorateur() {
   const [taille, setTaille] = useState<TaillePage>(20);
   const [page, setPage] = useState(0);
   const [lienCopie, setLienCopie] = useState(false);
+  // Téléphone : choix repliés à l'ouverture (lot D, 06/11/2026).
+  const [deplie, setDeplie] = useState(false);
   useEffect(() => {
     if (!lienCopie) return;
     const minuteur = setTimeout(() => setLienCopie(false), 2500);
@@ -548,6 +550,8 @@ function Explorateur() {
         ]
       : []),
   ];
+  // Nombre de choix retirables (période, filtres, zone), affiché sur le bouton des choix repliés.
+  const nombreActifs = actifs.filter((a) => a.retirer).length;
   const aReinitialiser = actifs.some((a) => a.retirer) || indicateurs.length > 1 || !!etat.par || !!etat.tri;
 
   const copierLien = () => {
@@ -610,213 +614,239 @@ function Explorateur() {
           </TabList>
           {SOURCES.map((s) => (
             <TabPanel key={s.cle} id={s.cle} className="panneau-m__corps">
-              <div className="xp-haut">
-                {s.cle === 'auth' && (
+              {/* Téléphone (lot D, 06/11/2026) : choix repliés sous un bouton ; ouverts en permanence au-delà de 700 px. */}
+              <button
+                type="button"
+                className="xp-replier"
+                aria-expanded={deplie}
+                aria-controls={`xp-choix-${s.cle}`}
+                onClick={() => setDeplie(!deplie)}
+              >
+                <span>
+                  Indicateurs et filtres
+                  {nombreActifs > 0 && (
+                    <>
+                      {' '}
+                      <span className="xp-replier__nombre">{nombreActifs}</span>
+                      <span className="visuellement-cache"> choix actifs</span>
+                    </>
+                  )}
+                </span>
+                <Chevron bas taille={12} />
+              </button>
+              <div id={`xp-choix-${s.cle}`} className={deplie ? 'xp-choix' : 'xp-choix xp-choix--replie'}>
+                <div className="xp-haut">
+                  {s.cle === 'auth' && (
+                    <div className="xp-bloc">
+                      <h2 className="xp-section" id={`xp-perimetre-${s.cle}`}>
+                        Périmètre
+                      </h2>
+                      <div className="xp-segment" role="group" aria-labelledby={`xp-perimetre-${s.cle}`}>
+                        {PERIMETRES_AUTH.map((o) => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            className="xp-segment__bouton"
+                            aria-pressed={perimetreAuth === o.id}
+                            // Les motifs et les appelants diffèrent d'un périmètre à l'autre.
+                            onClick={() =>
+                              perimetreAuth !== o.id &&
+                              changer({ ...etat, perimetre: o.id as EtatExploration['perimetre'], filtres: {} })
+                            }
+                          >
+                            {o.libelle}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="xp-bloc">
-                    <h2 className="xp-section" id={`xp-perimetre-${s.cle}`}>
-                      Périmètre
+                    <h2 className="xp-section" id={`xp-ind-${s.cle}`}>
+                      Indicateurs <span className="xp-section__aide">(un ou plusieurs)</span>
                     </h2>
-                    <div className="xp-segment" role="group" aria-labelledby={`xp-perimetre-${s.cle}`}>
-                      {PERIMETRES_AUTH.map((o) => (
+                    <div className="xp-puces" role="group" aria-labelledby={`xp-ind-${s.cle}`}>
+                      {s.indicateurs.map((i) => (
                         <button
-                          key={o.id}
+                          key={i.cle}
                           type="button"
-                          className="xp-segment__bouton"
-                          aria-pressed={perimetreAuth === o.id}
-                          // Les motifs et les appelants diffèrent d'un périmètre à l'autre.
-                          onClick={() =>
-                            perimetreAuth !== o.id &&
-                            changer({ ...etat, perimetre: o.id as EtatExploration['perimetre'], filtres: {} })
-                          }
+                          className="xp-puce"
+                          aria-pressed={indicateurs.includes(i.cle)}
+                          onClick={() => changer(basculerIndicateur(etat, i.cle))}
                         >
-                          {o.libelle}
+                          {i.libelle}
                         </button>
                       ))}
                     </div>
                   </div>
-                )}
-                <div className="xp-bloc">
-                  <h2 className="xp-section" id={`xp-ind-${s.cle}`}>
-                    Indicateurs <span className="xp-section__aide">(un ou plusieurs)</span>
-                  </h2>
-                  <div className="xp-puces" role="group" aria-labelledby={`xp-ind-${s.cle}`}>
-                    {s.indicateurs.map((i) => (
-                      <button
-                        key={i.cle}
-                        type="button"
-                        className="xp-puce"
-                        aria-pressed={indicateurs.includes(i.cle)}
-                        onClick={() => changer(basculerIndicateur(etat, i.cle))}
-                      >
-                        {i.libelle}
-                      </button>
+                </div>
+                <div className="xp-filet" />
+                <h2 className="xp-section">Période et filtres</h2>
+                <div className="xp-grille">
+                  <ChampChoix
+                    libelle="Période"
+                    valeur={perso ? PERSONNALISEE : periode}
+                    options={[]}
+                    groupes={[
+                      { titre: 'Raccourcis', options: RACCOURCIS.map((r) => ({ id: r.id, libelle: r.libelle })) },
+                      {
+                        titre: 'Autres',
+                        options: [
+                          { id: 'tout', libelle: 'Toute la période' },
+                          { id: PERSONNALISEE, libelle: 'Personnalisée' },
+                        ],
+                      },
+                      { titre: 'Années', options: annees.map((a) => ({ id: `A:${a}`, libelle: a })) },
+                      {
+                        titre: 'Mois',
+                        options: [...mois].reverse().map((m) => ({ id: `M:${m}`, libelle: libelleMois(m) })),
+                      },
+                    ]}
+                    onChange={(v) =>
+                      changer({
+                        ...etat,
+                        periode: v === PERSONNALISEE ? (perso ? periode : periodePersonnalisee('', '')) : v,
+                      })
+                    }
+                  />
+                  {perso && (
+                    <>
+                      <SaisieDates
+                        key={cleDates}
+                        periode={periode}
+                        bornes={bornes}
+                        invalide={!!erreurPerso}
+                        idErreur={erreurPerso && datesPerso.du ? `xp-erreur-${s.cle}` : undefined}
+                        onChange={(v) => changer({ ...etat, periode: v }, true)}
+                      />
+                      {!datesPerso.du ? (
+                        <p className="xp-aide">Choisissez la date de début ; laissez « Au » vide pour un seul jour.</p>
+                      ) : (
+                        erreurPerso && (
+                          <p id={`xp-erreur-${s.cle}`} className="xp-erreur" role="alert">
+                            {erreurPerso}
+                          </p>
+                        )
+                      )}
+                    </>
+                  )}
+                  {dimensionsSource.map((d) => {
+                    const applicable = choisis.some((i) => i.dimensions.includes(d));
+                    const dim = DIMENSIONS[d];
+                    const options = optionsDimension(d);
+                    const sansDonnees = dimensionIndisponible(d);
+                    return (
+                      <ChampChoix
+                        key={d}
+                        libelle={dim.libelle}
+                        valeur={filtres[d] ?? ''}
+                        options={[{ id: '', libelle: dim.tous }, ...options]}
+                        desactive={sansDonnees || !applicable || options.length === 0}
+                        raison={
+                          sansDonnees
+                            ? RAISON_INDISPONIBLE
+                            : !applicable
+                              ? raisonSansObjet(d)
+                              : 'Valeurs pas encore disponibles'
+                        }
+                        onChange={(v) => changer({ ...etat, filtres: { ...filtres, [d]: v || undefined } })}
+                      />
+                    );
+                  })}
+                </div>
+                {s.indicateurs.some((i) => i.territoire) && (
+                  <div className="xp-grille xp-grille--territoire">
+                    {niveauxAffiches.map(({ n, k }) => (
+                      <ChampChoix
+                        key={n.cle}
+                        libelle={n.libelle}
+                        valeur={chemin[k] ?? ''}
+                        options={[{ id: '', libelle: TOUTES_ZONES[k] }, ...optionsNiveau(k)]}
+                        desactive={!territoireOk}
+                        raison="Un des indicateurs choisis ne se ventile pas par territoire"
+                        onChange={(v) => choisirNiveau(k, v)}
+                      />
                     ))}
                   </div>
-                </div>
-              </div>
-              <div className="xp-filet" />
-              <h2 className="xp-section">Période et filtres</h2>
-              <div className="xp-grille">
-                <ChampChoix
-                  libelle="Période"
-                  valeur={perso ? PERSONNALISEE : periode}
-                  options={[]}
-                  groupes={[
-                    { titre: 'Raccourcis', options: RACCOURCIS.map((r) => ({ id: r.id, libelle: r.libelle })) },
-                    {
-                      titre: 'Autres',
-                      options: [
-                        { id: 'tout', libelle: 'Toute la période' },
-                        { id: PERSONNALISEE, libelle: 'Personnalisée' },
-                      ],
-                    },
-                    { titre: 'Années', options: annees.map((a) => ({ id: `A:${a}`, libelle: a })) },
-                    {
-                      titre: 'Mois',
-                      options: [...mois].reverse().map((m) => ({ id: `M:${m}`, libelle: libelleMois(m) })),
-                    },
-                  ]}
-                  onChange={(v) =>
-                    changer({
-                      ...etat,
-                      periode: v === PERSONNALISEE ? (perso ? periode : periodePersonnalisee('', '')) : v,
-                    })
-                  }
-                />
-                {perso && (
-                  <>
-                    <SaisieDates
-                      key={cleDates}
-                      periode={periode}
-                      bornes={bornes}
-                      invalide={!!erreurPerso}
-                      idErreur={erreurPerso && datesPerso.du ? `xp-erreur-${s.cle}` : undefined}
-                      onChange={(v) => changer({ ...etat, periode: v }, true)}
-                    />
-                    {!datesPerso.du ? (
-                      <p className="xp-aide">Choisissez la date de début ; laissez « Au » vide pour un seul jour.</p>
-                    ) : (
-                      erreurPerso && (
-                        <p id={`xp-erreur-${s.cle}`} className="xp-erreur" role="alert">
-                          {erreurPerso}
-                        </p>
-                      )
-                    )}
-                  </>
                 )}
-                {dimensionsSource.map((d) => {
-                  const applicable = choisis.some((i) => i.dimensions.includes(d));
-                  const dim = DIMENSIONS[d];
-                  const options = optionsDimension(d);
-                  const sansDonnees = dimensionIndisponible(d);
-                  return (
-                    <ChampChoix
-                      key={d}
-                      libelle={dim.libelle}
-                      valeur={filtres[d] ?? ''}
-                      options={[{ id: '', libelle: dim.tous }, ...options]}
-                      desactive={sansDonnees || !applicable || options.length === 0}
-                      raison={
-                        sansDonnees
-                          ? RAISON_INDISPONIBLE
-                          : !applicable
-                            ? raisonSansObjet(d)
-                            : 'Valeurs pas encore disponibles'
-                      }
-                      onChange={(v) => changer({ ...etat, filtres: { ...filtres, [d]: v || undefined } })}
-                    />
-                  );
-                })}
+                <div className="xp-filet" />
+                <div className="xp-bas">
+                  <ChampChoix
+                    libelle="Afficher par"
+                    valeur={parEffectif}
+                    options={optionsPar}
+                    onChange={(v) => changer({ ...etat, par: v })}
+                  />
+                  <ChampChoix
+                    libelle="Valeurs"
+                    valeur={modeEffectif}
+                    options={[
+                      { id: 'n', libelle: 'Nombres' },
+                      { id: 'pt', libelle: 'Part du total (%)' },
+                      ...(choisis.length > 1
+                        ? [{ id: 'pf', libelle: `En % de « ${choisis[0].libelle} »` }]
+                        : []),
+                    ]}
+                    onChange={(v) => changer({ ...etat, mode: v as Mode })}
+                  />
+                  <span className="xp-bas__vide" />
+                  <button type="button" className="xp-lien" onClick={copierLien}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
+                      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+                    </svg>
+                    {lienCopie ? 'Lien copié' : 'Copier le lien'}
+                  </button>
+                  <button type="button" className="xp-csv" onClick={exporter}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
+                      <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+                    </svg>
+                    Exporter en CSV
+                  </button>
+                </div>
+                {s.note && <p className="xp-note">{s.note}</p>}
+                {choisis.some((i) => i.cle === 'pre') && chemin.length >= 2 && (
+                  <p className="xp-note">
+                    Les pré-inscriptions ne sont situées qu’à la préfecture de résidence déclarée : le total de
+                    la zone est exact, le détail plus fin est à 0.
+                  </p>
+                )}
+                {!territoireOk && s.indicateurs.some((i) => i.territoire) && (
+                  <p className="xp-note">
+                    Un des indicateurs choisis ne se ventile pas par territoire : les filtres géographiques sont
+                    ignorés.
+                  </p>
+                )}
               </div>
-              {s.indicateurs.some((i) => i.territoire) && (
-                <div className="xp-grille xp-grille--territoire">
-                  {niveauxAffiches.map(({ n, k }) => (
-                    <ChampChoix
-                      key={n.cle}
-                      libelle={n.libelle}
-                      valeur={chemin[k] ?? ''}
-                      options={[{ id: '', libelle: TOUTES_ZONES[k] }, ...optionsNiveau(k)]}
-                      desactive={!territoireOk}
-                      raison="Un des indicateurs choisis ne se ventile pas par territoire"
-                      onChange={(v) => choisirNiveau(k, v)}
-                    />
+              {/* Sur téléphone, la rangée rappelle aussi les indicateurs choisis (sans ✕), même sans filtre. */}
+              <div
+                className={actifs.length > 0 || aReinitialiser ? 'xp-actifs' : 'xp-actifs xp-actifs--vide'}
+              >
+                <span className="xp-actifs__titre">
+                  {actifs.length ? 'Filtres actifs :' : 'Aucun filtre actif.'}
+                </span>
+                <ul className="xp-actifs__liste">
+                  <li className="xp-actif xp-actif--indicateurs">{choisis.map((i) => i.libelle).join(', ')}</li>
+                  {actifs.map((a) => (
+                    <li key={a.cle} className="xp-actif">
+                      {a.libelle}
+                      {a.retirer && (
+                        <button
+                          type="button"
+                          className="xp-actif__retirer"
+                          aria-label={`Retirer « ${a.libelle} »`}
+                          onClick={a.retirer}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </li>
                   ))}
-                </div>
-              )}
-              <div className="xp-filet" />
-              <div className="xp-bas">
-                <ChampChoix
-                  libelle="Afficher par"
-                  valeur={parEffectif}
-                  options={optionsPar}
-                  onChange={(v) => changer({ ...etat, par: v })}
-                />
-                <ChampChoix
-                  libelle="Valeurs"
-                  valeur={modeEffectif}
-                  options={[
-                    { id: 'n', libelle: 'Nombres' },
-                    { id: 'pt', libelle: 'Part du total (%)' },
-                    ...(choisis.length > 1
-                      ? [{ id: 'pf', libelle: `En % de « ${choisis[0].libelle} »` }]
-                      : []),
-                  ]}
-                  onChange={(v) => changer({ ...etat, mode: v as Mode })}
-                />
-                <span className="xp-bas__vide" />
-                <button type="button" className="xp-lien" onClick={copierLien}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
-                    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
-                  </svg>
-                  {lienCopie ? 'Lien copié' : 'Copier le lien'}
-                </button>
-                <button type="button" className="xp-csv" onClick={exporter}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
-                    <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
-                  </svg>
-                  Exporter en CSV
-                </button>
+                </ul>
+                {aReinitialiser && (
+                  <button type="button" className="xp-reinitialiser" onClick={() => changer(reinitialiser(etat))}>
+                    Réinitialiser
+                  </button>
+                )}
               </div>
-              {s.note && <p className="xp-note">{s.note}</p>}
-              {choisis.some((i) => i.cle === 'pre') && chemin.length >= 2 && (
-                <p className="xp-note">
-                  Les pré-inscriptions ne sont situées qu’à la préfecture de résidence déclarée : le total de
-                  la zone est exact, le détail plus fin est à 0.
-                </p>
-              )}
-              {!territoireOk && s.indicateurs.some((i) => i.territoire) && (
-                <p className="xp-note">
-                  Un des indicateurs choisis ne se ventile pas par territoire : les filtres géographiques sont
-                  ignorés.
-                </p>
-              )}
-              {(actifs.length > 0 || aReinitialiser) && (
-                <div className="xp-actifs">
-                  <span>{actifs.length ? 'Filtres actifs :' : 'Aucun filtre actif.'}</span>
-                  <ul className="xp-actifs__liste">
-                    {actifs.map((a) => (
-                      <li key={a.cle} className="xp-actif">
-                        {a.libelle}
-                        {a.retirer && (
-                          <button
-                            type="button"
-                            className="xp-actif__retirer"
-                            aria-label={`Retirer « ${a.libelle} »`}
-                            onClick={a.retirer}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  {aReinitialiser && (
-                    <button type="button" className="xp-reinitialiser" onClick={() => changer(reinitialiser(etat))}>
-                      Réinitialiser
-                    </button>
-                  )}
-                </div>
-              )}
             </TabPanel>
           ))}
         </Tabs>

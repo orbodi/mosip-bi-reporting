@@ -397,4 +397,22 @@ describe('Pages de la maquette', () => {
     await utilisateur.click(await screen.findByRole('link', { name: /Filtres détaillés dans l’Exploration/ }));
     expect(await screen.findByRole('tab', { name: 'Authentifications', selected: true })).toBeInTheDocument();
   });
+
+  it('Exploration : sur téléphone, choix repliés sous un bouton avec le nombre de filtres actifs', async () => {
+    simulerApi();
+    afficher('/exploration?zones=SAV&quand=R:moisprec');
+    const utilisateur = userEvent.setup();
+
+    const bouton = await screen.findByRole('button', { name: /Indicateurs et filtres/ });
+    // Deux choix retirables : la période et la région.
+    expect(bouton).toHaveAccessibleName('Indicateurs et filtres 2 choix actifs');
+    expect(bouton).toHaveAttribute('aria-expanded', 'false');
+    const choix = document.getElementById(bouton.getAttribute('aria-controls') ?? '');
+    expect(choix).toHaveClass('xp-choix--replie');
+    await utilisateur.click(bouton);
+    expect(bouton).toHaveAttribute('aria-expanded', 'true');
+    expect(choix).not.toHaveClass('xp-choix--replie');
+    // La rangée des choix actifs rappelle les indicateurs (visible sur téléphone seulement).
+    expect(document.querySelector('.xp-actif--indicateurs')).toHaveTextContent('Inscriptions');
+  });
 });
