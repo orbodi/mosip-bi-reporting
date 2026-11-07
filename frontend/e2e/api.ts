@@ -501,6 +501,7 @@ export async function simulerEnrolement(page: Page) {
             : [],
         total: chiffres(t),
         types: par === 'total' ? ['LOST', 'NEW', 'UPDATE'] : [],
+        nationalites: par === 'total' ? ['Togo', 'Non renseignée'] : [],
       },
     });
   });

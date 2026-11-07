@@ -46,7 +46,9 @@ import {
   NIVEAUX_TERRITOIRE,
   NOMBRE_INDICATEURS,
   RAISON_INDISPONIBLE,
+  SEXES,
   SOURCES,
+  TRANCHES_AGE,
   type CleDimension,
 } from './catalogue';
 import './exploration.css';
@@ -103,12 +105,15 @@ const CHAMP_ENROLEMENT: Record<string, ChampsEnrolement> = {
   pre: 'preinscriptions',
 };
 
-/** Enrôlement : ventilations de l'API Exploration. */
+/** Enrôlement : ventilations de l'API Exploration (sexe, âge et nationalité : lot E2, 07/11/2026). */
 const PAR_ENROLEMENT: Partial<Record<string, ParEnrolement>> = {
   sous: 'sous',
   annee: 'annee',
   mois: 'mois',
   type: 'type',
+  sexe: 'sexe',
+  age: 'age',
+  nat: 'nationalite',
 };
 
 /** Authentifications (05/11/2026) : colonnes de l'API Exploration et ventilations correspondantes. */
@@ -302,6 +307,13 @@ function Explorateur() {
     source.indicateurs.some((i) => i.dimensions.includes(d)),
   );
   const dimensionsCommunes = dimensionsSource.filter((d) => choisis.every((i) => i.dimensions.includes(d)));
+  // Filtres envoyés à l'API : ceux qu'un indicateur choisi porte (un filtre grisé reste dans l'adresse, sans
+  // effet).
+  const filtresApplicables: EtatExploration['filtres'] = Object.fromEntries(
+    (Object.entries(filtres) as [CleDimension, string | undefined][]).filter(
+      ([d, v]) => !!v && choisis.some((i) => i.dimensions.includes(d)),
+    ),
+  );
   // Sans données dans l'Exploration (grisés, 05/11/2026) : profil et type de l'Enrôlement, mois et années.
   const dimensionIndisponible = (d: CleDimension) => !!source.indisponibles?.dimensions.includes(d);
   const ventilationIndisponible = (v: string) => !!source.indisponibles?.ventilations.includes(v);
@@ -347,11 +359,17 @@ function Explorateur() {
   const auth = cleSource === 'auth';
   const valeursAuth = useExplorationAuthentifications(undefined, { perimetre: perimetreAuth, par: 'total' }, auth)
     .data?.valeurs;
-  // Types de demande de l'enrôlement, lus dans les données (codes MOSIP, libellés de lib/suivi).
+  // Types de demande (codes MOSIP, libellés de lib/suivi) et nationalités de l'enrôlement, lus dans les
+  // données.
   const enrol = cleSource === 'enrol';
-  const typesEnrol = useExplorationEnrolement(undefined, undefined, { par: 'total' }, enrol).data?.types;
+  const valeursEnrol = useExplorationEnrolement(undefined, undefined, { par: 'total' }, enrol).data;
   const optionsDimension = (d: CleDimension): OptionChoix[] => {
-    if (enrol && d === 'type') return (typesEnrol ?? []).map((c) => ({ id: c, libelle: typeDemande(c) }));
+    if (enrol && d === 'type') {
+      return (valeursEnrol?.types ?? []).map((c) => ({ id: c, libelle: typeDemande(c) }));
+    }
+    if (d === 'sexe') return SEXES;
+    if (d === 'age') return TRANCHES_AGE;
+    if (d === 'nat') return (valeursEnrol?.nationalites ?? []).map((n) => ({ id: n, libelle: n }));
     if (auth && d === 'taut') {
       const codes = valeursAuth?.types ?? TYPES_AUTHENTIFICATION.map((x) => x.code).filter((c) => c !== 'non_classe');
       return codes.map((c) => ({ id: c, libelle: libelleType(c) }));
@@ -368,7 +386,9 @@ function Explorateur() {
     const porteurs = source.indicateurs.filter((i) => i.dimensions.includes(d));
     return porteurs.length === 1
       ? `Choisissez l’indicateur « ${porteurs[0].libelle} »`
-      : 'Sans objet pour les indicateurs choisis';
+      : porteurs.length === 2
+        ? `Choisissez l’indicateur « ${porteurs[0].libelle} » ou « ${porteurs[1].libelle} »`
+        : 'Sans objet pour les indicateurs choisis';
   };
 
   const indisponible = (id: string, libelle: string): OptionChoix =>
@@ -392,13 +412,19 @@ function Explorateur() {
   const modeEffectif: Mode = mode === 'pf' && choisis.length < 2 ? 'n' : mode;
 
   const nomsChemin = chemin.map((_, k) => nomDe(k));
-  // Enrôlement (lot E1, 06/11/2026) : une requête par zone, période, type et ventilation ; seule la réponse à la
-  // ventilation et à la zone en cours s'affiche. Pré-inscriptions sans type de demande : null, affichées 0.
+  // Enrôlement (lots E1 et E2) : une requête par zone, période, filtres et ventilation ; seule la réponse
+  // à la ventilation et à la zone en cours s'affiche. Pré-inscriptions sans type ni profil : null, affichées 0.
   const parEnrol = PAR_ENROLEMENT[parEffectif] ?? 'total';
   const requeteEnrol = useExplorationEnrolement(
     plage,
     zoneChoisie,
-    { type: filtres.type, par: parEnrol },
+    {
+      type: filtresApplicables.type,
+      sexe: filtresApplicables.sexe,
+      age: filtresApplicables.age,
+      nationalite: filtresApplicables.nat,
+      par: parEnrol,
+    },
     enrol && periodePrete,
   );
   const reponseEnrol = requeteEnrol.data;
@@ -406,7 +432,12 @@ function Explorateur() {
     enrol && reponseEnrol?.par === parEnrol && (reponseEnrol.zone ?? undefined) === zoneChoisie
       ? reponseEnrol
       : undefined;
+  // Un indicateur sans la dimension d'un filtre choisi (en cours filtrées par sexe…) n'a pas de valeur :
+  // l'API compte ces dossiers en « Non renseigné », un nombre filtré serait trompeur.
+  const dimensionsFiltrees = Object.keys(filtresApplicables) as CleDimension[];
   const valeurEnrol = (c: Partial<Record<ChampsEnrolement, number | null>>, cle: string) => {
+    const indicateur = source.indicateurs.find((i) => i.cle === cle);
+    if (indicateur && dimensionsFiltrees.some((d) => !indicateur.dimensions.includes(d))) return Number.NaN;
     const v = CHAMP_ENROLEMENT[cle] ? c[CHAMP_ENROLEMENT[cle]] : undefined;
     return typeof v === 'number' ? v : Number.NaN;
   };
@@ -423,9 +454,9 @@ function Explorateur() {
     plage,
     {
       perimetre: perimetreAuth,
-      type: filtres.taut,
-      motif: filtres.cause,
-      appelant: filtres.part,
+      type: filtresApplicables.taut,
+      motif: filtresApplicables.cause,
+      appelant: filtresApplicables.part,
       par: PAR_AUTH[parEffectif] ?? 'total',
     },
     auth && periodePrete,
@@ -474,7 +505,13 @@ function Explorateur() {
       return exploEnrol.lignes.map((l) => ({
         id: l.cle,
         libelle:
-          parEffectif === 'mois' ? libelleMois(l.cle) : parEffectif === 'type' ? typeDemande(l.cle) : l.libelle,
+          parEffectif === 'mois'
+            ? libelleMois(l.cle)
+            : parEffectif === 'type'
+              ? typeDemande(l.cle)
+              : parEffectif === 'sexe' || parEffectif === 'age'
+                ? libelleFiltre(parEffectif, l.cle)
+                : l.libelle,
         valeurs: choisis.map((i) => valeurEnrol(l.chiffres, i.cle)),
         ouvrable: parEffectif === 'sous' && ouvrable(l),
       }));
@@ -493,7 +530,13 @@ function Explorateur() {
       return moisPeriode.map((m) => ({ id: m, libelle: libelleMois(m), valeurs: inconnues() }));
     }
     const dim = DIMENSIONS[parEffectif as CleDimension];
-    return dim ? dim.valeurs.map((v) => ({ id: v, libelle: v, valeurs: inconnues() })) : [];
+    return dim
+      ? optionsDimension(parEffectif as CleDimension).map((o) => ({
+          id: o.id,
+          libelle: o.libelle,
+          valeurs: inconnues(),
+        }))
+      : [];
   })();
 
   const totaux =
@@ -529,9 +572,7 @@ function Explorateur() {
   const titreResultat = `${choisis.map((i) => i.libelle).join(', ')}${parEffectif !== 'total' ? ` par ${libellePar.toLowerCase()}` : ''}`;
   const filtresDecrits = [
     ...(auth ? [PERIMETRES_AUTH.find((o) => o.id === perimetreAuth)?.libelle ?? ''] : []),
-    ...(Object.entries(filtres) as [CleDimension, string | undefined][])
-      .filter(([, v]) => !!v)
-      .map(([d, v]) => libelleFiltre(d, v as string)),
+    ...(Object.entries(filtresApplicables) as [CleDimension, string][]).map(([d, v]) => libelleFiltre(d, v)),
     ...nomsChemin,
   ];
   const libellePeriode =
@@ -563,7 +604,10 @@ function Explorateur() {
       .filter(([, v]) => !!v)
       .map(([d, v]) => ({
         cle: d,
-        libelle: `${DIMENSIONS[d].libelle} : ${libelleFiltre(d, v as string)}`,
+        // Filtre qu'aucun indicateur choisi ne porte : gardé, mais sans effet sur le tableau.
+        libelle:
+          `${DIMENSIONS[d].libelle} : ${libelleFiltre(d, v as string)}` +
+          (filtresApplicables[d] ? '' : ' (sans effet)'),
         retirer: () => changer({ ...etat, filtres: { ...filtres, [d]: undefined } }),
       })),
     ...(chemin.length

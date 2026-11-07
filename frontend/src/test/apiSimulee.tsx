@@ -772,13 +772,15 @@ const PAR_DEFAUT: Record<string, Reponse> = {
   '/enrolement/territoire': (url: URL) =>
     TERRITOIRES[url.searchParams.get('zone') ?? ''] ?? TERRITOIRE_NATIONAL,
   '/enrolement/centres': (url: URL) => CENTRES[url.searchParams.get('classement') ?? 'inscriptions'],
-  // Exploration de l'enrôlement (lot E1) : lignes du territoire simulé, deux mois, trois types de demande.
+  // Exploration de l'enrôlement (lots E1 et E2) : lignes du territoire simulé, deux mois, trois types de demande,
+  // sexe, tranches d'âge et nationalités.
   '/enrolement/exploration': (url: URL) => {
     const zone = url.searchParams.get('zone');
     const type = url.searchParams.get('type');
     const par = url.searchParams.get('par') ?? 'total';
     const t = TERRITOIRES[zone ?? ''] ?? TERRITOIRE_NATIONAL;
-    const sansPre = !!type || par === 'type';
+    const profil = ['sexe', 'age', 'nationalite'].some((p) => !!url.searchParams.get(p));
+    const sansPre = !!type || profil || ['type', 'sexe', 'age', 'nationalite'].includes(par);
     const chiffres = (c: {
       inscriptions: number;
       niuGeneres: number;
@@ -823,7 +825,13 @@ const PAR_DEFAUT: Record<string, Reponse> = {
           ? [temps('2025-12', 1200), temps('2026-01', 1500)]
           : par === 'type'
             ? [temps('NEW', 2400), temps('UPDATE', 250), temps('LOST', 50)]
-            : [];
+            : par === 'sexe'
+              ? [temps('F', 1300), temps('H', 1100), temps('I', 300)]
+              : par === 'age'
+                ? [temps('26-35', 1500), temps('60+', 900), temps('inconnu', 300)]
+                : par === 'nationalite'
+                  ? [temps('Togo', 2300), temps('Non renseignée', 300), temps('Bénin', 100)]
+                  : [];
     return {
       perimetre: t.perimetre,
       zone,
@@ -832,6 +840,7 @@ const PAR_DEFAUT: Record<string, Reponse> = {
       lignes,
       total: chiffres(t),
       types: par === 'total' ? ['LOST', 'NEW', 'UPDATE'] : [],
+      nationalites: par === 'total' ? ['Togo', 'Non renseignée', 'Bénin'] : [],
     };
   },
   '/enrolement/preinscriptions': PREINSCRIPTIONS,

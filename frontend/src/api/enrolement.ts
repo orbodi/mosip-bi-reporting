@@ -76,21 +76,25 @@ export function useTerritoire(plage: Plage | undefined, zone: string | undefined
 }
 
 /** Ventilation de l'onglet Enrôlement de l'Exploration. */
-export type ParEnrolement = 'sous' | 'annee' | 'mois' | 'type' | 'total';
+export type ParEnrolement = 'sous' | 'annee' | 'mois' | 'type' | 'sexe' | 'age' | 'nationalite' | 'total';
 
 /**
- * Onglet Enrôlement de l'Exploration (GET /api/v1/enrolement/exploration, lot E1 du 06/11/2026) : totaux de la zone,
- * lignes de la ventilation ; type : code MOSIP du type de demande filtré.
+ * Onglet Enrôlement de l'Exploration (GET /api/v1/enrolement/exploration, lots E1 et E2 des 06 et 07/11/2026) :
+ * totaux de la zone, lignes de la ventilation ; type : code MOSIP du type de demande ; sexe (F, H, I) et age (code
+ * de tranche) : codes de bi.fait_enrolement_jour ; nationalite : libellé.
  */
 export function useExplorationEnrolement(
   plage: Plage | undefined,
   zone: string | undefined,
-  filtres: { type?: string; par: ParEnrolement },
+  filtres: { type?: string; sexe?: string; age?: string; nationalite?: string; par: ParEnrolement },
   active = true,
 ) {
   return useBlocEnrolement<ExplorationEnrolement>('exploration', plage, active, {
     zone,
     type: filtres.type,
+    sexe: filtres.sexe,
+    age: filtres.age,
+    nationalite: filtres.nationalite,
     par: filtres.par,
   });
 }

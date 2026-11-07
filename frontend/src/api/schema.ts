@@ -790,6 +790,7 @@ export interface components {
       lignes: components['schemas']['LigneExplorationEnrolement'][];
       total: components['schemas']['ChiffresExplorationEnrolement'];
       types: string[];
+      nationalites: string[];
     };
     LigneExplorationEnrolement: {
       cle: string;

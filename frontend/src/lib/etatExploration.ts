@@ -1,6 +1,8 @@
 import {
   DIMENSIONS,
+  SEXES,
   SOURCES,
+  TRANCHES_AGE,
   type CleDimension,
   type SourceExploration,
 } from '../pages/exploration/catalogue';
@@ -8,7 +10,7 @@ import {
 /**
  * Choix de l'Exploration portés par l'adresse (décision du 05/11/2026, lot A) : un lien rouvre la même vue, Retour et
  * rechargement la gardent. Clés lisibles, absentes quand elles valent leur défaut :
- * ?source=cartes&indicateurs=dem,exp&quand=R:moisprec&zones=SAV.SAV-02&par=mois&valeurs=pt&tri=dem:desc&sexe=Femmes
+ * ?source=cartes&indicateurs=dem,exp&quand=R:moisprec&zones=SAV.SAV-02&par=mois&valeurs=pt&tri=dem:desc&sexe=F
  */
 export type Mode = 'n' | 'pt' | 'pf';
 export type Perimetre = 'usagers' | 'paquets';
@@ -43,6 +45,7 @@ export interface RechercheExploration {
   tri?: string;
   sexe?: string;
   age?: string;
+  nat?: string;
   type?: string;
   taut?: string;
   cause?: string;
@@ -100,6 +103,10 @@ export function validerExploration(recherche: Record<string, unknown>): Recherch
 /** Ventilation par défaut d'une source : sous-zone si son premier indicateur se ventile par territoire, sinon mois. */
 const parDefaut = (s: SourceExploration) => (s.indicateurs[0].territoire ? 'sous' : 'mois');
 
+/** Sexe et tranche d'âge : codes de l'API seulement (un ancien lien « sexe=Femmes » est écarté). */
+const valeurConnue = (d: CleDimension, v: string) =>
+  d === 'sexe' ? SEXES.some((s) => s.id === v) : d === 'age' ? TRANCHES_AGE.some((t) => t.id === v) : true;
+
 /** État de l'Exploration lu dans l'adresse, confronté au catalogue (valeurs inconnues écartées, défauts sinon). */
 export function lireEtat(r: RechercheExploration): EtatExploration {
   const source = SOURCES.find((s) => s.cle === r.source) ?? SOURCES[0];
@@ -109,7 +116,7 @@ export function lireEtat(r: RechercheExploration): EtatExploration {
   const sansDonnees = source.indisponibles?.dimensions ?? [];
   const dimensions = new Set(source.indicateurs.flatMap((i) => i.dimensions).filter((d) => !sansDonnees.includes(d)));
   const filtres: EtatExploration['filtres'] = {};
-  for (const d of dimensions) if (r[d]) filtres[d] = r[d];
+  for (const d of dimensions) if (r[d] && valeurConnue(d, r[d])) filtres[d] = r[d];
   const [colonne, sens] = (r.tri ?? '').split(':');
   const colonneConnue = colonne === 'libelle' || source.indicateurs.some((i) => i.cle === colonne);
   return {

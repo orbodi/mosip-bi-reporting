@@ -43,8 +43,10 @@ describe('État de l’Exploration dans l’adresse', () => {
   it('valeurs inconnues écartées : source, indicateurs, filtres sans données, tri sur une colonne absente', () => {
     expect(lireEtat({ source: 'xyz' }).source).toBe('enrol');
     expect(lireEtat({ indicateurs: 'zzz' }).indicateurs).toEqual(['ins']);
-    // Sexe de l'Enrôlement : sans données dans l'Exploration, un ancien lien ne le garde pas.
+    // Sexe et âge de l'Enrôlement (lot E2) : codes de l'API ; un ancien lien « sexe=Femmes » ne garde rien.
     expect(lireEtat({ sexe: 'Femmes' }).filtres).toEqual({});
+    expect(lireEtat({ sexe: 'F', age: '60+', nat: 'Togo' }).filtres).toEqual({ sexe: 'F', age: '60+', nat: 'Togo' });
+    expect(lireEtat({ age: '18-25' }).filtres).toEqual({});
     expect(lireEtat({ source: 'auth', taut: 'otp', sexe: 'Femmes' }).filtres).toEqual({ taut: 'otp' });
     expect(lireEtat({ tri: 'zzz:desc' }).tri).toBeUndefined();
     // Authentifications : pas de territoire.

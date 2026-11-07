@@ -324,7 +324,7 @@ describe('Pages de la maquette', () => {
     expect(await screen.findByRole('rowheader', { name: 'Cinkassé' })).toBeInTheDocument();
   });
 
-  it('Exploration : vue rouverte depuis l’adresse, choix sans données grisés, tri et filtres actifs', async () => {
+  it('Exploration : vue rouverte depuis l’adresse, profil ouvert aux inscriptions et NIU, tri et filtres actifs', async () => {
     simulerApi();
     const routeur = afficher('/exploration?zones=SAV&indicateurs=ins,niu');
     const utilisateur = userEvent.setup();
@@ -337,15 +337,11 @@ describe('Pages de la maquette', () => {
     expect(resultat.getByRole('columnheader', { name: 'NIU générés' })).toBeInTheDocument();
     expect(document.querySelector('.xp-resultat .grand-chiffre')).toBeNull();
 
-    // Sexe, âge et type de demande : grisés, raison au survol.
-    expect(boutonChoix('Sexe')).toBeDisabled();
-    expect(boutonChoix('Sexe').closest('[title]')).toHaveAttribute(
-      'title',
-      'Pas encore disponible dans l’Exploration',
-    );
-    // Afficher par : Sexe grisé, avec sa raison ; Mois et Type de demande ouverts (lot E1).
+    // Sexe, âge et nationalité (lot E2) : ouverts pour les inscriptions et les NIU, en filtre et en ventilation.
+    expect(boutonChoix('Sexe')).not.toBeDisabled();
+    expect(boutonChoix('Nationalité')).not.toBeDisabled();
     await utilisateur.click(boutonChoix('Afficher par'));
-    expect(await screen.findByRole('option', { name: /^Sexe/ })).toHaveAttribute('aria-disabled', 'true');
+    expect(await screen.findByRole('option', { name: /^Sexe/ })).not.toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('option', { name: /^Mois/ })).not.toHaveAttribute('aria-disabled', 'true');
     await utilisateur.keyboard('{Escape}');
 
@@ -450,5 +446,54 @@ describe('Pages de la maquette', () => {
     await utilisateur.click(boutonChoix('Afficher par'));
     await utilisateur.click(await screen.findByRole('option', { name: 'Mois' }));
     expect(await resultat.findByRole('rowheader', { name: 'janvier 2026' })).toBeInTheDocument();
+  });
+
+  it('Exploration : sexe, tranche d’âge et nationalité des inscriptions et des NIU (lot E2)', async () => {
+    const appels = simulerApi();
+    afficher('/exploration?indicateurs=ins,enc');
+    const utilisateur = userEvent.setup();
+
+    await screen.findByRole('region', { name: 'Inscriptions, Inscriptions en cours par région' });
+    // Filtre Sexe : code envoyé à l'API ; les en cours, sans profil, n'ont pas de valeur (affichées 0).
+    await utilisateur.click(boutonChoix('Sexe'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Femmes' }));
+    await waitFor(() =>
+      expect(
+        appels.some((u) => u.pathname.endsWith('/enrolement/exploration') && u.searchParams.get('sexe') === 'F'),
+      ).toBe(true),
+    );
+    expect(screen.getByText('Sexe : Femmes', { selector: '.xp-actif' })).toBeInTheDocument();
+
+    // Seules les en cours : le filtre se grise, reste dans l'adresse sans effet, n'est plus envoyé.
+    const indicateurs = within(screen.getByRole('group', { name: /Indicateurs/ }));
+    await utilisateur.click(indicateurs.getByRole('button', { name: 'Inscriptions' }));
+    expect(await screen.findByText('Sexe : Femmes (sans effet)', { selector: '.xp-actif' })).toBeInTheDocument();
+    expect(boutonChoix('Sexe')).toBeDisabled();
+    expect(boutonChoix('Sexe').closest('[title]')).toHaveAttribute(
+      'title',
+      'Choisissez l’indicateur « Inscriptions » ou « NIU générés »',
+    );
+    await utilisateur.click(indicateurs.getByRole('button', { name: 'NIU générés' }));
+    await utilisateur.click(indicateurs.getByRole('button', { name: 'Inscriptions en cours' }));
+    await utilisateur.click(screen.getByRole('button', { name: 'Retirer « Sexe : Femmes »' }));
+
+    // Ventilation par tranche d'âge : libellés en français ; nationalité : lue dans les données.
+    await utilisateur.click(boutonChoix('Afficher par'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Tranche d’âge' }));
+    const resultat = within(await screen.findByRole('region', { name: 'NIU générés par tranche d’âge' }));
+    expect(await resultat.findByRole('rowheader', { name: '60 ans et +' })).toBeInTheDocument();
+    expect(resultat.getByRole('rowheader', { name: 'Âge non renseigné' })).toBeInTheDocument();
+    expect(
+      appels.some((u) => u.pathname.endsWith('/enrolement/exploration') && u.searchParams.get('par') === 'age'),
+    ).toBe(true);
+    await utilisateur.click(boutonChoix('Nationalité'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Bénin' }));
+    await waitFor(() =>
+      expect(
+        appels.some(
+          (u) => u.pathname.endsWith('/enrolement/exploration') && u.searchParams.get('nationalite') === 'Bénin',
+        ),
+      ).toBe(true),
+    );
   });
 });

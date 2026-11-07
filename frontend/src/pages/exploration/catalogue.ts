@@ -1,7 +1,7 @@
 import type { CodeSource } from '../../api/meta';
 
 /** Dimensions de ventilation de l'Exploration (maquette/pages/Technique.dc.html). */
-export type CleDimension = 'sexe' | 'age' | 'type' | 'taut' | 'cause' | 'part' | 'terr';
+export type CleDimension = 'sexe' | 'age' | 'nat' | 'type' | 'taut' | 'cause' | 'part' | 'terr';
 
 export interface Indicateur {
   cle: string;
@@ -25,21 +25,45 @@ export interface SourceExploration {
   indicateurs: Indicateur[];
 }
 
-const PROFIL: CleDimension[] = ['sexe', 'age'];
+/**
+ * Profil de l'ID Repository (lot E2, 07/11/2026) : connu pour les dossiers dont le NIU est généré et enrichi ; les
+ * autres comptent en « Non renseigné ». Proposé pour les Inscriptions et les NIU générés seulement.
+ */
+const PROFIL: CleDimension[] = ['sexe', 'age', 'nat'];
+
+/** Sexe : code de bi.fait_enrolement_jour (paramètre sexe de l'API) et libellé. */
+export const SEXES = [
+  { id: 'F', libelle: 'Femmes' },
+  { id: 'H', libelle: 'Hommes' },
+  { id: 'I', libelle: 'Non renseigné' },
+];
+
+/** Tranches d'âge au jour de réception : code de bi.fait_enrolement_jour (paramètre age de l'API) et libellé. */
+export const TRANCHES_AGE = [
+  { id: '0-5', libelle: '0 à 5 ans' },
+  { id: '6-14', libelle: '6 à 14 ans' },
+  { id: '15-18', libelle: '15 à 18 ans' },
+  { id: '19-25', libelle: '19 à 25 ans' },
+  { id: '26-35', libelle: '26 à 35 ans' },
+  { id: '36-45', libelle: '36 à 45 ans' },
+  { id: '46-60', libelle: '46 à 60 ans' },
+  { id: '60+', libelle: '60 ans et +' },
+  { id: 'inconnu', libelle: 'Âge non renseigné' },
+];
 
 export const SOURCES: SourceExploration[] = [
   {
     cle: 'enrol',
     libelle: 'Enrôlement',
     fraicheur: 'enrolement',
-    // Lot E1 (06/11/2026) : type de demande, mois et année lus par l'API Exploration. Sexe et âge : lot E2 (pipeline).
-    indisponibles: { dimensions: ['sexe', 'age'], ventilations: ['sexe', 'age'] },
+    // Lot E1 (06/11/2026) : type de demande, mois et année ; lot E2 (07/11/2026) : sexe, âge et nationalité des
+    // inscriptions et des NIU. En cours, échouées et rejetées n'ont pas de profil (pas de NIU, pas d'ID Repository).
     indicateurs: [
       { cle: 'ins', libelle: 'Inscriptions', dimensions: [...PROFIL, 'type'], territoire: true },
       { cle: 'niu', libelle: 'NIU générés', dimensions: [...PROFIL, 'type'], territoire: true },
-      { cle: 'enc', libelle: 'Inscriptions en cours', dimensions: [...PROFIL, 'type'], territoire: true },
-      { cle: 'ech', libelle: 'Inscriptions échouées', dimensions: [...PROFIL, 'type'], territoire: true },
-      { cle: 'rej', libelle: 'Inscriptions rejetées', dimensions: [...PROFIL, 'type'], territoire: true },
+      { cle: 'enc', libelle: 'Inscriptions en cours', dimensions: ['type'], territoire: true },
+      { cle: 'ech', libelle: 'Inscriptions échouées', dimensions: ['type'], territoire: true },
+      { cle: 'rej', libelle: 'Inscriptions rejetées', dimensions: ['type'], territoire: true },
       // Selon la préfecture de résidence déclarée : pas de détail plus fin que la préfecture, ni de profil ici.
       { cle: 'pre', libelle: 'Pré-inscriptions', dimensions: [], territoire: true },
     ],
@@ -97,21 +121,10 @@ export const SOURCES: SourceExploration[] = [
 ];
 
 export const DIMENSIONS: Record<CleDimension, { libelle: string; tous: string; valeurs: string[] }> = {
-  sexe: { libelle: 'Sexe', tous: 'Tous', valeurs: ['Femmes', 'Hommes'] },
-  age: {
-    libelle: 'Tranche d’âge',
-    tous: 'Toutes',
-    valeurs: [
-      '0 à 5 ans',
-      '6 à 14 ans',
-      '15 à 18 ans',
-      '19 à 25 ans',
-      '26 à 35 ans',
-      '36 à 45 ans',
-      '46 à 60 ans',
-      '60 ans et +',
-    ],
-  },
+  sexe: { libelle: 'Sexe', tous: 'Tous', valeurs: SEXES.map((s) => s.libelle) },
+  age: { libelle: 'Tranche d’âge', tous: 'Toutes', valeurs: TRANCHES_AGE.map((t) => t.libelle) },
+  // Valeurs lues dans les données (libellés de la liste MOSIP « nationality »).
+  nat: { libelle: 'Nationalité', tous: 'Toutes', valeurs: [] },
   type: {
     libelle: 'Type de demande',
     tous: 'Tous',
