@@ -189,6 +189,11 @@
   border-left: 3px solid var(--statut-en-cours);
   background: var(--or-pale);
 }
+/* NIU générés aujourd'hui (07/11/2026) : même encart, aux couleurs des NIU (texte bleu sur bleu clair ≈ 7:1). */
+.carte-statut__encart--niu {
+  border-left-color: var(--statut-niu);
+  background: var(--bleu-clair);
+}
 .carte-statut__encart > .icone {
   flex-shrink: 0;
 }

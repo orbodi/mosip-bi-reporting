@@ -116,6 +116,42 @@ describe('Devenir des inscriptions', () => {
     expect(bloc.getByText('En reprocessing').closest('li')).toHaveTextContent(/^En cours/);
   });
 
+  it('montre les NIU générés aujourd’hui dans la carte NIU, période choisie ou non', async () => {
+    const jours = {
+      perimetre: 'Ensemble du Togo',
+      aujourdhui: '2026-10-16',
+      niuDisponibles: true,
+      jours: [
+        { jour: '2026-10-15', inscriptions: 900, niuGeneres: 700 },
+        { jour: '2026-10-16', inscriptions: 1200, niuGeneres: 812 },
+      ],
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: URL) => {
+        const corps = url.pathname.endsWith('/meta')
+          ? META
+          : url.pathname.endsWith('/enrolement/devenir')
+            ? DEVENIR
+            : url.pathname.endsWith('/enrolement/jours')
+              ? jours
+              : undefined;
+        return corps
+          ? new Response(JSON.stringify(corps), { headers: { 'Content-Type': 'application/json' } })
+          : new Response('', { status: 404 });
+      }),
+    );
+    afficher('/enrolement?periode=7j');
+
+    const bloc = within(await screen.findByRole('region', { name: 'Devenir des inscriptions' }));
+    await waitFor(() =>
+      expect(bloc.getByText('Générés aujourd’hui').parentElement).toHaveTextContent(`Générés aujourd’hui${nf(812)}`),
+    );
+    expect(bloc.getByText('Générés aujourd’hui').closest('li')).toHaveTextContent(/^NIU générés/);
+    // Une précision de la carte NIU, pas un statut de plus.
+    expect(bloc.getAllByRole('listitem')).toHaveLength(4);
+  });
+
   it('garde ses cartes, chiffres à 0 et sans message, quand l’API ne répond pas', async () => {
     vi.stubGlobal(
       'fetch',

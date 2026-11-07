@@ -1,7 +1,8 @@
-import { useDevenirInscriptions } from '../../api/enrolement';
+import { useDevenirInscriptions, useJours } from '../../api/enrolement';
 import { Icone } from '../../composants/blocs/Icone';
 import { depuisApi, devenirInconnu, estConnu } from '../../lib/blocsVides';
 import { nf, part, pct } from '../../lib/format';
+import { niuDuJour } from '../../lib/jours';
 import { usePlagePeriode } from '../../lib/usePlagePeriode';
 import './enrolement.css';
 
@@ -25,6 +26,8 @@ interface Statut {
   bloques?: number;
   /** Paquets en cours que MOSIP reprendra, dernière transaction REPROCESS (carte « En cours »). */
   enReprocessing?: number;
+  /** NIU générés aujourd'hui, quel que soit le jour de réception (carte « NIU générés », 07/11/2026). */
+  aujourdhui?: number;
 }
 
 /**
@@ -34,8 +37,9 @@ interface Statut {
  * Les demandes de mise à jour et de NIU perdu, sous le total des inscriptions dont elles font partie ; les dossiers en
  * reprocessing (dernière transaction MOSIP REPROCESS), dans la carte En cours. Ni la barre ni la somme des statuts ne
  * changent.
- * Suit le filtre Période ; relu toutes les 30 s (pipeline temps réel). Contrôle affiché si des statuts MOSIP n'ont
- * pas encore de correspondance validée (« non classées »), jamais réparties d'office.
+ * Suit le filtre Période ; relu toutes les 30 s (pipeline temps réel). Encart « Générés aujourd'hui » de la carte
+ * NIU (07/11/2026) : NIU du jour courant (GET /enrolement/jours), quelle que soit la période choisie. Contrôle affiché
+ * si des statuts MOSIP n'ont pas encore de correspondance validée (« non classées »), jamais réparties d'office.
  */
 export function BlocDevenir() {
   const { choix, plage } = usePlagePeriode('enrolement');
@@ -46,11 +50,12 @@ export function BlocDevenir() {
     depuisLeDebut || !!plage,
   );
 
+  const jours = useJours();
   // Sans réponse de l'API, les cartes restent en place avec des chiffres à 0 (lib/blocsVides.ts).
   const d = data ?? devenirInconnu();
   const connu = estConnu(d.inscriptions);
   const statuts: Statut[] = [
-    { cle: 'niu', libelle: 'NIU générés', valeur: d.niuGeneres },
+    { cle: 'niu', libelle: 'NIU générés', valeur: d.niuGeneres, aujourdhui: niuDuJour(jours.data) },
     // « dont N bloqués » : stock sans date, absent quand une période est demandée (bloques null de l'API).
     {
       cle: 'en-cours',
@@ -146,6 +151,13 @@ export function BlocDevenir() {
               {s.bloques !== undefined && (
                 <span className="carte-statut__detail">
                   dont <strong className="chiffre">{nf(s.bloques)}</strong> bloqués depuis plus de 30 jours
+                </span>
+              )}
+              {s.aujourdhui !== undefined && (
+                <span className="carte-statut__encart carte-statut__encart--niu">
+                  <Icone nom="calendrierOk" taille={16} />
+                  <span className="carte-statut__encart-libelle">Générés aujourd’hui</span>
+                  <span className="chiffre carte-statut__encart-valeur">{nf(s.aujourdhui)}</span>
                 </span>
               )}
               {s.enReprocessing !== undefined && (

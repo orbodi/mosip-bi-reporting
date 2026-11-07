@@ -6,6 +6,7 @@ import {
   joursInconnus,
   lectureJours,
   libelleJour,
+  niuDuJour,
   pageDeJours,
   totauxJours,
 } from './jours';
@@ -22,6 +23,13 @@ const DONNEES: InscriptionsParJour = (() => {
 })();
 
 describe('Inscriptions et NIU par jour', () => {
+  it('NIU générés aujourd’hui : la colonne du jour, inconnus sans réponse ni source', () => {
+    expect(niuDuJour(DONNEES)).toBe(280);
+    expect(Number.isNaN(niuDuJour(undefined))).toBe(true);
+    expect(Number.isNaN(niuDuJour({ ...DONNEES, niuDisponibles: false }))).toBe(true);
+    expect(Number.isNaN(niuDuJour({ ...DONNEES, aujourdhui: '2026-01-15' }))).toBe(true);
+  });
+
   it('donne 28 jours jusqu’à aujourd’hui, sans trou, même sans réponse de l’API', () => {
     const j = joursInconnus('2026-01-14').jours;
     expect(j).toHaveLength(28);

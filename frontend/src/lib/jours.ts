@@ -37,6 +37,16 @@ export function pageDeJours(donnees: InscriptionsParJour, page: number): JourIns
   return donnees.niuDisponibles ? jours : jours.map((j) => ({ ...j, niuGeneres: INCONNUE }));
 }
 
+/**
+ * NIU générés aujourd'hui (jour de génération, heure de Lomé), pour l'encart de la carte « NIU générés » du bloc
+ * Devenir (07/11/2026) : même chiffre que la colonne d'aujourd'hui de ce bloc. Inconnu sans réponse de l'API ou tant
+ * que la source des NIU n'est pas alimentée (affiché 0).
+ */
+export function niuDuJour(donnees?: InscriptionsParJour): number {
+  if (!donnees?.niuDisponibles) return INCONNUE;
+  return donnees.jours.find((j) => j.jour === donnees.aujourdhui)?.niuGeneres ?? INCONNUE;
+}
+
 /** « 2026-10-29 » → « jeu. 29/10 ». */
 export function libelleJour(jour: string): string {
   const d = date(jour);
