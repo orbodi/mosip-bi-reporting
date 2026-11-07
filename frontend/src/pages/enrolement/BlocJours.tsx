@@ -20,7 +20,10 @@ import {
 
 type Vue = 'graphique' | 'tableau';
 
-/** Deux barres par jour (inscriptions, NIU générés), valeur au-dessus ; le jour en cours plus clair, en pointillé. */
+/**
+ * Deux barres par jour (inscriptions, NIU générés), valeur au-dessus, écrite à la verticale (variante A du 07/11/2026 :
+ * deux nombres à cinq chiffres côte à côte se chevauchaient) ; le jour en cours plus clair, en pointillé.
+ */
 function option(jours: JourInscriptions[], aujourdhui: string): EChartsCoreOption {
   const couleurs = {
     inscriptions: jeton('--serie-1'),
@@ -52,15 +55,21 @@ function option(jours: JourInscriptions[], aujourdhui: string): EChartsCoreOptio
     label: {
       show: true,
       position: 'top',
+      rotate: 90,
+      align: 'left',
+      verticalAlign: 'middle',
+      distance: 6,
       color: couleurs.encre,
-      fontSize: 11,
+      fontSize: 12,
+      fontWeight: 600,
       formatter: (p: { value: number | null }) => (p.value == null ? '' : nf(p.value)),
     },
     emphasis: { disabled: true },
   });
   return {
     animation: false,
-    grid: { left: 4, right: 4, top: 24, bottom: 4, containLabel: true },
+    // Place en haut pour le chiffre vertical de la barre la plus haute (« 33 196 »).
+    grid: { left: 4, right: 4, top: 56, bottom: 4, containLabel: true },
     textStyle: { fontFamily: jeton('--police') || undefined },
     tooltip: { show: false },
     xAxis: {
@@ -166,7 +175,7 @@ export function BlocJours() {
           {premier && dernier && (
             <Graphique
               option={graphique}
-              hauteur={280}
+              hauteur={310}
               libelle={`Inscriptions et NIU générés par jour, du ${dateFr(premier)} au ${dateFr(dernier)}`}
             />
           )}

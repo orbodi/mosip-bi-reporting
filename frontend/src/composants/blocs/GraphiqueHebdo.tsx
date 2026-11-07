@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
+import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import type { SemaineValeurs } from '../../lib/blocsVides';
 import { dateFr, dimanche, etiquetteVisible, nf, semaineCourte, semaineDates } from '../../lib/format';
 import { jeton } from '../../lib/jetons';
 import { Graphique } from '../graphique/Graphique';
 import type { EChartsCoreOption } from '../graphique/echarts';
 import { JETON_COULEUR, type Couleur } from './couleurs';
+import './blocs.css';
 
 export type { SemaineValeurs } from '../../lib/blocsVides';
 
@@ -49,9 +51,13 @@ const MOIS = [
   'déc.',
 ];
 
+type Vue = 'graphique' | 'tableau';
+
 /**
  * Graphique hebdomadaire de la maquette (barres simples ou empilées, courbe) avec lecture de la semaine survolée et
- * tableau équivalent. Valeurs inconnues (NaN) : semaine sans barre, échelle sans graduations.
+ * tableau équivalent. Valeurs inconnues (NaN) : semaine sans barre, échelle sans graduations. Graphique et tableau
+ * en onglets, comme le bloc « Inscriptions et NIU par jour » (07/11/2026, à la place de « Voir le tableau des
+ * semaines »).
  */
 export function GraphiqueHebdo({
   semaines,
@@ -64,6 +70,7 @@ export function GraphiqueHebdo({
   etiquettes,
 }: Props) {
   const [survol, setSurvol] = useState<number | null>(null);
+  const [vue, setVue] = useState<Vue>('graphique');
   const derniere = semaines.length - 1;
   const active = survol !== null && survol <= derniere ? survol : derniere;
 
@@ -146,19 +153,30 @@ export function GraphiqueHebdo({
   if (semaines.length === 0) return <p className="texte-2">Aucune semaine sur la période.</p>;
 
   return (
-    <div className="graphique-hebdo">
-      <p className={`lecture${ton === 'rouge' ? ' lecture--rouge' : ''}`} aria-live="polite">
-        {lecture(semaines[active])}
-      </p>
-      <Graphique
-        option={option}
-        hauteur={hauteur}
-        libelle={`${libelle}, du ${dateFr(semaines[0].lundi)} au ${dateFr(dimanche(semaines[derniere].lundi))}`}
-        onSurvol={(c) => setSurvol(c?.indice ?? null)}
-        onClic={(c) => setSurvol(c.indice ?? null)}
-      />
-      <details className="equivalent">
-        <summary>Voir le tableau des semaines</summary>
+    <Tabs className="graphique-hebdo" selectedKey={vue} onSelectionChange={(cle) => setVue(cle as Vue)}>
+      <div className="graphique-hebdo__barre">
+        <p className={`lecture${ton === 'rouge' ? ' lecture--rouge' : ''}`} aria-live="polite">
+          {lecture(semaines[active])}
+        </p>
+        <TabList aria-label="Affichage" className="onglets">
+          <Tab id="graphique" className="onglets__onglet">
+            Graphique
+          </Tab>
+          <Tab id="tableau" className="onglets__onglet">
+            Tableau
+          </Tab>
+        </TabList>
+      </div>
+      <TabPanel id="graphique" className="onglets__panneau">
+        <Graphique
+          option={option}
+          hauteur={hauteur}
+          libelle={`${libelle}, du ${dateFr(semaines[0].lundi)} au ${dateFr(dimanche(semaines[derniere].lundi))}`}
+          onSurvol={(c) => setSurvol(c?.indice ?? null)}
+          onClic={(c) => setSurvol(c.indice ?? null)}
+        />
+      </TabPanel>
+      <TabPanel id="tableau" className="onglets__panneau">
         <table className="tableau">
           <caption className="visuellement-cache">{libelle}</caption>
           <thead>
@@ -184,7 +202,7 @@ export function GraphiqueHebdo({
             ))}
           </tbody>
         </table>
-      </details>
-    </div>
+      </TabPanel>
+    </Tabs>
   );
 }

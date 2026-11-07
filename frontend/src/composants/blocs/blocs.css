@@ -559,8 +559,16 @@
 .lecture--rouge {
   border-left-color: var(--danger);
 }
+/* Lecture de la semaine à gauche, onglets Graphique | Tableau à droite (07/11/2026) */
+.graphique-hebdo__barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3) var(--e-4);
+}
 .graphique-hebdo .lecture {
-  margin: 0 0 var(--e-3);
+  margin: 0;
   padding-left: var(--e-3);
   border-left: 3px solid var(--serie-1);
   font-size: var(--t-s);
@@ -578,18 +586,47 @@
   font-size: var(--t-s);
 }
 
-/* Équivalent tableau d'un graphique */
-.equivalent {
-  margin-top: var(--e-3);
-  font-size: var(--t-s);
+/* Onglets React Aria (Graphique | Tableau, classements) : partagés par les pages depuis le 07/11/2026 */
+.onglets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--e-1);
+  padding: var(--e-1);
+  border-radius: var(--r-m);
+  background: var(--fond);
 }
-.equivalent summary {
-  min-height: 44px;
-  display: flex;
+.onglets__onglet {
+  display: inline-flex;
   align-items: center;
-  color: var(--bleu);
+  min-height: 36px;
+  padding: 0 var(--e-3);
+  border-radius: 6px;
+  color: var(--encre-2);
+  font-size: var(--t-s);
   font-weight: 600;
   cursor: pointer;
+  outline: none;
+}
+.onglets__onglet[data-selected] {
+  background: var(--surface);
+  box-shadow: var(--ombre-1);
+  color: var(--encre);
+}
+.onglets__onglet[data-focus-visible] {
+  outline: 2px solid var(--bleu);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .onglets__onglet {
+    min-height: 44px;
+  }
+}
+.onglets__panneau {
+  margin-top: var(--e-4);
+  outline: none;
+}
+.onglets__panneau[data-focus-visible] {
+  outline: 2px solid var(--bleu);
 }
 
 /* Tableaux de la page */

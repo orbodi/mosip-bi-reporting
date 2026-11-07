@@ -541,48 +541,6 @@
   }
 }
 
-/* Bloc « Top des centres » : onglets React Aria */
-.onglets {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--e-1);
-  padding: var(--e-1);
-  border-radius: var(--r-m);
-  background: var(--fond);
-}
-.onglets__onglet {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 var(--e-3);
-  border-radius: 6px;
-  color: var(--encre-2);
-  font-size: var(--t-s);
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-}
-.onglets__onglet[data-selected] {
-  background: var(--surface);
-  box-shadow: var(--ombre-1);
-  color: var(--encre);
-}
-.onglets__onglet[data-focus-visible] {
-  outline: 2px solid var(--bleu);
-  outline-offset: 2px;
-}
-@media (max-width: 700px) {
-  .onglets__onglet {
-    min-height: 44px;
-  }
-}
-.onglets__panneau {
-  margin-top: var(--e-4);
-  outline: none;
-}
-.onglets__panneau[data-focus-visible] {
-  outline: 2px solid var(--bleu);
-}
 .tableau-centres__rang {
   width: 48px;
   color: var(--encre-2);
