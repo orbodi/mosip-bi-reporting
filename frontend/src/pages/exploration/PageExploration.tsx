@@ -1,5 +1,5 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import type { Territoire } from '../../api/client';
 import { useExplorationAuthentifications, type ParametresExploration } from '../../api/authentifications';
@@ -288,14 +288,8 @@ function Explorateur() {
   // Pagination du tableau (beaucoup de cantons, de localités ou de mois) ; l'export CSV garde toutes les lignes.
   const [taille, setTaille] = useState<TaillePage>(20);
   const [page, setPage] = useState(0);
-  const [lienCopie, setLienCopie] = useState(false);
   // Téléphone : choix repliés à l'ouverture (lot D, 06/11/2026).
   const [deplie, setDeplie] = useState(false);
-  useEffect(() => {
-    if (!lienCopie) return;
-    const minuteur = setTimeout(() => setLienCopie(false), 2500);
-    return () => clearTimeout(minuteur);
-  }, [lienCopie]);
 
   const { regions } = useFiltreRegion();
   const meta = useMeta();
@@ -624,13 +618,6 @@ function Explorateur() {
   const nombreActifs = actifs.filter((a) => a.retirer).length;
   const aReinitialiser = actifs.some((a) => a.retirer) || indicateurs.length > 1 || !!etat.par || !!etat.tri;
 
-  const copierLien = () => {
-    navigator.clipboard
-      ?.writeText(window.location.href)
-      .then(() => setLienCopie(true))
-      .catch(() => undefined);
-  };
-
   const exporter = () => {
     const brut = (v: number, j: number, ligne: number[]) =>
       modeEffectif === 'n'
@@ -859,12 +846,6 @@ function Explorateur() {
                     onChange={(v) => changer({ ...etat, mode: v as Mode })}
                   />
                   <span className="xp-bas__vide" />
-                  <button type="button" className="xp-lien" onClick={copierLien}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
-                      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
-                    </svg>
-                    {lienCopie ? 'Lien copié' : 'Copier le lien'}
-                  </button>
                   <button type="button" className="xp-csv" onClick={exporter}>
                     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="chevron">
                       <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
