@@ -470,6 +470,40 @@ export async function simulerEnrolement(page: Page) {
       json: new URL(route.request().url()).searchParams.get('zone') === 'KAR' ? KARA : NATIONAL,
     }),
   );
+  // Exploration de l'enrôlement (lot E1) : mêmes lignes que le territoire simulé.
+  await page.route('**/api/v1/enrolement/exploration*', (route) => {
+    const url = new URL(route.request().url());
+    const t = url.searchParams.get('zone') === 'KAR' ? KARA : NATIONAL;
+    const par = url.searchParams.get('par') ?? 'total';
+    const chiffres = (c: Ligne | typeof NATIONAL) => ({
+      inscriptions: c.inscriptions,
+      niuGeneres: c.niuGeneres,
+      enCours: c.enCours,
+      echouees: c.echouees,
+      rejetees: c.rejetees,
+      preinscriptions: c.preinscriptions,
+    });
+    return route.fulfill({
+      json: {
+        perimetre: t.perimetre,
+        zone: t.zone,
+        par,
+        lignes:
+          par === 'sous'
+            ? t.lignes.map((l) => ({
+                cle: l.code,
+                libelle: l.nom,
+                niveau: l.niveau,
+                horsReferentiel: false,
+                ouvrable: l.ouvrable,
+                chiffres: chiffres(l),
+              }))
+            : [],
+        total: chiffres(t),
+        types: par === 'total' ? ['LOST', 'NEW', 'UPDATE'] : [],
+      },
+    });
+  });
   await page.route('**/api/v1/enrolement/centres*', (route) => {
     const url = new URL(route.request().url());
     const classement = url.searchParams.get('classement') ?? 'inscriptions';

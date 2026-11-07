@@ -778,6 +778,41 @@ export interface components {
       /** Format: int64 */
       aRemettre: number;
     };
+    ExplorationEnrolement: {
+      perimetre: string;
+      zone?: string | null;
+      /** Format: date */
+      du?: string | null;
+      /** Format: date */
+      au?: string | null;
+      type?: string | null;
+      par: string;
+      lignes: components['schemas']['LigneExplorationEnrolement'][];
+      total: components['schemas']['ChiffresExplorationEnrolement'];
+      types: string[];
+    };
+    LigneExplorationEnrolement: {
+      cle: string;
+      libelle: string;
+      niveau?: string | null;
+      horsReferentiel: boolean;
+      ouvrable: boolean;
+      chiffres: components['schemas']['ChiffresExplorationEnrolement'];
+    };
+    ChiffresExplorationEnrolement: {
+      /** Format: int64 */
+      inscriptions: number;
+      /** Format: int64 */
+      niuGeneres: number;
+      /** Format: int64 */
+      enCours: number;
+      /** Format: int64 */
+      echouees: number;
+      /** Format: int64 */
+      rejetees: number;
+      /** Format: int64 */
+      preinscriptions?: number | null;
+    };
     ExplorationCartes: {
       perimetre: string;
       zone?: string | null;

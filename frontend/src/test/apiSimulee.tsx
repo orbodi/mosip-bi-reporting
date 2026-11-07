@@ -772,6 +772,68 @@ const PAR_DEFAUT: Record<string, Reponse> = {
   '/enrolement/territoire': (url: URL) =>
     TERRITOIRES[url.searchParams.get('zone') ?? ''] ?? TERRITOIRE_NATIONAL,
   '/enrolement/centres': (url: URL) => CENTRES[url.searchParams.get('classement') ?? 'inscriptions'],
+  // Exploration de l'enrôlement (lot E1) : lignes du territoire simulé, deux mois, trois types de demande.
+  '/enrolement/exploration': (url: URL) => {
+    const zone = url.searchParams.get('zone');
+    const type = url.searchParams.get('type');
+    const par = url.searchParams.get('par') ?? 'total';
+    const t = TERRITOIRES[zone ?? ''] ?? TERRITOIRE_NATIONAL;
+    const sansPre = !!type || par === 'type';
+    const chiffres = (c: {
+      inscriptions: number;
+      niuGeneres: number;
+      enCours: number;
+      echouees: number;
+      rejetees: number;
+      preinscriptions: number;
+    }) => ({
+      inscriptions: c.inscriptions,
+      niuGeneres: c.niuGeneres,
+      enCours: c.enCours,
+      echouees: c.echouees,
+      rejetees: c.rejetees,
+      preinscriptions: sansPre ? null : c.preinscriptions,
+    });
+    const temps = (cle: string, inscriptions: number) => ({
+      cle,
+      libelle: cle,
+      niveau: null,
+      horsReferentiel: false,
+      ouvrable: false,
+      chiffres: chiffres({
+        inscriptions,
+        niuGeneres: inscriptions - 10,
+        enCours: 4,
+        echouees: 3,
+        rejetees: 3,
+        preinscriptions: 7,
+      }),
+    });
+    const lignes =
+      par === 'sous'
+        ? t.lignes.map((l) => ({
+            cle: l.code,
+            libelle: l.nom,
+            niveau: l.niveau,
+            horsReferentiel: l.horsReferentiel,
+            ouvrable: l.ouvrable,
+            chiffres: chiffres(l),
+          }))
+        : par === 'mois'
+          ? [temps('2025-12', 1200), temps('2026-01', 1500)]
+          : par === 'type'
+            ? [temps('NEW', 2400), temps('UPDATE', 250), temps('LOST', 50)]
+            : [];
+    return {
+      perimetre: t.perimetre,
+      zone,
+      type,
+      par,
+      lignes,
+      total: chiffres(t),
+      types: par === 'total' ? ['LOST', 'NEW', 'UPDATE'] : [],
+    };
+  },
   '/enrolement/preinscriptions': PREINSCRIPTIONS,
   '/enrolement/preinscriptions/profil': PROFIL_PREINSCRIPTIONS,
   '/cartes/impression': IMPRESSION,

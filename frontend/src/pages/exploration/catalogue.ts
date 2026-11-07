@@ -32,14 +32,14 @@ export const SOURCES: SourceExploration[] = [
     cle: 'enrol',
     libelle: 'Enrôlement',
     fraicheur: 'enrolement',
-    // L'API Territoire ne donne ni profil, ni type de demande, ni détail dans le temps.
-    indisponibles: { dimensions: ['sexe', 'age', 'type'], ventilations: ['annee', 'mois', 'sexe', 'age', 'type'] },
+    // Lot E1 (06/11/2026) : type de demande, mois et année lus par l'API Exploration. Sexe et âge : lot E2 (pipeline).
+    indisponibles: { dimensions: ['sexe', 'age'], ventilations: ['sexe', 'age'] },
     indicateurs: [
       { cle: 'ins', libelle: 'Inscriptions', dimensions: [...PROFIL, 'type'], territoire: true },
-      { cle: 'niu', libelle: 'NIU générés', dimensions: PROFIL, territoire: true },
-      { cle: 'enc', libelle: 'Inscriptions en cours', dimensions: PROFIL, territoire: true },
-      { cle: 'ech', libelle: 'Inscriptions échouées', dimensions: PROFIL, territoire: true },
-      { cle: 'rej', libelle: 'Inscriptions rejetées', dimensions: PROFIL, territoire: true },
+      { cle: 'niu', libelle: 'NIU générés', dimensions: [...PROFIL, 'type'], territoire: true },
+      { cle: 'enc', libelle: 'Inscriptions en cours', dimensions: [...PROFIL, 'type'], territoire: true },
+      { cle: 'ech', libelle: 'Inscriptions échouées', dimensions: [...PROFIL, 'type'], territoire: true },
+      { cle: 'rej', libelle: 'Inscriptions rejetées', dimensions: [...PROFIL, 'type'], territoire: true },
       // Selon la préfecture de résidence déclarée : pas de détail plus fin que la préfecture, ni de profil ici.
       { cle: 'pre', libelle: 'Pré-inscriptions', dimensions: [], territoire: true },
     ],

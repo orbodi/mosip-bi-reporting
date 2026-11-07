@@ -7,6 +7,7 @@ import {
   type AgeSexe,
   type DelaisTraitement,
   type DevenirInscriptions,
+  type ExplorationEnrolement,
   type Preinscriptions,
   type ProfilPreinscriptions,
   type SuiviDossier,
@@ -72,6 +73,26 @@ export function useJours(active = true) {
 /** Territoire : totaux de la zone et ses sous-zones (GET /api/v1/enrolement/territoire). */
 export function useTerritoire(plage: Plage | undefined, zone: string | undefined, active = true) {
   return useBlocEnrolement<Territoire>('territoire', plage, active, { zone });
+}
+
+/** Ventilation de l'onglet Enrôlement de l'Exploration. */
+export type ParEnrolement = 'sous' | 'annee' | 'mois' | 'type' | 'total';
+
+/**
+ * Onglet Enrôlement de l'Exploration (GET /api/v1/enrolement/exploration, lot E1 du 06/11/2026) : totaux de la zone,
+ * lignes de la ventilation ; type : code MOSIP du type de demande filtré.
+ */
+export function useExplorationEnrolement(
+  plage: Plage | undefined,
+  zone: string | undefined,
+  filtres: { type?: string; par: ParEnrolement },
+  active = true,
+) {
+  return useBlocEnrolement<ExplorationEnrolement>('exploration', plage, active, {
+    zone,
+    type: filtres.type,
+    par: filtres.par,
+  });
 }
 
 /** Top des centres (GET /api/v1/enrolement/centres). */

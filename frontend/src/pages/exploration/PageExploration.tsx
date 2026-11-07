@@ -1,10 +1,10 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
-import type { LigneZone, Territoire } from '../../api/client';
+import type { Territoire } from '../../api/client';
 import { useExplorationAuthentifications, type ParametresExploration } from '../../api/authentifications';
 import { useExplorationCartes, type ParCartes } from '../../api/cartes';
-import { useTerritoire } from '../../api/enrolement';
+import { useExplorationEnrolement, useTerritoire, type ParEnrolement } from '../../api/enrolement';
 import { useMeta } from '../../api/meta';
 import { ChampChoix, type OptionChoix } from '../../composants/blocs/ChampChoix';
 import { Chevron } from '../../composants/blocs/Icone';
@@ -12,6 +12,7 @@ import { Pagination } from '../../composants/blocs/Pagination';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { TYPES_AUTHENTIFICATION } from '../../lib/authentifications';
+import { typeDemande } from '../../lib/suivi';
 import {
   basculerIndicateur,
   changerSource,
@@ -92,7 +93,7 @@ type ChampsEnrolement =
   | 'rejetees'
   | 'preinscriptions';
 
-/** Colonnes de l'API Territoire correspondant aux indicateurs d'enrôlement. */
+/** Colonnes de l'API Exploration de l'enrôlement correspondant aux indicateurs (lot E1, 06/11/2026). */
 const CHAMP_ENROLEMENT: Record<string, ChampsEnrolement> = {
   ins: 'inscriptions',
   niu: 'niuGeneres',
@@ -100,6 +101,14 @@ const CHAMP_ENROLEMENT: Record<string, ChampsEnrolement> = {
   ech: 'echouees',
   rej: 'rejetees',
   pre: 'preinscriptions',
+};
+
+/** Enrôlement : ventilations de l'API Exploration. */
+const PAR_ENROLEMENT: Partial<Record<string, ParEnrolement>> = {
+  sous: 'sous',
+  annee: 'annee',
+  mois: 'mois',
+  type: 'type',
 };
 
 /** Authentifications (05/11/2026) : colonnes de l'API Exploration et ventilations correspondantes. */
@@ -338,7 +347,11 @@ function Explorateur() {
   const auth = cleSource === 'auth';
   const valeursAuth = useExplorationAuthentifications(undefined, { perimetre: perimetreAuth, par: 'total' }, auth)
     .data?.valeurs;
+  // Types de demande de l'enrôlement, lus dans les données (codes MOSIP, libellés de lib/suivi).
+  const enrol = cleSource === 'enrol';
+  const typesEnrol = useExplorationEnrolement(undefined, undefined, { par: 'total' }, enrol).data?.types;
   const optionsDimension = (d: CleDimension): OptionChoix[] => {
+    if (enrol && d === 'type') return (typesEnrol ?? []).map((c) => ({ id: c, libelle: typeDemande(c) }));
     if (auth && d === 'taut') {
       const codes = valeursAuth?.types ?? TYPES_AUTHENTIFICATION.map((x) => x.code).filter((c) => c !== 'non_classe');
       return codes.map((c) => ({ id: c, libelle: libelleType(c) }));
@@ -379,13 +392,25 @@ function Explorateur() {
   const modeEffectif: Mode = mode === 'pf' && choisis.length < 2 ? 'n' : mode;
 
   const nomsChemin = chemin.map((_, k) => nomDe(k));
-  // Données réelles de l'Enrôlement : par sous-zone de la zone choisie, ou total.
-  const reel = cleSource === 'enrol' && periodePrete && (parEffectif === 'sous' || parEffectif === 'total');
-  const territoire = useTerritoire(plage, zoneChoisie, reel);
-  const lignesApi = reel ? territoire.data?.lignes.filter((l) => !l.horsReferentiel) : undefined;
+  // Enrôlement (lot E1, 06/11/2026) : une requête par zone, période, type et ventilation ; seule la réponse à la
+  // ventilation et à la zone en cours s'affiche. Pré-inscriptions sans type de demande : null, affichées 0.
+  const parEnrol = PAR_ENROLEMENT[parEffectif] ?? 'total';
+  const requeteEnrol = useExplorationEnrolement(
+    plage,
+    zoneChoisie,
+    { type: filtres.type, par: parEnrol },
+    enrol && periodePrete,
+  );
+  const reponseEnrol = requeteEnrol.data;
+  const exploEnrol =
+    enrol && reponseEnrol?.par === parEnrol && (reponseEnrol.zone ?? undefined) === zoneChoisie
+      ? reponseEnrol
+      : undefined;
+  const valeurEnrol = (c: Partial<Record<ChampsEnrolement, number | null>>, cle: string) => {
+    const v = CHAMP_ENROLEMENT[cle] ? c[CHAMP_ENROLEMENT[cle]] : undefined;
+    return typeof v === 'number' ? v : Number.NaN;
+  };
 
-  const valeursDe = (l?: Pick<LigneZone, ChampsEnrolement>) =>
-    choisis.map((i) => (l && CHAMP_ENROLEMENT[i.cle] ? l[CHAMP_ENROLEMENT[i.cle]] : Number.NaN));
   // On ouvre une sous-zone du niveau attendu qui a elle-même des sous-zones (pas un centre rattaché plus haut).
   const ouvrable = (l: { niveau?: string | null; ouvrable?: boolean }) =>
     !!niveauSuivant &&
@@ -418,7 +443,7 @@ function Explorateur() {
       : undefined;
   // Chargement visible (05/11/2026) : les chiffres précédents restent affichés, en pâle, jusqu'à la réponse.
   const enCours =
-    (reel && territoire.isFetching) ||
+    (enrol && periodePrete && requeteEnrol.isFetching) ||
     (auth && periodePrete && requeteAuth.isFetching) ||
     (cartes && periodePrete && requeteCartes.isFetching);
   const libelleLigneAuth = (cle: string, libelle: string) =>
@@ -445,12 +470,13 @@ function Explorateur() {
         ouvrable: parEffectif === 'sous' && ouvrable(l),
       }));
     }
-    if (lignesApi && parEffectif === 'sous') {
-      return lignesApi.map((l) => ({
-        id: l.code,
-        libelle: l.nom,
-        valeurs: valeursDe(l),
-        ouvrable: ouvrable(l),
+    if (exploEnrol) {
+      return exploEnrol.lignes.map((l) => ({
+        id: l.cle,
+        libelle:
+          parEffectif === 'mois' ? libelleMois(l.cle) : parEffectif === 'type' ? typeDemande(l.cle) : l.libelle,
+        valeurs: choisis.map((i) => valeurEnrol(l.chiffres, i.cle)),
+        ouvrable: parEffectif === 'sous' && ouvrable(l),
       }));
     }
     const inconnues = () => choisis.map(() => Number.NaN);
@@ -475,8 +501,8 @@ function Explorateur() {
       ? choisis.map((i) => exploAuth.total[CHAMP_AUTH[i.cle]] ?? Number.NaN)
       : exploCartes
         ? choisis.map((i) => exploCartes.total[CHAMP_CARTES[i.cle]] ?? Number.NaN)
-        : reel && territoire.data
-          ? valeursDe(territoire.data)
+        : exploEnrol
+          ? choisis.map((i) => valeurEnrol(exploEnrol.total, i.cle))
           : choisis.map(() => Number.NaN);
   // Tri au clic sur un titre de colonne (05/11/2026), avant la pagination.
   const lignesTriees = trierLignes(

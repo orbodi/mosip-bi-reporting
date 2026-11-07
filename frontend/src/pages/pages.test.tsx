@@ -202,7 +202,7 @@ describe('Pages de la maquette', () => {
       expect(
         appels.some(
           (u) =>
-            u.pathname.endsWith('/territoire') &&
+            u.pathname.endsWith('/enrolement/exploration') &&
             u.searchParams.get('du') === '2026-01-02' &&
             u.searchParams.get('au') === '2026-01-02',
         ),
@@ -343,9 +343,10 @@ describe('Pages de la maquette', () => {
       'title',
       'Pas encore disponible dans l’Exploration',
     );
-    // Afficher par : Mois grisé, avec sa raison.
+    // Afficher par : Sexe grisé, avec sa raison ; Mois et Type de demande ouverts (lot E1).
     await utilisateur.click(boutonChoix('Afficher par'));
-    expect(await screen.findByRole('option', { name: /^Mois/ })).toHaveAttribute('aria-disabled', 'true');
+    expect(await screen.findByRole('option', { name: /^Sexe/ })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('option', { name: /^Mois/ })).not.toHaveAttribute('aria-disabled', 'true');
     await utilisateur.keyboard('{Escape}');
 
     // Tri par inscriptions, décroissant : Tône (186 239) passe devant Cinkassé ; le tri va dans l'adresse.
@@ -376,7 +377,7 @@ describe('Pages de la maquette', () => {
       expect(
         appels.some(
           (u) =>
-            u.pathname.endsWith('/territoire') &&
+            u.pathname.endsWith('/enrolement/exploration') &&
             u.searchParams.get('du') === '2025-12-01' &&
             u.searchParams.get('au') === '2025-12-31',
         ),
@@ -414,5 +415,40 @@ describe('Pages de la maquette', () => {
     expect(choix).not.toHaveClass('xp-choix--replie');
     // La rangée des choix actifs rappelle les indicateurs (visible sur téléphone seulement).
     expect(document.querySelector('.xp-actif--indicateurs')).toHaveTextContent('Inscriptions');
+  });
+
+  it('Exploration : enrôlement par type de demande, filtre et ventilation lus dans les données (lot E1)', async () => {
+    const appels = simulerApi();
+    afficher('/exploration?indicateurs=ins,pre');
+    const utilisateur = userEvent.setup();
+
+    await screen.findByRole('region', { name: 'Inscriptions, Pré-inscriptions par région' });
+    // Filtre : types présents dans les données, en français ; envoyé à l'API par son code MOSIP.
+    await utilisateur.click(boutonChoix('Type de demande'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'NIU perdu' }));
+    await waitFor(() =>
+      expect(
+        appels.some(
+          (u) => u.pathname.endsWith('/enrolement/exploration') && u.searchParams.get('type') === 'LOST',
+        ),
+      ).toBe(true),
+    );
+    expect(screen.getByText('Type de demande : NIU perdu', { selector: '.xp-actif' })).toBeInTheDocument();
+    await utilisateur.click(screen.getByRole('button', { name: 'Retirer « Type de demande : NIU perdu »' }));
+
+    // Une pré-inscription n'a pas de type : la ventilation par type s'ouvre sans elle.
+    const indicateurs = within(screen.getByRole('group', { name: /Indicateurs/ }));
+    await utilisateur.click(indicateurs.getByRole('button', { name: 'Pré-inscriptions' }));
+    await utilisateur.click(boutonChoix('Afficher par'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Type de demande' }));
+    const resultat = within(await screen.findByRole('region', { name: 'Inscriptions par type de demande' }));
+    expect(await resultat.findByRole('rowheader', { name: 'Nouvelle inscription' })).toBeInTheDocument();
+    const ligne = resultat.getByRole('rowheader', { name: 'Nouvelle inscription' }).closest('tr');
+    expect(ligne).toHaveTextContent(/2\s400$/);
+
+    // Par mois : lignes de l'API.
+    await utilisateur.click(boutonChoix('Afficher par'));
+    await utilisateur.click(await screen.findByRole('option', { name: 'Mois' }));
+    expect(await resultat.findByRole('rowheader', { name: 'janvier 2026' })).toBeInTheDocument();
   });
 });
