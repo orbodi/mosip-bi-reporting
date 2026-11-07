@@ -168,6 +168,12 @@ describe('Pages de la maquette', () => {
     // Savanes : 188 796 cartes remises pour 450 239 inscriptions, moins de la moitié (en gras).
     expect(await within(savanes).findByText(/^41,9\s%$/, { selector: 'strong' })).toBeInTheDocument();
     expect(await regions.findByRole('rowheader', { name: 'Grand Lomé' })).toBeInTheDocument();
+
+    // Authentifications : requêtes des usagers de l'API, comme sur leur page (2 186 dont 70,4 % réussies).
+    const modules = within(screen.getByRole('region', { name: 'Indicateurs clés par module' }));
+    const carteAuth = (await modules.findByText(/^2\s186$/)).closest('a');
+    expect(carteAuth).toHaveTextContent(/requêtes des usagers/);
+    expect(carteAuth).toHaveTextContent(/70,4\s%\s*réussies, 29,6\s%\s*échouées/);
   });
 
   it('Exploration : inscriptions par région depuis l’API, puis par préfecture de la région choisie', async () => {

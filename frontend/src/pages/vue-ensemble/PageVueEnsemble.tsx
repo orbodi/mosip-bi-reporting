@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
+import { useUsagers } from '../../api/authentifications';
 import { useImpression, useTerritoireCartes } from '../../api/cartes';
 import { useDevenirInscriptions, usePreinscriptions, useTerritoire } from '../../api/enrolement';
 import { CarteZones } from '../../composants/carte/CarteZones';
@@ -9,6 +10,7 @@ import { CarteIndicateur } from '../../composants/blocs/Indicateur';
 import { Panneau } from '../../composants/blocs/Panneau';
 import { Bandeau } from '../../composants/coque/Bandeau';
 import { FiltresPage } from '../../composants/coque/FiltresPage';
+import { chiffresUsagers } from '../../lib/authentifications';
 import { INCONNUE, depuisApi, devenirInconnu } from '../../lib/blocsVides';
 import {
   CLASSES_AVEC_CARTE,
@@ -37,7 +39,8 @@ const COULEURS_BANDES = ['bleu', 'bleu-vif', 'bleu', 'bleu-vif', 'bleu', 'bleu-v
 /**
  * Vue d'ensemble du parcours citoyen (maquette/pages/Main.dc.html). Les étapes d'enrôlement viennent de l'API
  * (blocs « Devenir des inscriptions » et « Pré-inscription »), les demandes, l'impression et la remise de l'API des
- * cartes (lot 8c, GET /api/v1/cartes/impression et /territoire) ; ABIS, IDPS et authentifications attendent leurs
+ * cartes (lot 8c, GET /api/v1/cartes/impression et /territoire), la carte Authentifications des requêtes des usagers
+ * (GET /api/v1/authentifications/usagers, mêmes chiffres que la page, 07/11/2026) ; ABIS et IDPS attendent leurs
  * sources (0, décision du 20/10/2026).
  */
 export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
@@ -50,6 +53,9 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
   const cartes = chiffresImpression(useImpression(plage, prete).data);
   const cartesRegions = useTerritoireCartes(plage, undefined, prete);
   const toutes = choix === 'tout';
+  // Authentifications : même choix de période, borné aux données de leur source (comme sur leur page).
+  const periodeAuth = usePlageApi('authentifications');
+  const auth = chiffresUsagers(useUsagers(periodeAuth.plage, periodeAuth.prete).data);
 
   const ins = d.inscriptions;
   const traites = d.niuGeneres + d.echouees + d.rejetees;
@@ -277,11 +283,12 @@ export function PageVueEnsemble({ page }: { page: DefinitionPage }) {
               lien="/authentifications"
               icone="bouclier"
               nom="Authentifications"
-              valeur={nf(INCONNUE)}
-              unite="requêtes"
+              valeur={nf(auth.requetes)}
+              unite="requêtes des usagers"
               detail={
                 <>
-                  <strong>{pct(INCONNUE)}</strong> réussies, {pct(INCONNUE)} échouées
+                  <strong>{pct(part(auth.reussies, auth.requetes))}</strong> réussies,{' '}
+                  {pct(part(auth.echouees, auth.requetes))} échouées
                 </>
               }
             />
