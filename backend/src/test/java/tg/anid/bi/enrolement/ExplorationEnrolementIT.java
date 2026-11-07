@@ -13,8 +13,9 @@ import tg.anid.bi.commun.RequeteInvalide;
 import tg.anid.bi.commun.RessourceIntrouvable;
 
 /**
- * Onglet Enrôlement de l'Exploration (lot E1) sur un PostgreSQL jetable : quatre jours d'inscriptions de trois types
- * dans trois centres (Savanes et Kara), deux jours de pré-inscriptions. Contrôle : somme des lignes = total.
+ * Onglet Enrôlement de l'Exploration (lots E1 et E2) sur un PostgreSQL jetable : quatre jours d'inscriptions de trois
+ * types dans trois centres (Savanes et Kara), dont une partie avec profil (sexe, tranche d'âge, nationalité de l'ID
+ * Repository), deux jours de pré-inscriptions. Contrôle : somme des lignes = total.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:tc:postgresql:17-alpine:///bi",
@@ -35,14 +36,19 @@ class ExplorationEnrolementIT {
     @BeforeEach
     void preparer() {
         jdbc.sql("truncate bi.fait_enrolement_jour, bi.fait_preinscription_zone_jour").update();
+        // Mêmes totaux que le lot E1 (25 inscriptions, 20 NIU) ; profil connu pour 14 NIU, « I » ailleurs.
         jdbc.sql("""
-                insert into bi.fait_enrolement_jour (jour, centre_id, sexe, tranche_age, type_demande, inscriptions,
-                                                     niu_generes, en_cours, echouees, rejetees)
-                select cast(v.jour as date), z.id, 'I', 'inconnu', v.t, v.i, v.n, v.e, v.c, v.r
-                from (values ('2025-12-20', '10011', 'NEW', 10, 8, 1, 1, 0),
-                             ('2026-01-05', '10011', 'UPDATE', 5, 4, 0, 0, 1),
-                             ('2026-01-06', '10012', 'NEW', 7, 6, 1, 0, 0),
-                             ('2026-01-07', '10021', 'LOST', 3, 2, 0, 0, 1)) as v(jour, code, t, i, n, e, c, r)
+                insert into bi.fait_enrolement_jour (jour, centre_id, sexe, tranche_age, type_demande, nationalite,
+                                                     inscriptions, niu_generes, en_cours, echouees, rejetees)
+                select cast(v.jour as date), z.id, v.s, v.a, v.t, v.n, v.i, v.g, v.e, v.c, v.r
+                from (values ('2025-12-20', '10011', 'F', '26-35', 'NEW', 'TOGO', 6, 6, 0, 0, 0),
+                             ('2025-12-20', '10011', 'I', 'inconnu', 'NEW', 'Non renseignée', 4, 2, 1, 1, 0),
+                             ('2026-01-05', '10011', 'H', '0-5', 'UPDATE', 'BENIN', 4, 4, 0, 0, 0),
+                             ('2026-01-05', '10011', 'I', 'inconnu', 'UPDATE', 'Non renseignée', 1, 0, 0, 0, 1),
+                             ('2026-01-06', '10012', 'F', '60+', 'NEW', 'TOGO', 4, 4, 0, 0, 0),
+                             ('2026-01-06', '10012', 'I', 'inconnu', 'NEW', 'Non renseignée', 3, 2, 1, 0, 0),
+                             ('2026-01-07', '10021', 'I', 'inconnu', 'LOST', 'Non renseignée', 3, 2, 0, 0, 1))
+                     as v(jour, code, s, a, t, n, i, g, e, c, r)
                 join bi.zone z on z.code = v.code
                 """).update();
         jdbc.sql("""
@@ -51,6 +57,10 @@ class ExplorationEnrolementIT {
                 from (values ('2025-12-21', 'SAV-02', 4), ('2026-01-10', 'KAR-05', 6)) as v(jour, code, d)
                 join bi.zone z on z.code = v.code
                 """).update();
+    }
+
+    private static ExplorationEnrolementRepository.Filtres type(String type) {
+        return new ExplorationEnrolementRepository.Filtres(type, null, null, null);
     }
 
     @Test
@@ -84,16 +94,40 @@ class ExplorationEnrolementIT {
         assertThat(parType.total().preinscriptions()).isNull();
         assertThat(parType.lignes()).allSatisfy(l -> assertThat(l.chiffres().preinscriptions()).isNull());
 
-        ExplorationEnrolement nouvelles = service.exploration(null, null, null, "NEW", "sous");
+        ExplorationEnrolement nouvelles = service.exploration(null, null, null, type("NEW"), "sous");
         assertThat(nouvelles.type()).isEqualTo("NEW");
         assertThat(nouvelles.total()).isEqualTo(new ExplorationEnrolement.Chiffres(17, 14, 2, 1, 0, null));
         assertThat(nouvelles.lignes().get(1).chiffres().inscriptions()).isZero();
 
-        assertThat(service.exploration(null, null, null, null, "total").types())
-                .containsExactly("LOST", "NEW", "UPDATE");
-        assertThatThrownBy(() -> service.exploration(null, null, null, null, "sexe"))
-                .isInstanceOf(RequeteInvalide.class);
+        ExplorationEnrolement valeurs = service.exploration(null, null, null, null, "total");
+        assertThat(valeurs.types()).containsExactly("LOST", "NEW", "UPDATE");
+        assertThat(valeurs.nationalites()).containsExactly("Non renseignée", "TOGO", "BENIN");
         assertThatThrownBy(() -> service.exploration(null, null, "INCONNUE", null, "sous"))
                 .isInstanceOf(RessourceIntrouvable.class);
+    }
+
+    @Test
+    void sexeTrancheEtNationaliteSeulementPourLesInscriptionsAvecProfil() {
+        ExplorationEnrolement parSexe = service.exploration(null, null, null, null, "sexe");
+        assertThat(parSexe.lignes()).extracting(ExplorationEnrolement.Ligne::cle).containsExactly("F", "H", "I");
+        assertThat(parSexe.lignes().getFirst().chiffres()).isEqualTo(
+                new ExplorationEnrolement.Chiffres(10, 10, 0, 0, 0, null));
+        assertThat(parSexe.lignes().stream().mapToLong(l -> l.chiffres().inscriptions()).sum()).isEqualTo(25);
+
+        ExplorationEnrolement parAge = service.exploration(null, null, "SAV", null, "age");
+        assertThat(parAge.lignes()).extracting(ExplorationEnrolement.Ligne::cle)
+                .containsExactly("0-5", "26-35", "60+", "inconnu");
+
+        ExplorationEnrolement parNationalite = service.exploration(null, null, null, null, "nationalite");
+        assertThat(parNationalite.lignes()).extracting(ExplorationEnrolement.Ligne::cle)
+                .containsExactly("Non renseignée", "TOGO", "BENIN");
+
+        // Femmes togolaises de 26 à 35 ans en nouvelle inscription : 6, sans pré-inscriptions.
+        ExplorationEnrolement filtre = service.exploration(null, null, null,
+                new ExplorationEnrolementRepository.Filtres("NEW", "F", "26-35", "TOGO"), "sous");
+        assertThat(filtre.total()).isEqualTo(new ExplorationEnrolement.Chiffres(6, 6, 0, 0, 0, null));
+        assertThat(filtre.lignes().getFirst().chiffres().inscriptions()).isEqualTo(6);
+        assertThatThrownBy(() -> service.exploration(null, null, null, null, "region"))
+                .isInstanceOf(RequeteInvalide.class);
     }
 }
